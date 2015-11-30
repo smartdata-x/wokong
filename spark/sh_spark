@@ -6,8 +6,6 @@ object VisitAndSearch {
     println(s1)
     val s2 = kunyan_visit_and_search("AD_c8e1cd724f332682377944527e26d586ab86e\t1446107445761\td3g.qq.com\t/clubapp/pop/p4294967295.zip\t\t180.166.64.130\t180.153.105.144\tMozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)\tptcz=6a6560aa3d2351797b8c9149d77fe1e6dd8e6e02eae820ec2c90c20b8ba63095; pt2gguin=o2880130854; RK=mavGoAMd6u; uin=o2880130854; skey=@NXGEZNSve; ptisp=ctc\t*/*\t-------")
     println(s2)
-    val s3 = kunyan_visit_and_search("AD_c8e1cd724f332682377944527e26d586ab86e\t1446107445761\tsuggest.eastmoney.com\t/clubapp/input=/p429&967295.zip\t\t180.166.64.130\t180.153.105.144\tMozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)\tptcz=6a6560aa3d2351797b8c9149d77fe1e6dd8e6e02eae820ec2c90c20b8ba63095; pt2gguin=o2880130854; RK=mavGoAMd6u; uin=o2880130854; skey=@NXGEZNSve; ptisp=ctc\t*/*\t-------")
-    println(s3)
   }
 
   def kunyan_visit_and_search(input: String): String = {
