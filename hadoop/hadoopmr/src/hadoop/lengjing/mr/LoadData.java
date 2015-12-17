@@ -103,13 +103,13 @@ public class LoadData extends Configured implements Tool{
 	    String hour = getTime(timeStamp);
 		/** visit */
 		if(visitWebsite.charAt(0) >= '0' && visitWebsite.charAt(0) <= '5'){
-			
+			if(stockCodes.contains(stockCode)){
 			context.write(new Text("visit:"+stockCode+":"+hour), new LongWritable(1));
 			
 			context.write(new Text("hash:visit:"+hour+","+stockCode),new LongWritable(1)); 
 			
 			context.write(new Text("visit:count:"+hour), new LongWritable(1));
-			
+			}
 		}
 		/** search */
 		else if(visitWebsite.charAt(0) >= '6' && visitWebsite.charAt(0) <= '9'){
