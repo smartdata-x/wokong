@@ -67,6 +67,9 @@ public final class RedisUtil {
             address = prop.getProperty("ip").trim();    
             port = Integer.parseInt(prop.getProperty("port").trim());
             auth = prop.getProperty("auth").trim(); 
+			if(auth.isEmpty()){
+				auth = null;
+			}   	
             database = Integer.parseInt(prop.getProperty("database").trim()); 
          }catch  (IOException e) {    
             e.printStackTrace();    
