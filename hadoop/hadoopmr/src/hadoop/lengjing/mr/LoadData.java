@@ -91,7 +91,7 @@ public class LoadData extends Configured implements Tool{
 
 		@Override
 		protected void map(LongWritable key, Text value, Mapper<LongWritable, Text, Text, LongWritable>.Context context)
-			throws IOException, InterruptedException {
+		    throws IOException, InterruptedException {
 			String getLine = value.toString();
 			String[] lineSplits = getLine.split("\t");
 			
@@ -182,9 +182,9 @@ public class LoadData extends Configured implements Tool{
 		protected void cleanup(Mapper<LongWritable, Text, Text, LongWritable>.Context context)
 				throws IOException, InterruptedException {
 			// TODO Auto-generated method stub
-			if (jedis != null) {
+			if(jedis != null) {
 	            jedis.close();
-	        }
+	    }
 		}
 		/**
 		 * Gets the time
@@ -213,8 +213,7 @@ public class LoadData extends Configured implements Tool{
 				String[] keys = key.toString().split(",");
 				
 				context.write(new Text(keys[0]), new Text(keys[1]+":"+hashCounter));
-			}
-			else{
+			}else{
 				
 				for ( LongWritable items : value){
 					counter += items.get();

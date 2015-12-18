@@ -35,41 +35,38 @@ public class RedisOutputFormat extends FileOutputFormat<Text, Text>{
 	 /**
      * 定制一个RecordWriter类，每一条reduce处理后的记录，我们便可将该记录输出到数据库中
      */
-    protected static class RedisRecordWriter extends RecordWriter<Text,Text> {
-        private Jedis jedis = null; 
-         
-        public RedisRecordWriter(Jedis jedis){
-            this.jedis = jedis;
-            System.out.println("Connection to server sucessfully");
-            System.out.println("Server is running: "+jedis.ping());
-        }
-         
-        @Override
-        public void write(Text key, Text value) throws IOException,
-                InterruptedException {
-             
-            boolean nullKey = key == null;
-            boolean nullValue = value == null;
-            if (nullKey || nullValue){
-            	return;
-            }
-            System.out.println(jedis);
-            
-            if(key.toString().startsWith("hash:")){
-            	String[] split = key.toString().split(":");
-            	String[] field = value.toString().split(":");
-            	String outKey = split[1]+":"+split[2];
-            	jedis.zincrby(outKey, Long.parseLong(field[1]),field[0]);
-                jedis.expire(outKey, 50*60*60);
-            }
-            else{
-            	
-            	jedis.incrBy(key.toString(), Long.parseLong(value.toString()));
-            	jedis.expire(key.toString(), 50*60*60);
-            	
-            }
-           
-        }
+  protected static class RedisRecordWriter extends RecordWriter<Text,Text> {
+    private Jedis jedis = null; 
+     
+    public RedisRecordWriter(Jedis jedis){
+        this.jedis = jedis;
+        System.out.println("Connection to server sucessfully");
+        System.out.println("Server is running: "+jedis.ping());
+    }
+       
+    @Override
+    public void write(Text key, Text value) throws IOException,InterruptedException {
+      boolean nullKey = key == null;
+      boolean nullValue = value == null;
+      if (nullKey || nullValue){
+      	return;
+      }
+      System.out.println(jedis);
+      
+      if(key.toString().startsWith("hash:")){
+      	String[] split = key.toString().split(":");
+      	String[] field = value.toString().split(":");
+      	String outKey = split[1]+":"+split[2];
+      	jedis.zincrby(outKey, Long.parseLong(field[1]),field[0]);
+          jedis.expire(outKey, 50*60*60);
+      }else{
+      	
+      	jedis.incrBy(key.toString(), Long.parseLong(value.toString()));
+      	jedis.expire(key.toString(), 50*60*60);
+      	
+      }
+       
+    }
 
 		@Override
 		public void close(TaskAttemptContext context) throws IOException, InterruptedException {
@@ -78,7 +75,7 @@ public class RedisOutputFormat extends FileOutputFormat<Text, Text>{
 			}
 		}
 
-    }
+  }
 
 	@Override
 	public RecordWriter<Text, Text> getRecordWriter(TaskAttemptContext context) throws IOException, InterruptedException {
