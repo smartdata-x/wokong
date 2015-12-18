@@ -71,18 +71,21 @@ public class LoadData extends Configured implements Tool{
 		@Override
 		protected void setup(Mapper<LongWritable, Text, Text, LongWritable>.Context context)
 				throws IOException, InterruptedException {
-		   if(!jedis.isConnected()){
-			   System.out.println("redis connect error");
-			   System.exit(2);
-		   }
-		   stockCodes = jedis.lrange("stock:list", 0, -1);
-		   System.out.println("redis connected");
-		   for(String stockCode : stockCodes){
-			   nameUrls = jedis.mget("stock:"+stockCode+":nameurl");
-			   jianPins = jedis.mget("stock:"+stockCode+":jianpin");
-			   quanPins = jedis.mget("stock:"+stockCode+":quanpin");
-			   
-		    }
+			
+	    if(!jedis.isConnected()){
+	    	
+	    	System.out.println("redis connect error");
+	    	System.exit(2);
+	    }
+	    stockCodes = jedis.lrange("stock:list", 0, -1);
+	    System.out.println("redis connected");
+	    for(String stockCode : stockCodes){
+	    	
+	    	nameUrls = jedis.mget("stock:"+stockCode+":nameurl");
+	    	jianPins = jedis.mget("stock:"+stockCode+":jianpin");
+	    	quanPins = jedis.mget("stock:"+stockCode+":quanpin");
+	    	
+	    }
 		        
 		}
 
@@ -95,8 +98,8 @@ public class LoadData extends Configured implements Tool{
 			if(lineSplits.length < 3){
 				return ;
 			}
-			stockCode = lineSplits[0];
-			timeStamp = lineSplits[1];
+		    stockCode = lineSplits[0];
+		    timeStamp = lineSplits[1];
 		    visitWebsite = lineSplits[2];
 		    String hour = getTime(timeStamp);
 			/** visit */
