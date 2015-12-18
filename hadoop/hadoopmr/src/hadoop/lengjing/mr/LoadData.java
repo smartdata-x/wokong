@@ -68,7 +68,7 @@ public class LoadData extends Configured implements Tool{
 		private List<String> quanPins;
 				
 	
-	@Override
+		@Override
 		protected void setup(Mapper<LongWritable, Text, Text, LongWritable>.Context context)
 				throws IOException, InterruptedException {
 		   if(!jedis.isConnected()){
@@ -86,113 +86,113 @@ public class LoadData extends Configured implements Tool{
 		        
 		}
 
-	@Override
-	protected void map(LongWritable key, Text value, Mapper<LongWritable, Text, Text, LongWritable>.Context context)
+		@Override
+		protected void map(LongWritable key, Text value, Mapper<LongWritable, Text, Text, LongWritable>.Context context)
 			throws IOException, InterruptedException {
-		String getLine = value.toString();
-		String[] lineSplits = getLine.split("\t");
-		
-		if(lineSplits.length < 3){
-			return ;
-		}
-		stockCode = lineSplits[0];
-		timeStamp = lineSplits[1];
-	    visitWebsite = lineSplits[2];
-	    String hour = getTime(timeStamp);
-		/** visit */
-		if(visitWebsite.charAt(0) >= '0' && visitWebsite.charAt(0) <= '5'){
-			if(stockCodes.contains(stockCode)){
-			context.write(new Text("visit:"+stockCode+":"+hour), new LongWritable(1));
+			String getLine = value.toString();
+			String[] lineSplits = getLine.split("\t");
 			
-			context.write(new Text("hash:visit:"+hour+","+stockCode),new LongWritable(1)); 
-			
-			context.write(new Text("visit:count:"+hour), new LongWritable(1));
-			}
-		}
-		/** search */
-		else if(visitWebsite.charAt(0) >= '6' && visitWebsite.charAt(0) <= '9'){
-			/** wait for finish */
-			String keyWord = stockCode;
-			if(keyWord.length() < 4){
+			if(lineSplits.length < 3){
 				return ;
 			}
+			stockCode = lineSplits[0];
+			timeStamp = lineSplits[1];
+		    visitWebsite = lineSplits[2];
+		    String hour = getTime(timeStamp);
+			/** visit */
+			if(visitWebsite.charAt(0) >= '0' && visitWebsite.charAt(0) <= '5'){
+				if(stockCodes.contains(stockCode)){
+				context.write(new Text("visit:"+stockCode+":"+hour), new LongWritable(1));
 				
-			char firstChar = keyWord.charAt(0);
-			
-			if(firstChar >= '0' && firstChar <= '9'){
-				if(keyWord.length() < 6){
-					return;
+				context.write(new Text("hash:visit:"+hour+","+stockCode),new LongWritable(1)); 
+				
+				context.write(new Text("visit:count:"+hour), new LongWritable(1));
+				}
+			}
+			/** search */
+			else if(visitWebsite.charAt(0) >= '6' && visitWebsite.charAt(0) <= '9'){
+				/** wait for finish */
+				String keyWord = stockCode;
+				if(keyWord.length() < 4){
+					return ;
 				}
 					
-				for(String stockCode : stockCodes){
-					if(stockCode.contains(keyWord)){
-						context.write(new Text("search:"+stockCode+":"+hour), new LongWritable(1));
-						context.write(new Text("hash:search:"+hour+","+stockCode),new LongWritable(1)); 
-						context.write(new Text("search:count:"+hour), new LongWritable(1));
+				char firstChar = keyWord.charAt(0);
+				
+				if(firstChar >= '0' && firstChar <= '9'){
+					if(keyWord.length() < 6){
+						return;
 					}
-					
-				}
-			}else if (firstChar == '%'){
-				boolean b = Pattern.matches("%.*%.*%.*%.*%.*%.*%.*%",keyWord);
-				if(!b){
-					return;
-				}
-				keyWord = keyWord.toUpperCase();
-				int index = 0;
-				for(String nameUrl : nameUrls){
-					index += 1;
-					if(nameUrl.contains(keyWord)){
-						context.write(new Text("search:"+stockCodes.get(index - 1)+":"+hour), new LongWritable(1));
-						context.write(new Text("hash:search:"+hour+","+stockCodes.get(index - 1)),new LongWritable(1));
-						context.write(new Text("search:count:"+hour), new LongWritable(1));
+						
+					for(String stockCode : stockCodes){
+						if(stockCode.contains(keyWord)){
+							context.write(new Text("search:"+stockCode+":"+hour), new LongWritable(1));
+							context.write(new Text("hash:search:"+hour+","+stockCode),new LongWritable(1)); 
+							context.write(new Text("search:count:"+hour), new LongWritable(1));
+						}
+						
 					}
-					
-			}
+				}else if (firstChar == '%'){
+					boolean b = Pattern.matches("%.*%.*%.*%.*%.*%.*%.*%",keyWord);
+					if(!b){
+						return;
+					}
+					keyWord = keyWord.toUpperCase();
+					int index = 0;
+					for(String nameUrl : nameUrls){
+						index += 1;
+						if(nameUrl.contains(keyWord)){
+							context.write(new Text("search:"+stockCodes.get(index - 1)+":"+hour), new LongWritable(1));
+							context.write(new Text("hash:search:"+hour+","+stockCodes.get(index - 1)),new LongWritable(1));
+							context.write(new Text("search:count:"+hour), new LongWritable(1));
+						}
+						
+				}
+				
+				}else if((firstChar >= 'A' && firstChar <= 'Z') || (firstChar >= 'a' && firstChar <= 'z')){
+					keyWord = keyWord.toLowerCase();
+					int index = 0;
+					for(String jianPin : jianPins){
+						index += 1;
+						if(jianPin.contains(keyWord)){
+							context.write(new Text("search:"+stockCodes.get(index - 1)+":"+hour), new LongWritable(1));
+							context.write(new Text("hash:search:"+hour+","+stockCodes.get(index - 1)),new LongWritable(1));
+							context.write(new Text("search:count:"+hour), new LongWritable(1));
+						}
+					}
+					if(index != 0){
+						return;
+					}
+					for(String quanPin : quanPins){
+						index += 1;
+						if(quanPin.contains(keyWord)){
+							context.write(new Text("search:"+stockCodes.get(index - 1)+":"+hour), new LongWritable(1));
+							context.write(new Text("hash:search:"+hour+","+stockCodes.get(index - 1)),new LongWritable(1));
+							context.write(new Text("search:count:"+hour), new LongWritable(1));
+						}
+					}
+				}
 			
-		}else if((firstChar >= 'A' && firstChar <= 'Z') || (firstChar >= 'a' && firstChar <= 'z')){
-			keyWord = keyWord.toLowerCase();
-			int index = 0;
-			for(String jianPin : jianPins){
-				index += 1;
-				if(jianPin.contains(keyWord)){
-					context.write(new Text("search:"+stockCodes.get(index - 1)+":"+hour), new LongWritable(1));
-					context.write(new Text("hash:search:"+hour+","+stockCodes.get(index - 1)),new LongWritable(1));
-					context.write(new Text("search:count:"+hour), new LongWritable(1));
-				}
-			}
-			if(index != 0){
-				return;
-			}
-			for(String quanPin : quanPins){
-				index += 1;
-				if(quanPin.contains(keyWord)){
-					context.write(new Text("search:"+stockCodes.get(index - 1)+":"+hour), new LongWritable(1));
-					context.write(new Text("hash:search:"+hour+","+stockCodes.get(index - 1)),new LongWritable(1));
-					context.write(new Text("search:count:"+hour), new LongWritable(1));
-				}
-			}
-		}
-		
-	 }	
+		 }	
   }
-	@Override
-	protected void cleanup(Mapper<LongWritable, Text, Text, LongWritable>.Context context)
-			throws IOException, InterruptedException {
-		// TODO Auto-generated method stub
-		if (jedis != null) {
-            jedis.close();
-        }
-	}
-	/**
-	 * Gets the time
-	 */
-	private String getTime(String timeStamp){
-		SimpleDateFormat format = new SimpleDateFormat( "yyyy-MM-dd HH" );
-		BigInteger time2 = new BigInteger(timeStamp);
-		String d = format.format(time2);
-		return d;
-		
-	}
+		@Override
+		protected void cleanup(Mapper<LongWritable, Text, Text, LongWritable>.Context context)
+				throws IOException, InterruptedException {
+			// TODO Auto-generated method stub
+			if (jedis != null) {
+	            jedis.close();
+	        }
+		}
+		/**
+		 * Gets the time
+		 */
+		private String getTime(String timeStamp){
+			SimpleDateFormat format = new SimpleDateFormat( "yyyy-MM-dd HH" );
+			BigInteger time2 = new BigInteger(timeStamp);
+			String d = format.format(time2);
+			return d;
+			
+		}
 	
  }
 
