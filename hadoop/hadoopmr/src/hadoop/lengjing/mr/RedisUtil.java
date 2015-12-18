@@ -66,11 +66,10 @@ public final class RedisUtil {
 	    
     static {
     	Configuration conf = new Configuration();
-	    Properties prop =  new  Properties();
-	    String hdfsUrl = conf.get("fs.defaultFS");
-	    FileSystem fs = null;
-
-	    try {
+		Properties prop =  new  Properties();
+		String hdfsUrl = conf.get("fs.defaultFS");
+		FileSystem fs = null;
+		try {
 			fs = FileSystem.get(new URI(hdfsUrl),new Configuration(), "root");
 		} catch (IOException e2) {
 			// TODO Auto-generated catch block
@@ -95,27 +94,27 @@ public final class RedisUtil {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
-        try {
-            prop.load(in);    
-            address = prop.getProperty("ip").trim();    
-            port = Integer.parseInt(prop.getProperty("port").trim());
+		try {
+			prop.load(in);    
+			address = prop.getProperty("ip").trim();    
+			port = Integer.parseInt(prop.getProperty("port").trim());
 			if(prop.getProperty("auth")!= null){
 				auth = prop.getProperty("auth").trim();
 			}
-            database = Integer.parseInt(prop.getProperty("database").trim()); 
-         }catch  (IOException e) {    
-            e.printStackTrace();    
-        } 
-        try {
-            JedisPoolConfig config = new JedisPoolConfig();
-            config.setMaxIdle(MAX_IDLE);
-            config.setMaxTotal(MAX_ACTIVE);
-            config.setMaxWaitMillis(MAX_WAIT);
-            config.setTestOnBorrow(TEST_ON_BORROW);
-            jedisPool = new JedisPool(config, address, port, TIMEOUT, auth, database);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+			database = Integer.parseInt(prop.getProperty("database").trim()); 
+		 }catch  (IOException e) {    
+			e.printStackTrace();    
+		} 
+		try {
+			JedisPoolConfig config = new JedisPoolConfig();
+			config.setMaxIdle(MAX_IDLE);
+			config.setMaxTotal(MAX_ACTIVE);
+			config.setMaxWaitMillis(MAX_WAIT);
+			config.setTestOnBorrow(TEST_ON_BORROW);
+			jedisPool = new JedisPool(config, address, port, TIMEOUT, auth, database);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		
 	}
     /**

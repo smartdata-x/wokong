@@ -52,8 +52,6 @@ public class LoadData extends Configured implements Tool{
 	 * The Class LoadDataMapper.
 	 */
 	public static class LoadDataMapper extends Mapper<LongWritable, Text, Text, LongWritable>{
-		
-	
 		private Jedis jedis = RedisUtil.getJedis();;
 		/** The stock code. */
 		private String stockCode = null;
@@ -84,7 +82,7 @@ public class LoadData extends Configured implements Tool{
 			   jianPins = jedis.mget("stock:"+stockCode+":jianpin");
 			   quanPins = jedis.mget("stock:"+stockCode+":quanpin");
 			   
-		   }
+		    }
 		        
 		}
 
@@ -189,10 +187,10 @@ public class LoadData extends Configured implements Tool{
 	 * Gets the time
 	 */
 	private String getTime(String timeStamp){
-		 SimpleDateFormat format = new SimpleDateFormat( "yyyy-MM-dd HH" );
-		 BigInteger time2 = new BigInteger(timeStamp);
-		 String d = format.format(time2);
-		 return d;
+		SimpleDateFormat format = new SimpleDateFormat( "yyyy-MM-dd HH" );
+		BigInteger time2 = new BigInteger(timeStamp);
+		String d = format.format(time2);
+		return d;
 		
 	}
 	
@@ -227,61 +225,60 @@ public class LoadData extends Configured implements Tool{
 	}
 	@Override
 	public int run(String[] args) throws Exception {
+		Configuration conf = getConf();
+		Job job = null;
+		String jobName = "start_job_"+System.currentTimeMillis();
+		try {
+			job = Job.getInstance(conf, jobName);
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+		/** set main class */
+		job.setJarByClass(LoadData.class);
+		/** set Mapper */
+		job.setMapperClass(LoadDataMapper.class);
+		job.setMapOutputKeyClass(Text.class);
+		job.setMapOutputValueClass(LongWritable.class);
+		try {
+			FileInputFormat.setInputPaths(job, new Path(args[0]));
+		} catch (IllegalArgumentException e) {			
+			e.printStackTrace();
+		} catch (IOException e) {				
+			e.printStackTrace();
+		}
 		
-		    Configuration conf = getConf();
-			Job job = null;
-		    String jobName = "start_job_"+System.currentTimeMillis();
-			try {
-				job = Job.getInstance(conf, jobName);
-			} catch (IOException e1) {
-				e1.printStackTrace();
-			}
-			/** set main class */
-	 		job.setJarByClass(LoadData.class);
-			/** set Mapper */
-			job.setMapperClass(LoadDataMapper.class);
-			job.setMapOutputKeyClass(Text.class);
-			job.setMapOutputValueClass(LongWritable.class);
-			try {
-				FileInputFormat.setInputPaths(job, new Path(args[0]));
-			} catch (IllegalArgumentException e) {			
-				e.printStackTrace();
-			} catch (IOException e) {				
-				e.printStackTrace();
-			}
-			
-			/** set reducer */
-		    Path out = new Path(jobName+".out");
-		    FileOutputFormat.setOutputPath(job,out);
-			job.setReducerClass(LoadDataReducer.class);
-			
-			/** 定制MR程序的结果输出到 Redis */
-		    job.setOutputFormatClass(RedisOutputFormat.class);
-			job.setOutputKeyClass(Text.class);
-			job.setOutputValueClass(LongWritable.class);
-			try {
-				job.waitForCompletion(true);
-			} catch (ClassNotFoundException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-			return 0;
+		/** set reducer */
+		Path out = new Path(jobName+".out");
+		FileOutputFormat.setOutputPath(job,out);
+		job.setReducerClass(LoadDataReducer.class);
+		
+		/** 定制MR程序的结果输出到 Redis */
+		job.setOutputFormatClass(RedisOutputFormat.class);
+		job.setOutputKeyClass(Text.class);
+		job.setOutputValueClass(LongWritable.class);
+		try {
+			job.waitForCompletion(true);
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		return 0;
 	}
 	
 	/**
 	 * The main method.
 	 */
 	public static void main(String[] args) throws Exception {		
-		 Configuration conf = new Configuration();
-		 if(args.length < 2){
-			  System.err.println("Usage: <in> <out>");
-		         System.exit(2);
-		 }
-	     int res = ToolRunner.run(conf, new LoadData(), args);
-	     System.exit(res);
+		Configuration conf = new Configuration();
+		if(args.length < 2){
+			System.err.println("Usage: <in> <out>");
+			System.exit(2);
+		}
+		int res = ToolRunner.run(conf, new LoadData(), args);
+		System.exit(res);
 	}
 
 }

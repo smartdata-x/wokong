@@ -73,9 +73,9 @@ public class RedisOutputFormat extends FileOutputFormat<Text, Text>{
 
 		@Override
 		public void close(TaskAttemptContext context) throws IOException, InterruptedException {
-			 if (jedis != null){
-				 jedis.disconnect(); 
-			 }
+			if (jedis != null){
+				jedis.disconnect(); 
+			}
 		}
 
     }
