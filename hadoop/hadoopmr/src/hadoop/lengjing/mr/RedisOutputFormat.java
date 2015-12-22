@@ -23,6 +23,7 @@
 package hadoop.lengjing.mr;
 
 import java.io.IOException;
+import java.math.BigInteger;
 
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.RecordWriter;
@@ -30,6 +31,7 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.Pipeline;
 
 public class RedisOutputFormat extends FileOutputFormat<Text, Text>{
 	 /**
@@ -37,11 +39,15 @@ public class RedisOutputFormat extends FileOutputFormat<Text, Text>{
      */
   protected static class RedisRecordWriter extends RecordWriter<Text,Text> {
     private Jedis jedis = null; 
-     
+    private Pipeline p = null;
+    private BigInteger index = BigInteger.ZERO;
+    
     public RedisRecordWriter(Jedis jedis){
         this.jedis = jedis;
-        System.out.println("Connection to server sucessfully");
-        System.out.println("Server is running: "+jedis.ping());
+        this.p = this.jedis.pipelined(); 
+        // Response<String> multi = p.multi();
+        System.out.println("------Connection to server sucessfully--------");
+        System.out.println("-------Server is running:------- "+jedis.ping());
     }
        
     @Override
@@ -57,29 +63,40 @@ public class RedisOutputFormat extends FileOutputFormat<Text, Text>{
       	String[] split = key.toString().split(":");
       	String[] field = value.toString().split(":");
       	String outKey = split[1]+":"+split[2];
-      	jedis.zincrby(outKey, Long.parseLong(field[1]),field[0]);
-          jedis.expire(outKey, 50*60*60);
+      	p.zincrby(outKey, Long.parseLong(field[1]),field[0]);
+        p.expire(outKey, 50*60*60);
       }else{
       	
-      	jedis.incrBy(key.toString(), Long.parseLong(value.toString()));
-      	jedis.expire(key.toString(), 50*60*60);
+      	p.incrBy(key.toString(), Long.parseLong(value.toString()));
+      	p.expire(key.toString(), 50*60*60);
       	
       }
-       
+      // index = index.add(BigInteger.ONE);
+      // System.out.println(index.toString());
+      // BigInteger[] re = index.divideAndRemainder(new BigInteger("5"));
+      // if(re[1] == BigInteger.ZERO){
+      // p.exec();
+      }
     }
 
 		@Override
 		public void close(TaskAttemptContext context) throws IOException, InterruptedException {
 			if (jedis != null){
+			  System.out.println("------------p.syncAndReturnAll()");
+			  
+			  p.syncAndReturnAll(); 
+			 
 				jedis.disconnect(); 
 			}
+			
 		}
 
   }
 
 	@Override
 	public RecordWriter<Text, Text> getRecordWriter(TaskAttemptContext context) throws IOException, InterruptedException {
-		Jedis jedis = RedisUtil.getJedis();
+		
+	  Jedis jedis = RedisUtil.getJedis();
 		return new RedisRecordWriter(jedis);
 		
 	}

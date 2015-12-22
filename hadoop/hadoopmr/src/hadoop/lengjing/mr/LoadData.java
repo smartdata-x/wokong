@@ -40,7 +40,6 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-
 import redis.clients.jedis.Jedis;
 
 /**
@@ -51,8 +50,12 @@ public class LoadData extends Configured implements Tool{
 	/**
 	 * The Class LoadDataMapper.
 	 */
-	public static class LoadDataMapper extends Mapper<LongWritable, Text, Text, LongWritable>{
-		private Jedis jedis = RedisUtil.getJedis();;
+	public static class LoadDataMapper extends Mapper<LongWritable, Text, Text, Text>{
+	  
+		private Jedis jedis = RedisUtil.getJedis();
+		// 从阿里云读数据
+		// private Jedis jedis_in = RedisUtil.getJedis_in();
+		
 		/** The stock code. */
 		private String stockCode = null;
 		
@@ -69,28 +72,32 @@ public class LoadData extends Configured implements Tool{
 				
 	
 		@Override
-		protected void setup(Mapper<LongWritable, Text, Text, LongWritable>.Context context)
+		protected void setup(Mapper<LongWritable, Text, Text, Text>.Context context)
 				throws IOException, InterruptedException {
 			
 	    if(!jedis.isConnected()){
-	    	
 	    	System.out.println("redis connect error");
 	    	System.exit(2);
 	    }
 	    stockCodes = jedis.lrange("stock:list", 0, -1);
+	    // stockCodes = jedis_in.lrange("stock:list", 0, -1);
 	    System.out.println("redis connected");
 	    for(String stockCode : stockCodes){
-	    	
-	    	nameUrls = jedis.mget("stock:"+stockCode+":nameurl");
-	    	jianPins = jedis.mget("stock:"+stockCode+":jianpin");
-	    	quanPins = jedis.mget("stock:"+stockCode+":quanpin");
+	      // 从阿里云读数据
+	    	// nameUrls = jedis_in.mget("stock:"+stockCode+":nameurl");
+	    	// jianPins = jedis_in.mget("stock:"+stockCode+":jianpin");
+	    	// quanPins = jedis_in.mget("stock:"+stockCode+":quanpin");
+	      
+	      nameUrls = jedis.mget("stock:"+stockCode+":nameurl");
+        jianPins = jedis.mget("stock:"+stockCode+":jianpin");
+        quanPins = jedis.mget("stock:"+stockCode+":quanpin");
 	    	
 	    }
 		        
 		}
 
 		@Override
-		protected void map(LongWritable key, Text value, Mapper<LongWritable, Text, Text, LongWritable>.Context context)
+		protected void map(LongWritable key, Text value, Mapper<LongWritable, Text, Text, Text>.Context context)
 		    throws IOException, InterruptedException {
 			String getLine = value.toString();
 			String[] lineSplits = getLine.split("\t");
@@ -105,11 +112,11 @@ public class LoadData extends Configured implements Tool{
 			/** visit */
 			if(visitWebsite.charAt(0) >= '0' && visitWebsite.charAt(0) <= '5'){
 				if(stockCodes.contains(stockCode)){
-				context.write(new Text("visit:"+stockCode+":"+hour), new LongWritable(1));
+				context.write(new Text("visit:"+stockCode+":"+hour), new Text("1"));
 				
-				context.write(new Text("hash:visit:"+hour+","+stockCode),new LongWritable(1)); 
+				context.write(new Text("hash:visit:"+hour+","+stockCode),new Text("1")); 
 				
-				context.write(new Text("visit:count:"+hour), new LongWritable(1));
+				context.write(new Text("visit:count:"+hour), new Text("1"));
 				}
 			}
 			/** search */
@@ -129,9 +136,9 @@ public class LoadData extends Configured implements Tool{
 						
 					for(String stockCode : stockCodes){
 						if(stockCode.contains(keyWord)){
-							context.write(new Text("search:"+stockCode+":"+hour), new LongWritable(1));
-							context.write(new Text("hash:search:"+hour+","+stockCode),new LongWritable(1)); 
-							context.write(new Text("search:count:"+hour), new LongWritable(1));
+							context.write(new Text("search:"+stockCode+":"+hour), new Text("1"));
+							context.write(new Text("hash:search:"+hour+","+stockCode),new Text("1")); 
+							context.write(new Text("search:count:"+hour), new Text("1"));
 						}
 						
 					}
@@ -145,9 +152,9 @@ public class LoadData extends Configured implements Tool{
 					for(String nameUrl : nameUrls){
 						index += 1;
 						if(nameUrl.contains(keyWord)){
-							context.write(new Text("search:"+stockCodes.get(index - 1)+":"+hour), new LongWritable(1));
-							context.write(new Text("hash:search:"+hour+","+stockCodes.get(index - 1)),new LongWritable(1));
-							context.write(new Text("search:count:"+hour), new LongWritable(1));
+							context.write(new Text("search:"+stockCodes.get(index - 1)+":"+hour), new Text("1"));
+							context.write(new Text("hash:search:"+hour+","+stockCodes.get(index - 1)),new Text("1"));
+							context.write(new Text("search:count:"+hour), new Text("1"));
 						}
 						
 				}
@@ -158,9 +165,9 @@ public class LoadData extends Configured implements Tool{
 					for(String jianPin : jianPins){
 						index += 1;
 						if(jianPin.contains(keyWord)){
-							context.write(new Text("search:"+stockCodes.get(index - 1)+":"+hour), new LongWritable(1));
-							context.write(new Text("hash:search:"+hour+","+stockCodes.get(index - 1)),new LongWritable(1));
-							context.write(new Text("search:count:"+hour), new LongWritable(1));
+							context.write(new Text("search:"+stockCodes.get(index - 1)+":"+hour), new Text("1"));
+							context.write(new Text("hash:search:"+hour+","+stockCodes.get(index - 1)),new Text("1"));
+							context.write(new Text("search:count:"+hour), new Text("1"));
 						}
 					}
 					if(index != 0){
@@ -169,9 +176,9 @@ public class LoadData extends Configured implements Tool{
 					for(String quanPin : quanPins){
 						index += 1;
 						if(quanPin.contains(keyWord)){
-							context.write(new Text("search:"+stockCodes.get(index - 1)+":"+hour), new LongWritable(1));
-							context.write(new Text("hash:search:"+hour+","+stockCodes.get(index - 1)),new LongWritable(1));
-							context.write(new Text("search:count:"+hour), new LongWritable(1));
+							context.write(new Text("search:"+stockCodes.get(index - 1)+":"+hour), new Text("1"));
+							context.write(new Text("hash:search:"+hour+","+stockCodes.get(index - 1)),new Text("1"));
+							context.write(new Text("search:count:"+hour), new Text("1"));
 						}
 					}
 				}
@@ -179,12 +186,15 @@ public class LoadData extends Configured implements Tool{
 		 }	
   }
 		@Override
-		protected void cleanup(Mapper<LongWritable, Text, Text, LongWritable>.Context context)
+		protected void cleanup(Mapper<LongWritable, Text, Text, Text>.Context context)
 				throws IOException, InterruptedException {
 			// TODO Auto-generated method stub
 			if(jedis != null) {
 	            jedis.close();
 	    }
+//		if(jedis_in != null) {
+//			  jedis_in.close();
+//    }
 		}
 		/**
 		 * Gets the time
@@ -199,24 +209,24 @@ public class LoadData extends Configured implements Tool{
 	
  }
 
-	public static class LoadDataReducer extends Reducer<Text, LongWritable, Text, Text>{
+	public static class LoadDataReducer extends Reducer<Text, Text, Text, Text>{
 		
 		@Override
-		protected void reduce(Text key, Iterable<LongWritable> value,
-				Reducer<Text, LongWritable, Text, Text>.Context context) throws IOException, InterruptedException {
-			long counter = 0;
-			long hashCounter = 0;
+		protected void reduce(Text key, Iterable<Text> value,
+				Reducer<Text, Text, Text, Text>.Context context) throws IOException, InterruptedException {
+		  BigInteger counter = BigInteger.ZERO;
+		  BigInteger hashCounter = BigInteger.ZERO;
 			if(key.toString().startsWith("hash:")){
-				for ( LongWritable item : value){
-					hashCounter += item.get();
+				for ( Text item : value){
+					hashCounter =hashCounter.add(new BigInteger(item.toString()));
 				}
 				String[] keys = key.toString().split(",");
 				
 				context.write(new Text(keys[0]), new Text(keys[1]+":"+hashCounter));
 			}else{
 				
-				for ( LongWritable items : value){
-					counter += items.get();
+				for ( Text items : value){
+				  counter = counter.add(new BigInteger(items.toString()));
 				}
 				
 				context.write(key, new Text(String.valueOf(counter)));
@@ -229,7 +239,7 @@ public class LoadData extends Configured implements Tool{
 	public int run(String[] args) throws Exception {
 		Configuration conf = getConf();
 		Job job = null;
-		String jobName = "start_job_"+System.currentTimeMillis();
+		String jobName = "start_job_"+new LoadDataMapper().getTime(Long.toString(System.currentTimeMillis()))+"_("+System.currentTimeMillis()+")";
 		try {
 			job = Job.getInstance(conf, jobName);
 		} catch (IOException e1) {
@@ -240,7 +250,7 @@ public class LoadData extends Configured implements Tool{
 		/** set Mapper */
 		job.setMapperClass(LoadDataMapper.class);
 		job.setMapOutputKeyClass(Text.class);
-		job.setMapOutputValueClass(LongWritable.class);
+		job.setMapOutputValueClass(Text.class);
 		try {
 			FileInputFormat.setInputPaths(job, new Path(args[0]));
 		} catch (IllegalArgumentException e) {			
@@ -257,7 +267,9 @@ public class LoadData extends Configured implements Tool{
 		/** 定制MR程序的结果输出到 Redis */
 		job.setOutputFormatClass(RedisOutputFormat.class);
 		job.setOutputKeyClass(Text.class);
-		job.setOutputValueClass(LongWritable.class);
+		job.setOutputValueClass(Text.class);
+		/**  set number reducer  */
+		job.setNumReduceTasks(5);
 		try {
 			job.waitForCompletion(true);
 		} catch (ClassNotFoundException e) {

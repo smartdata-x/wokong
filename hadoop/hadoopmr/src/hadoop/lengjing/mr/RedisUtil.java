@@ -57,12 +57,13 @@ public final class RedisUtil {
   /** 等待可用连接的最大时间，单位毫秒，默认值为-1，表示永不超时。如果超过等待时间，则直接抛出JedisConnectionException； */
   private static final int MAX_WAIT = 10000;
   
-  private static final int TIMEOUT = 10000;
+  private static final int TIMEOUT = 20000;
   
   /** 在borrow一个jedis实例时，是否提前进行validate操作；如果为true，则得到的jedis实例均是可用的； */
   private static boolean TEST_ON_BORROW = true;
   
   private static JedisPool jedisPool = null;
+  // private static JedisPool jedisPool_in = null;
     
   static {
     
@@ -99,20 +100,32 @@ public final class RedisUtil {
   		prop.load(in);    
   		address = prop.getProperty("ip").trim();    
   		port = Integer.parseInt(prop.getProperty("port").trim());
-  		if(prop.getProperty("auth")!= null){
+  		database = Integer.parseInt(prop.getProperty("database").trim()); 
+  		if(!prop.getProperty("auth").equals("null")){
   			auth = prop.getProperty("auth").trim();
   		}
-  		database = Integer.parseInt(prop.getProperty("database").trim()); 
   	 }catch  (IOException e) {    
   		e.printStackTrace();    
   	} 
+  	System.out.println("==========Redis Connect conf:"+address+":"+port+":"+auth+":"+database);
   	try {
   		JedisPoolConfig config = new JedisPoolConfig();
   		config.setMaxIdle(MAX_IDLE);
   		config.setMaxTotal(MAX_ACTIVE);
   		config.setMaxWaitMillis(MAX_WAIT);
   		config.setTestOnBorrow(TEST_ON_BORROW);
-  		jedisPool = new JedisPool(config, address, port, TIMEOUT, auth, database);
+  		
+  		if(!prop.getProperty("auth").equals("null")){
+  		  System.out.println("auth is not null ? check++++++++++++++++++++");
+  		  jedisPool = new JedisPool(config, address, port, TIMEOUT, auth, database);
+  		}else{
+  		  System.out.println("auth is null ? check++++++++++++++++++++");
+  		  jedisPool = new JedisPool(config, address, port, TIMEOUT, null, database);
+  		  
+  		}
+   
+      
+  		// jedisPool_in = new JedisPool(config, "120.55.189.211", 6379, TIMEOUT, "7ifW4i@M", 0);
   	} catch (Exception e) {
   		e.printStackTrace();
   	}
@@ -135,6 +148,24 @@ public final class RedisUtil {
         return null;
     }
   }
+  
+  /**
+   * 读取的redis:
+   */
+//  public synchronized static Jedis getJedis_in() {
+//    try {
+//      
+//      if (jedisPool_in != null) {
+//          Jedis resource = jedisPool_in.getResource();
+//          return resource;
+//      } else {
+//          return null;
+//      }
+//    } catch (Exception e) {
+//        e.printStackTrace();
+//        return null;
+//    }
+//  }
 	    
 }
 
