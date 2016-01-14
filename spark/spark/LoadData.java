@@ -340,9 +340,9 @@ public final class LoadData {
               String stockCodeFormat = stockCodeFollow.substring(1, 7);
               String timeStamp = tempContent.getValue().toString();
               if(stockCodes.contains(stockCodeFormat)){
-                /** 判断时间差  */
+                
                 long currentTime = System.currentTimeMillis();
-                /**与redis 数据对比，看是否有写入 */
+                
                 String followCount = "follow:count:"+TimeUtil.getTime(timeStamp);
                 p.incrBy(followCount, 1);
                 p.expire(followCount, 50*60*60);

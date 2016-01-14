@@ -87,6 +87,7 @@ public final class Hbase {
     Scan scan = new Scan();
     long currentTime = System.currentTimeMillis();
     try {
+	  /** 判断时间差  */
       scan.setTimeRange(currentTime-(1800000), currentTime);
     } catch (IOException e1) {
       // TODO Auto-generated catch block
