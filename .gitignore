@@ -1,0 +1,6 @@
+.idea/*
+spark/**/out/*
+spark/**/target/*
+spark/**/.idea/*
+spark/**/project/project/*
+
