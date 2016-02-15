@@ -102,7 +102,7 @@ object TableHbase extends HBase {
         userStockList
 
       } catch {
-        case e: Exception => println("[C.J.YOU] writeToHdfsFile error")
+        case e: Exception => println("[C.J.YOU] getStockCodesFromHbase error")
           ListBuffer[String]()
       }
     }).collect()

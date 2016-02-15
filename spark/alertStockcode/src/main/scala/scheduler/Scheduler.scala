@@ -5,6 +5,7 @@ import java.util
 import _root_.util.RedisUtil
 import alert.AlertHttp
 import follow.FollowStock
+import log.PrismLogger
 import message.SendMessage
 import org.apache.spark.{SparkContext, SparkConf}
 
@@ -50,15 +51,15 @@ object Scheduler {
     }
 
     def main(args: Array[String]) {
-      if (args.length < 2) {
-        System.err.println("Usage: LoadDataScala <redis Conf file> <data Files>")
+      if (args.length < 1) {
+        System.err.println("Usage: LoadData <redis Conf file>")
         System.exit(1)
       }
       val sparkConf = new SparkConf()
-        .setAppName("LoadDataScala")
+        .setAppName("LoadData_Alert")
         .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
         .set("spark.kryoserializer.buffer.max", "2000")
-        .setMaster("local")
+        // .setMaster("local")
       val sc = new SparkContext(sparkConf)
       val confRead = sc.textFile(args(0))
       val alertList = confRead.map(getConfInfo)
@@ -85,27 +86,29 @@ object Scheduler {
       try{
         AlertHttp.init(confInfoMap)
         AlertHttp.alertSV(jedis, stockCodes)
-        println("alertSV followList number size--"+AlertHttp.followList.size)
-        println("alertSV searchList number size--"+AlertHttp.searchList.size)
-        println("alertSV visitList number size--"+AlertHttp.visitList.size)
+        PrismLogger.info("alertSV followList number size--"+AlertHttp.followList.size)
+        PrismLogger.info("alertSV searchList number size--"+AlertHttp.searchList.size)
+        PrismLogger.info("alertSV visitList number size--"+AlertHttp.visitList.size)
       }catch {
         case e:Exception =>
-          println("alertSV Exception")
+          PrismLogger.info("alertSV Exception")
+          PrismLogger.exception(e)
           SendMessage.sendMessage(1,"电信平台计算", "搜索和查看报警操作异常")
-        // System.exit(-1)
+          System.exit(-1)
       }
       try{
         AlertHttp.alertF(jedis, stockCodes)
-        println("----------alertF followList number size--"+AlertHttp.followList.size)
-        println("----------alertF searchList number size--"+AlertHttp.searchList.size)
-        println("-----------alertF visitList number size--"+AlertHttp.visitList.size)
-        System.out.println("---Alert Over----")
-        println("Total Alert number--"+AlertHttp.SEND_NUMBER)
+        PrismLogger.info("----------alertF followList number size--"+AlertHttp.followList.size)
+        PrismLogger.info("----------alertF searchList number size--"+AlertHttp.searchList.size)
+        PrismLogger.info("-----------alertF visitList number size--"+AlertHttp.visitList.size)
+        PrismLogger.info("---Alert Over----")
+        PrismLogger.info("Total Alert number--"+AlertHttp.SEND_NUMBER)
       }catch {
         case e:Exception =>
-          println("alertF Exception")
+          PrismLogger.info("alertF Exception")
+          PrismLogger.exception(e)
           SendMessage.sendMessage(1,"电信平台计算", "关注报警操作异常")
-        // System.exit(-1)
+          System.exit(-1)
       }
       try{
         /** 添加 add follow 数据到 redis **/
@@ -113,10 +116,17 @@ object Scheduler {
         System.out.println("---add Follow Alert to Redis F---p.syncAndReturnAll()----")
       }catch {
         case e:Exception =>
-          println("add Follow Alert to Redis Exception")
+          PrismLogger.info("add Follow Alert to Redis Exception")
           SendMessage.sendMessage(1,"电信平台计算", "写入关注数据操作异常")
-        // System.exit(-1)
+          PrismLogger.exception(e)
+          System.exit(-1)
+      }finally{
+        if(jedis != null){
+          /** 关闭连接池的实例 **/
+          jedis.close()
+        }
       }
-
+      sc.stop()
+      System.exit(0)
     }
 }

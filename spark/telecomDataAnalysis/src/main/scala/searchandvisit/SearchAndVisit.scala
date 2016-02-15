@@ -11,6 +11,7 @@ object SearchAndVisit {
 
   def writeDataToRedis(jedis:Jedis,array: Array[(String,Int)]): Unit ={
     val jedisSv = RedisUtil.getRedis(Scheduler.confInfoMap("ip"),Scheduler.confInfoMap("port"),Scheduler.confInfoMap("auth"),Scheduler.confInfoMap("database"))
+    println("redisinfo:"+Scheduler.confInfoMap("ip")+":"+Scheduler.confInfoMap("port")+":"+Scheduler.confInfoMap("auth")+":"+Scheduler.confInfoMap("database"))
     val pipeSearchAndVisit = jedisSv.pipelined()
     array.foreach(line => {
       if (line._1.startsWith("hash:")) {
@@ -43,6 +44,7 @@ object SearchAndVisit {
       }
       println("writeDataToRedis redis Response number:"+count)
     }
+    jedisSv.close()
     System.out.println("---pipeSearchAndVisit---syncAndReturnAll()----")
   }
 }

@@ -6,6 +6,7 @@ import java.util
 import java.util.regex.Pattern
 
 import _root_.util.RedisUtil
+import log.PrismLogger
 import message.SendMessage
 import org.apache.spark.{SparkConf, SparkContext}
 import searchandvisit.SearchAndVisit
@@ -166,11 +167,11 @@ object Scheduler {
   }
   def main(args: Array[String]) {
     if (args.length < 2) {
-      System.err.println("Usage: LoadDataScala <redis Conf file> <data Files>")
+      System.err.println("Usage: LoadData <redis Conf file> <data Files>")
       System.exit(1)
     }
     val sparkConf = new SparkConf()
-      .setAppName("LoadDataScala")
+      .setAppName("LoadData_Analysis")
       .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
       .set("spark.kryoserializer.buffer.max", "2000")
       .setMaster("local")
@@ -204,15 +205,20 @@ object Scheduler {
     /** write data to redis */
     val counts  = flatmap.collect()
     try {
-      counts.foreach(x =>{
-        println(x._1 +"-->"+x._2)
-      })
+//      counts.foreach(x =>{
+//        println(x._1+"->"+x._2)
+//      })
       SearchAndVisit.writeDataToRedis(jedis,counts)
     } catch {
       case e:Exception =>
-        println(" VS Operation Exception"+e.printStackTrace())
+        PrismLogger.info(" VS Operation Exception"+e.printStackTrace())
         SendMessage.sendMessage(1,"电信平台计算", "数据解析操作异常")
+        PrismLogger.exception(e)
         System.exit(-1)
+    }finally {
+      jedis.close()
     }
+    sc.stop()
+    System.exit(0)
   }
 }

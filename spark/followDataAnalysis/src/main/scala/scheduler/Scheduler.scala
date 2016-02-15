@@ -8,6 +8,7 @@ import _root_.util.{TimeUtil, FileUtil, RedisUtil}
 import config.FileConfig
 
 import hbase.TableHbase
+import log.PrismLogger
 import message.SendMessage
 
 import org.apache.spark.{SparkContext, SparkConf}
@@ -21,14 +22,6 @@ import scala.collection.mutable
   * 获取hbase follow 数据的 主程序
   */
 object Scheduler {
-  val sparkConf = new SparkConf()
-    .setAppName("LoadDataScala_Follow")
-    .setExecutorEnv("executor-memory","5g")
-    .setExecutorEnv("executor-cores","10")
-    .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-    .set("spark.kryoserializer.buffer.max", "2000")
-    .setMaster("local")
-  val sc = new SparkContext(sparkConf)
 
   var confInfoMap = new mutable.HashMap[String,String]()
   var stockCodes:java.util.List[String] = new util.ArrayList[String]()
@@ -58,9 +51,15 @@ object Scheduler {
   }
   def main(args: Array[String]) {
     if (args.length < 1) {
-      System.err.println("Usage: LoadDataScala <redis Conf file> ")
+      System.err.println("Usage: LoadData <redis Conf file> ")
       System.exit(-1)
     }
+    val sparkConf = new SparkConf()
+      .setAppName("LoadData_Follow")
+      .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+      .set("spark.kryoserializer.buffer.max", "2000")
+      .setMaster("local")
+    val sc = new SparkContext(sparkConf)
     val confRead = sc.textFile(args(0))
     val alertList = confRead.map(getConfInfo)
     // info.foreach(print(_))  //(ip,222.73.34.96)(port,6390)(auth,7ifW4i@M)(database,0)
@@ -83,16 +82,18 @@ object Scheduler {
     stockCodes = jedis.lrange("stock:list", 0, -1)
     /** 获取 hbase的follow 信息 **/
     val list = FileUtil.readFile(FileConfig.ROOT_DIR + FileConfig.HBASE_CONF_FILENAME)
-    // val list = FileUtil.readFile(FileConfig.TEST_ROOT + FileConfig.TEST_HBASE_CONF_FILENAME)
+     // val list = FileUtil.readFile(FileConfig.TEST_ROOT + FileConfig.TEST_HBASE_CONF_FILENAME)
     var timeRangeMap = new mutable.HashMap[String,String]()
     list.foreach(x =>{
       val split = x.split("=")
       timeRangeMap.+=(split(0) -> split(1))
     })
     println("timeRange>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>:"+timeRangeMap("last_timeStamp")+":"+TimeUtil.getTime(timeRangeMap("last_timeStamp")))
+    PrismLogger.info("timeRange>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>:"+timeRangeMap("last_timeStamp")+":"+TimeUtil.getTime(timeRangeMap("last_timeStamp")))
     try{
       TableHbase.getStockCodesFromHbase(sc,timeRangeMap("last_timeStamp"))
       System.out.println("---Follow stockCodeMap size:----"+TableHbase.stockCodeMap.size)
+      PrismLogger.info("---Follow stockCodeMap size:----"+TableHbase.stockCodeMap.size)
       if(TableHbase.stockCodeMap.isEmpty){
         SendMessage.sendMessage(2,"电信平台计算", " Hbase数据异常")
         System.exit(-1)
@@ -123,19 +124,23 @@ object Scheduler {
       System.out.println("---F---p.syncAndReturnAll()----")
     } catch {
     case e:Exception =>
-      println(" F Operation Exception"+e.printStackTrace())
+      PrismLogger.info(" F Operation Exception")
       jedis.close()
       SendMessage.sendMessage(1,"电信平台计算", "过去关注数据操作异常")
+      PrismLogger.exception(e)
       System.exit(-1)
+    }finally{
+      if(jedis != null){
+        /** 关闭连接的实例 **/
+        jedis.close()
+      }
     }
+    PrismLogger.info("--- Write timeStamp for hbase----<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ----")
     System.out.println("--- Write timeStamp for hbase----<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ----")
     FileUtil.createFile(FileConfig.ROOT_DIR + FileConfig.HBASE_CONF_FILENAME,"last_timeStamp="+System.currentTimeMillis())
     //  FileUtil.createFile(FileConfig.TEST_ROOT + FileConfig.TEST_HBASE_CONF_FILENAME,"last_timeStamp="+System.currentTimeMillis())
-    if(jedis != null){
-      /** 关闭连接词的实例 **/
-      jedis.close()
-    }
     sc.stop()
+    System.exit(0)
   }
 
 }
