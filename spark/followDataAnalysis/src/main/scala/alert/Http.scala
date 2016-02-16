@@ -43,15 +43,12 @@ abstract class Http {
   def get(strUrl:String, parameters:mutable.HashMap[String,String], parse: String): Unit = {
     try{
       val finalUrl = getUrl(strUrl, parameters)
-      // println("finalURL:"+finalUrl)
       val req = url(finalUrl)
       val response = Http(req OK as.String)
       response onComplete {
         case Success(content) =>
-//          println("get Success content:"+content)
         case Failure(t) =>
           PrismLogger.warn("get Failure content An error has occurred: " + t.getMessage)
-          // println("get Success content:"+t.getMessage)
       }
     }catch {
       case e:Exception =>
@@ -66,7 +63,6 @@ abstract class Http {
 
     response onComplete {
       case Success(content) =>
-        // parse(content)
         println("post Success content:"+content)
       case Failure(t) =>
         println("post Failure content:"+t)

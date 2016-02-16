@@ -5,6 +5,7 @@ package config
   * 本地目录配置文件
   */
 object FileConfig {
+
   val ROOT_DIR = "/home/hadoop/code/conf"
   val HBASE_CONF_FILENAME ="/hbase-conf.properties"
   val FOLLOW_BACKUP_FILE = "/home/hadoop/unbacked_redis_files"

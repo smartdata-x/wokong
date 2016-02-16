@@ -6,12 +6,13 @@ import util.RedisUtil
 
 /**
   * Created by C.J.YOU on 2016/2/4.
+  * search and visit data analysis
   */
 object SearchAndVisit {
 
   def writeDataToRedis(jedis:Jedis,array: Array[(String,Int)]): Unit ={
     val jedisSv = RedisUtil.getRedis(Scheduler.confInfoMap("ip"),Scheduler.confInfoMap("port"),Scheduler.confInfoMap("auth"),Scheduler.confInfoMap("database"))
-    println("redisinfo:"+Scheduler.confInfoMap("ip")+":"+Scheduler.confInfoMap("port")+":"+Scheduler.confInfoMap("auth")+":"+Scheduler.confInfoMap("database"))
+    // println("redisinfo:"+Scheduler.confInfoMap("ip")+":"+Scheduler.confInfoMap("port")+":"+Scheduler.confInfoMap("auth")+":"+Scheduler.confInfoMap("database"))
     val pipeSearchAndVisit = jedisSv.pipelined()
     array.foreach(line => {
       if (line._1.startsWith("hash:")) {
@@ -40,7 +41,7 @@ object SearchAndVisit {
       var count = 0
       while(iterator.hasNext){
         count +=1
-        val value = iterator.next()
+        iterator.next()
       }
       println("writeDataToRedis redis Response number:"+count)
     }

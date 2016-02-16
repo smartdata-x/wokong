@@ -15,7 +15,6 @@ object SendMessage {
     }else if(mobileGroup == 2){
       TextSender.send(MessageConfig.userid,MessageConfig.account,MessageConfig.password,MessageConfig.hbaseMobileGroup,key,msg)
     }
-
   }
 
 }

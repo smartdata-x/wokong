@@ -32,7 +32,6 @@ object Scheduler {
 
   val  setSearchCount ="set:search:count:"
   val  setVisitCount ="set:visit:count:"
-  //val setFollowCount ="set:follow:count:"
   val setSearch ="set:search:"
   val setVisit ="set:visit:"
 
@@ -82,7 +81,7 @@ object Scheduler {
     }
     lineList
   }
-  def mapFunct(s:String):mutable.MutableList[String] ={
+  def mapFunction(s:String):mutable.MutableList[String] ={
     var words: mutable.MutableList[String] = new mutable.MutableList[String]()
     if(s.startsWith("hash:search:")){
       val keys:Array[String]  = s.split(",")
@@ -180,7 +179,7 @@ object Scheduler {
     val alertList = confRead.map(getConfInfo)
     val file = sc.textFile(args(1))
 
-    // info.foreach(print(_))  //(ip,222.73.34.96)(port,6390)(auth,7ifW4i@M)(database,0)
+    // (ip,222.73.34.96)(port,6390)(auth,7ifW4i@M)(database,0)
     alertList.collect().foreach {
       case (attr,value)  =>
         if (attr == "ip") confInfoMap.+=(("ip", value))
@@ -195,19 +194,22 @@ object Scheduler {
         if (attr == "VISIT_NUMBER") confInfoMap.+=(("VISIT_NUMBER", value))
     }
 
-    /** connection redis server */
+    /**
+      * connection redis server
+      */
     val jedis = RedisUtil.getRedis(confInfoMap("ip"),confInfoMap("port"),confInfoMap("auth"),confInfoMap("database"))
-    /** init data from redis such as stockCodes... */
+    /**
+      * init data from redis such as stockCodes
+      */
     initRedisData()
     val lines = file.flatMap(flatMapFun)
     System.out.println("flatmap:start")
-    val flatmap =lines.flatMap(mapFunct).map((_,1)).reduceByKey(_+_)
-    /** write data to redis */
+    val flatmap =lines.flatMap(mapFunction).map((_,1)).reduceByKey(_+_)
+    /**
+      * write data to redis
+      */
     val counts  = flatmap.collect()
     try {
-//      counts.foreach(x =>{
-//        println(x._1+"->"+x._2)
-//      })
       SearchAndVisit.writeDataToRedis(jedis,counts)
     } catch {
       case e:Exception =>

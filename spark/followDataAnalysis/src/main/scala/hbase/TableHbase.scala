@@ -34,6 +34,7 @@ object TableHbase extends HBase {
   def getStockCodeMap:mutable.HashMap[String, Set[String]] = {
     this.stockCodeMap
   }
+
   /** 按照rowKey 将获取hbase的数据 */
   def get(rowKey:String,table:String,columnFamliy:String,column:String):Result = {
     val connection = ConnectionFactory.createConnection(HBaseConfiguration.create())
@@ -77,6 +78,7 @@ object TableHbase extends HBase {
     }
     userId
   }
+
   /** 使用spark运行获取Hbase股票信息 */
   def getStockCodesFromHbase(sc:SparkContext,timeRange:String): Array[String] = {
     /** get hbase data */
