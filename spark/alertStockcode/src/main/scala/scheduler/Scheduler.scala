@@ -24,7 +24,6 @@ object Scheduler {
     var quanPins = mutable.MutableList[String]()
     val  setSearchCount ="set:search:count:"
     val  setVisitCount ="set:visit:count:"
-    //val setFollowCount ="set:follow:count:"
     val setSearch ="set:search:"
     val setVisit ="set:visit:"
 
@@ -63,7 +62,7 @@ object Scheduler {
       val sc = new SparkContext(sparkConf)
       val confRead = sc.textFile(args(0))
       val alertList = confRead.map(getConfInfo)
-      // info.foreach(print(_))  //(ip,222.73.34.96)(port,6390)(auth,7ifW4i@M)(database,0)
+      // (ip,222.73.34.96)(port,6390)(auth,7ifW4i@M)(database,0)
       alertList.collect().foreach {
         case (attr,value)  =>
           if (attr == "ip") confInfoMap.+=(("ip", value))
@@ -77,7 +76,6 @@ object Scheduler {
           if (attr == "SEARCH_NUMBER") confInfoMap.+=(("SEARCH_NUMBER", value))
           if (attr == "VISIT_NUMBER") confInfoMap.+=(("VISIT_NUMBER", value))
       }
-
       /** connection redis server */
       val jedis = RedisUtil.getRedis(confInfoMap("ip"),confInfoMap("port"),confInfoMap("auth"),confInfoMap("database"))
       /** init data from redis such as stockCodes... */
@@ -102,7 +100,7 @@ object Scheduler {
         PrismLogger.info("----------alertF searchList number size--"+AlertHttp.searchList.size)
         PrismLogger.info("-----------alertF visitList number size--"+AlertHttp.visitList.size)
         PrismLogger.info("---Alert Over----")
-        PrismLogger.info("Total Alert number--"+AlertHttp.SEND_NUMBER)
+        PrismLogger.info("Total Alert number--"+AlertHttp.sendNumber)
       }catch {
         case e:Exception =>
           PrismLogger.info("alertF Exception")

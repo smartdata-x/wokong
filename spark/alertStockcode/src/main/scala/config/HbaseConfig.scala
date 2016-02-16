@@ -5,6 +5,7 @@ package config
   * Hbase的配置文件
   */
 object HbaseConfig {
+
   /*
   val HBASE_URL = "hdfs://server:9000"
   val HBASE_ROOT_DIR = "hdfs://server:9000/hbase"

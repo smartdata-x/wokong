@@ -31,7 +31,7 @@ object AlertHttp extends Http {
 
   val parse = "prase"
 
-  var SEND_NUMBER = 0
+  var sendNumber = 0
 
   override def get(strUrl: String, parameters: mutable.HashMap[String, String], parse: (String)): Unit = super.get(strUrl, parameters, parse)
 
@@ -120,11 +120,11 @@ object AlertHttp extends Http {
       val stockCode = iterator.next()
       if(isSearchAlertStockCode(jedis,stockCode, startHour, endHour)){
         requestOneByOne(stockCode,2)
-        SEND_NUMBER = SEND_NUMBER +1
+        sendNumber = sendNumber +1
       }
       if(isVisitAlertStockCode(jedis,stockCode, startHour, endHour)){
         requestOneByOne(stockCode,3)
-        SEND_NUMBER = SEND_NUMBER +1
+        sendNumber = sendNumber +1
       }
     }
     /** 记录 alert的历史数据到本地文件夹 */
@@ -149,7 +149,7 @@ object AlertHttp extends Http {
       val stockCode = iterator.next()
       if(isFollowAlertStockCode(jedis,stockCode, startHour, endHour)){
         requestOneByOne(stockCode,1)
-        SEND_NUMBER = SEND_NUMBER +1
+        sendNumber = sendNumber +1
       }
     }
     /** 记录 alert的历史数据到本地文件夹 */
