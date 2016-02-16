@@ -31,7 +31,7 @@ object AlertHttp extends Http {
 
   val parse = "prase"
 
-  var SEND_NUMBER = 0
+  var sendNumber = 0
 
   override def get(strUrl: String, parameters: mutable.HashMap[String, String], parse: (String)): Unit = super.get(strUrl, parameters, parse)
 
@@ -53,7 +53,6 @@ object AlertHttp extends Http {
       followList.+=(stockCode+"\t"+ (endValue - beginValue)+"\t"+endHour)
       if(endValue - beginValue > maxFollow) {
         maxFollow = endValue - beginValue
-        // System.out.println(maxFollow+":"+stockCode+":"+"=======================maxFollow,FOLLOW_NUMBER:"+FOLLOW_NUMBER)
       }
       if(endValue - beginValue > FOLLOW_NUMBER){
         return  true
@@ -71,7 +70,7 @@ object AlertHttp extends Http {
         searchList.+=(stockCode+"\t"+ (endValue - beginValue))
         if(endValue - beginValue > maxSearch) {
           maxSearch =endValue - beginValue
-          // System.out.println(maxSearch+":"+stockCode+":"+"===========maxSearch,SEARCH_NUMBER:"+SEARCH_NUMBER)
+
         }
         if(endValue - beginValue > SEARCH_NUMBER){
           return  true
@@ -89,7 +88,6 @@ object AlertHttp extends Http {
       visitList.+=(stockCode+"\t"+ (endValue - beginValue))
       if(endValue - beginValue > maxVisit) {
         maxVisit =endValue - beginValue
-       // System.out.println(maxVisit+":"+stockCode+":"+"=============================maxVisit,VISIT_NUMBER:"+VISIT_NUMBER)
       }
       if(endValue - beginValue > VISIT_NUMBER){
         return  true
@@ -97,6 +95,7 @@ object AlertHttp extends Http {
     }
     false
   }
+
   /** 获取需要报警的 股票代码并实时报警 (SEARCH AND VISIT) */
   def alertSV(jedis:Jedis,stockCodes: List[String]): Unit ={
     val calendarNew = Calendar.getInstance()
@@ -112,13 +111,11 @@ object AlertHttp extends Http {
       val stockCode = iterator.next()
       if(isSearchAlertStockCode(jedis,stockCode, startHour, endHour)){
         requestOneByOne(stockCode,2)
-        SEND_NUMBER = SEND_NUMBER +1
-        // System.out.println("searchList,SEND_NUMBER:"+SEND_NUMBER)
+        sendNumber = sendNumber +1
       }
       if(isVisitAlertStockCode(jedis,stockCode, startHour, endHour)){
         requestOneByOne(stockCode,3)
-        SEND_NUMBER = SEND_NUMBER +1
-        // System.out.println("visitList,SEND_NUMBER:"+SEND_NUMBER)
+        sendNumber = sendNumber +1
       }
     }
     /** 记录 alert的历史数据到本地文件夹 */
@@ -126,12 +123,8 @@ object AlertHttp extends Http {
     FileUtil.mkDir(dir)
     recordFollowAlertData(dir,2,searchList,startHour,endHour)
     recordFollowAlertData(dir,3,visitList,startHour,endHour)
-
-    /** send notice msg  */
-//    request(followList,1)
-//    request(searchList,2)
-//    request(visitList,3)
   }
+
   /** 获取需要报警的 股票代码并实时报警 (SEARCH AND VISIT) */
   def alertF(jedis:Jedis,stockCodes: List[String]): Unit ={
     val calendarNew = Calendar.getInstance()
@@ -147,20 +140,15 @@ object AlertHttp extends Http {
       val stockCode = iterator.next()
       if(isFollowAlertStockCode(jedis,stockCode, startHour, endHour)){
         requestOneByOne(stockCode,1)
-        SEND_NUMBER = SEND_NUMBER +1
-        // System.out.println("followList,SEND_NUMBER:"+SEND_NUMBER)
+        sendNumber = sendNumber +1
       }
     }
     /** 记录 alert的历史数据到本地文件夹 */
     val dir = FileConfig.ALERT_FOLLOW_DATA_FILE + "/" +TimeUtil.getDate(System.currentTimeMillis().toString)
     FileUtil.mkDir(dir)
     recordFollowAlertData(dir,1,followList,startHour,endHour)
-
-    /** send notice msg  */
-    //    request(followList,1)
-    //    request(searchList,2)
-    //    request(visitList,3)
   }
+
   /**
     *记录 alert的历史数据
     */
@@ -189,17 +177,14 @@ object AlertHttp extends Http {
       if(msgType == 1){
         paraMap.+=(("stock_type","follow"))
         get(urlString,paraMap,parse)
-        // System.out.println("isFollowAlertStockCode:"+paraMap.get("stock_code").get)
       }
       if(msgType == 2){
         paraMap.+=(("stock_type","search"))
         get(urlString,paraMap,parse)
-        // System.out.println("isSearchAlertStockCode:"+paraMap.get("stock_code").get)
       }
       if(msgType == 3){
         paraMap.+=(("stock_type","visit"))
         get(urlString,paraMap,parse)
-        // System.out.println("isVisitAlertStockCode:"+paraMap.get("stock_code").get)
       }
     }catch {
       case e:Exception =>
@@ -207,6 +192,7 @@ object AlertHttp extends Http {
     }
 
   }
+
   /** 发送request的请求 */
   def request(msg:mutable.MutableList[String],msgType: Int): Unit ={
     if(msg.nonEmpty){
@@ -219,17 +205,14 @@ object AlertHttp extends Http {
       if(msgType == 1){
         paraMap.+=(("stock_type","follow"))
         get(urlString,paraMap,parse)
-       // System.out.println("isFollowAlertStockCode:"+paraMap.get("stock_code"))
       }
       if(msgType == 2){
         paraMap.+=(("stock_type","search"))
         get(urlString,paraMap,parse)
-        // System.out.println("isSearchAlertStockCode:"+paraMap.get("stock_code"))
       }
       if(msgType == 3){
         paraMap.+=(("stock_type","visit"))
         get(urlString,paraMap,parse)
-        // System.out.println("isVisitAlertStockCode:"+paraMap.get("stock_code"))
       }
     }
   }
