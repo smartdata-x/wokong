@@ -5,6 +5,7 @@ package config
   * 消息接口配置文件
   */
 object MessageConfig {
+
   val userid = "66"
   val account = "HY_KunYanData"
   val password = "98349823984"

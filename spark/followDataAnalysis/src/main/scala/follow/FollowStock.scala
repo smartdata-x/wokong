@@ -54,7 +54,6 @@ object FollowStock {
     p.expire(hashKeys, 50*60*60)
 
     val followFile:File  = new File(FileConfig.FOLLOW_BACKUP_FILE,"follow_"+fileName)
-    // val followFile:File  = new File(FileConfig.TEST_FOLLOW_BACKUP_FILE,"follow_"+fileName)
     if(!followFile.exists()){
       try {
         followFile.createNewFile()
@@ -97,10 +96,8 @@ object FollowStock {
     }
     System.out.println("---add_F---CRTEAT Follow File for back_up to mysql----")
     FileUtil.createFile(FileConfig.FOLLOW_BACKUP_FILE+"/follow_"+fileName,"content not used")
-    // val followFile:File  = new File(FileConfig.FOLLOW_BACKUP_FILE,"follow_"+fileName)
-    // val followFile:File  = new File(FileConfig.TEST_FOLLOW_BACKUP_FILE,"follow_"+fileName)
     val response = p.syncAndReturnAll()
-    if(response.isEmpty()){
+    if(response.isEmpty){
       println("Pipeline error: redis no response...")
     }else{
       val iterator = response.iterator()
@@ -109,7 +106,7 @@ object FollowStock {
         count +=1
         val value = iterator.next()
       }
-      println("writeAddFollowDataToRedis redis Response number:"+(count))
+      println("writeAddFollowDataToRedis redis Response number:"+count)
     }
     System.out.println("---add_F---p.syncAndReturnAll()----")
   }

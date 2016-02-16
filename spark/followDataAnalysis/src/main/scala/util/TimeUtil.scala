@@ -8,6 +8,7 @@ import java.util.{Calendar, Date}
   * Created by Administrator on 2016/1/8.
   */
 object TimeUtil {
+
   def getTime(timeStamp: String): String = {
     val sdf: SimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH")
     val bigInt: BigInteger = new BigInteger(timeStamp)

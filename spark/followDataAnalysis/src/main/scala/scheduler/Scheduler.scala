@@ -33,6 +33,7 @@ object Scheduler {
     val confValue = lineSplits(1)
     (attr,confValue)
   }
+
   def flatMapFun(timeStam:String,stockCodesTemp:Set[String]): mutable.MutableList[String] = {
     val lineList: mutable.MutableList[String] = mutable.MutableList [String]()
     val timeStamp = timeStam
@@ -49,6 +50,7 @@ object Scheduler {
     }
     lineList
   }
+
   def main(args: Array[String]) {
     if (args.length < 1) {
       System.err.println("Usage: LoadData <redis Conf file> ")
@@ -62,7 +64,7 @@ object Scheduler {
     val sc = new SparkContext(sparkConf)
     val confRead = sc.textFile(args(0))
     val alertList = confRead.map(getConfInfo)
-    // info.foreach(print(_))  //(ip,222.73.34.96)(port,6390)(auth,7ifW4i@M)(database,0)
+    //(ip,222.73.34.96)(port,6390)(auth,7ifW4i@M)(database,0)
     alertList.collect().foreach {
       case (attr,value)  =>
         if (attr == "ip") confInfoMap.+=(("ip", value))
@@ -138,7 +140,6 @@ object Scheduler {
     PrismLogger.info("--- Write timeStamp for hbase----<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ----")
     System.out.println("--- Write timeStamp for hbase----<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ----")
     FileUtil.createFile(FileConfig.ROOT_DIR + FileConfig.HBASE_CONF_FILENAME,"last_timeStamp="+System.currentTimeMillis())
-    //  FileUtil.createFile(FileConfig.TEST_ROOT + FileConfig.TEST_HBASE_CONF_FILENAME,"last_timeStamp="+System.currentTimeMillis())
     sc.stop()
     System.exit(0)
   }
