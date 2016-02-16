@@ -79,6 +79,7 @@ object FileUtil {
     writer.println(lines)
     writer.close()
   }
+
   def readUserFile(dir: File): Iterator[File] = {
     val d = dir.listFiles.filter(_.isDirectory)
     val f = dir.listFiles.toIterator
