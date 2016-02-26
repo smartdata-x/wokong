@@ -1,4 +1,4 @@
-package kunyandata
+package com.kunyan.net
 
 import scala.collection.mutable
 

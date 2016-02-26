@@ -1,5 +1,8 @@
 import java.io.File
 
+import com.kunyan.net.HotWordHttp
+
+import scala.collection.mutable
 import scala.io.Source
 
 /**
@@ -7,18 +10,5 @@ import scala.io.Source
   */
 object StringTest extends App {
 
-  val filestockk = new File("F:/stock.txt")
-  Source.fromFile(filestockk, "UTF-8").getLines().foreach(keyValuestock => {
-    val arr = keyValuestock.split("\t")
-    val r1= arr(0)
-    val name = arr(1)
-    val code =r1.split("\\.")(0)
-    println(code)
-    println(name)
-
-    //          val keystock =r1(0).split(".")
-    //          alert(keystock[0])
-    //          val valuestock =r1(1)
-    //          mapstockk+=(valuestock->keystock)
-  })
+  HotWordHttp.sendNew("http://120.55.189.211/cgi-bin/northsea/prsim/subscribe/1/hot_words_notice.fcgi", mutable.HashMap[String, String]("asdf" -> "asdf"))
 }

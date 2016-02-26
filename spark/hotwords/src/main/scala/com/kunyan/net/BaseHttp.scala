@@ -1,9 +1,10 @@
-package kunyandata
+package com.kunyan.net
+
+import dispatch.Defaults._
+import dispatch._
 
 import scala.collection.mutable
 import scala.util.{Failure, Success}
-import dispatch._
-import dispatch.Defaults._
 /**
   * Created by kerry on 16/1/13.
   */

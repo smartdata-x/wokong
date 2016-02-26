@@ -4,6 +4,10 @@ version := "1.0"
 
 scalaVersion := "2.10.4"
 
+resolvers += "Kunyan Repo" at "http://222.73.34.92:8081/nexus/content/groups/public/"
+
+resolvers += "OSChina" at "http://maven.oschina.net/content/groups/public/"
+
 libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.10.4"
 
 libraryDependencies += "net.databinder.dispatch" % "dispatch-core_2.10" % "0.11.0"
@@ -22,6 +26,7 @@ libraryDependencies += "org.apache.spark" % "spark-core_2.10" % "1.5.2"
 
 libraryDependencies += "org.apache.spark" % "spark-streaming_2.10" % "1.5.2"
 
-resolvers += "Kunyan Repo" at "http://222.73.34.92:8081/nexus/content/groups/public/"
-
 libraryDependencies += "org.wltea.ik-analyzer" % "ik-analyzer" % "3.2.8"
+
+libraryDependencies += "redis.clients" % "jedis" % "2.8.0"
+
