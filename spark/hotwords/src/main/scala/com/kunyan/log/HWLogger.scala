@@ -7,7 +7,9 @@ import org.apache.log4j.{PropertyConfigurator, BasicConfigurator, Logger}
   */
 object HWLogger {
 
-  val logger = Logger.getRootLogger
+  val logger = Logger.getLogger("HOT_WORDS")
+  BasicConfigurator.configure()
+  PropertyConfigurator.configure("/home/hotwords/conf/log4j.properties")
 
   def exception(e: Exception) = {
     logger.error(e.printStackTrace())

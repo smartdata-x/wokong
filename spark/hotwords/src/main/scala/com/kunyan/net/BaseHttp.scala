@@ -1,5 +1,6 @@
 package com.kunyan.net
 
+import com.kunyan.scheduler.Scheduler
 import dispatch.Defaults._
 import dispatch._
 
@@ -38,7 +39,7 @@ abstract class BaseHttp {
     strUrl
   }
 
-  def get(strUrl:String, parameters:mutable.HashMap[String,String], parse: String ): Unit = {
+  def get(strUrl:String, parameters:mutable.HashMap[String,String]): Unit = {
 
     val finalUrl = getUrl(strUrl, parameters)
 
@@ -47,10 +48,13 @@ abstract class BaseHttp {
 
     response onComplete {
       case Success(content) =>
-        println("get success content>>>>>>:" +content)
+        Scheduler.timer += 1
+        if (Scheduler.timer == Scheduler.total)
+          System.exit(0)
       case Failure(t) =>
-        println("get failure content>>>>>>:" +t)
-
+        Scheduler.timer += 1
+        if (Scheduler.timer == Scheduler.total)
+          System.exit(0)
     }
   }
 
@@ -61,9 +65,7 @@ abstract class BaseHttp {
 
     response onComplete {
       case Success(content) =>
-        println("post success content>>>>>>:" +content)
       case Failure(t) =>
-        println("post failure content>>>>>>:" +t)
     }
   }
 }

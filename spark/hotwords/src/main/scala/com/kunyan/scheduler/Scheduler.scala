@@ -8,6 +8,7 @@ import javax.xml.parsers.DocumentBuilderFactory
 import _root_.redis.clients.jedis.Jedis
 import akka.io.Udp.SO.Broadcast
 import com.kunyan.config.RedisConfig
+import com.kunyan.log.HWLogger
 import com.kunyan.net.HotWordHttp
 import com.kunyan.util.TimeUtil
 import org.apache.hadoop.hbase.HBaseConfiguration
@@ -35,6 +36,9 @@ object Scheduler {
 
   //至少保证此list在初始化时有一个元素
   val tablePrefix = List[Int](3, 5, 6, 7, 8, 9)
+
+  var timer = 0
+  var total = 0
 
   val mapAfter = new mutable.HashMap[String, Int]()
   val mapBefore = new mutable.HashMap[String, Int]()
@@ -181,27 +185,41 @@ object Scheduler {
     sendHotWords(result.toSeq)
 
     val oldMap = sc.broadcast(getLastHourHotWords)
-    val paramMap = new mutable.HashMap[String, String]
 
-    println("topwords size: " + topWords.count())
+    HWLogger.warn("before loop")
 
-    topWords.map(x => {
+    val pairs = topWords.map(x => {
+
+      HWLogger.warn("enter rdd loop")
 
       val newWords = x._2
 
-      val oldWords = oldMap.value.get(x._1).get.toMap[String, Int]
-      val oldSize = oldWords.size + 1
       val result = mutable.HashMap[String, Int]()
 
-      newWords.foreach(newWord => {
-        val hotWord = newWord._1
-        val newRank = newWord._2
+      var oldWords:scala.collection.immutable.Map[String, Int] = null
 
-        val oldRank = oldWords.getOrElse(hotWord, oldSize)
-        val rank = oldRank - newRank
+      if (oldMap.value.get(x._1).nonEmpty) {
 
-        result.put(hotWord, rank)
-      })
+        oldWords = oldMap.value.get(x._1).get.toMap[String, Int]
+        val oldSize = oldWords.size + 1
+        newWords.foreach(newWord => {
+          val hotWord = newWord._1
+          val newRank = newWord._2
+
+          val oldRank = oldWords.getOrElse(hotWord, oldSize)
+          val rank = oldRank - newRank
+
+          result.put(hotWord, rank)
+        })
+
+      } else {
+        newWords.foreach(newWord => {
+          result.put(newWord._1, 0 - newWord._2)
+        })
+      }
+
+
+
 
       val list = result.toSeq.sortWith(_._2 > _._2).toList
 
@@ -217,13 +235,47 @@ object Scheduler {
           hotWords += list(i)._1 + "*"
         }
 
-        paramMap.clear()
-        paramMap.+=("hot_words" -> hotWords, "section" -> x._1)
-        HotWordHttp.sendNew("http://120.55.189.211/cgi-bin/northsea/prsim/subscribe/1/hot_words_notice.fcgi", paramMap)
+
+        (x._1, hotWords)
       }
-    })
+
+    }).collect()
 
     sc.stop()
+
+    total = pairs.length
+
+    pairs.foreach(x => {
+
+      val pair = x.asInstanceOf[Tuple2[String, String]]
+
+      val arr = pair._1.split("_")
+      var keyValue = ""
+      if (arr.length > 1)
+        keyValue = arr(1)
+
+
+      val ttype = pair._1.split("_")(0)
+      var key = ""
+      if (ttype == "se") {
+        key = "section"
+      } else if (ttype == "in") {
+        key = "industry"
+      } else {
+        key = "stock_code"
+        keyValue += "x"
+      }
+
+      val paramMap = new mutable.HashMap[String, String]
+      paramMap.clear()
+      paramMap.+=("hot_words" -> pair._2, key -> keyValue)
+      HWLogger.warn(pair._2)
+      HWLogger.warn(pair._1)
+      HotWordHttp.sendNew("http://120.55.189.211/cgi-bin/northsea/prsim/subscribe/1/hot_words_notice.fcgi", paramMap)
+    })
+
+    val a = 111
+
   }
 
   /**
