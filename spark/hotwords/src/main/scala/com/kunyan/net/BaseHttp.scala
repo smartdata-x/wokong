@@ -1,5 +1,6 @@
 package com.kunyan.net
 
+import com.kunyan.log.HWLogger
 import com.kunyan.scheduler.Scheduler
 import dispatch.Defaults._
 import dispatch._
@@ -49,10 +50,12 @@ abstract class BaseHttp {
     response onComplete {
       case Success(content) =>
         Scheduler.timer += 1
+        HWLogger.warn((Scheduler.total - Scheduler.timer).toString)
         if (Scheduler.timer == Scheduler.total)
           System.exit(0)
       case Failure(t) =>
         Scheduler.timer += 1
+        HWLogger.warn((Scheduler.total - Scheduler.timer).toString)
         if (Scheduler.timer == Scheduler.total)
           System.exit(0)
     }

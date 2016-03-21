@@ -44,7 +44,7 @@ object Scheduler {
   val mapBefore = new mutable.HashMap[String, Int]()
   val mapDiff = new mutable.HashMap[String, Int]()
   val hbaseConf = HBaseConfiguration.create()
-  val conf = new SparkConf().setAppName("hot words").setMaster("local")
+  val conf = new SparkConf().setAppName("hot words")
   val sc = new SparkContext(conf)
 
   def getRddByTableName(tableName: String): RDD[(ImmutableBytesWritable, Result)] = {
@@ -113,8 +113,8 @@ object Scheduler {
     */
   def getLastHourHotWords: mutable.HashMap[String, ListBuffer[(String, Int)]] = {
 
-    val jedis = new Jedis("222.73.34.92", 6379)
-    jedis.auth("kunyan")
+    val jedis = new Jedis("222.73.34.96", 6390)
+    jedis.auth("7ifW4i@M")
 
     val map = mutable.HashMap[String, ListBuffer[(String, Int)]]()
     val list = ListBuffer[(String, Int)]()
@@ -135,13 +135,15 @@ object Scheduler {
     */
   def sendHotWords(wordList: Seq[(String, String)]): Unit = {
 
-    val jedis = new Jedis("222.73.34.92", 6379)
-    jedis.auth("kunyan")
+    val jedis = new Jedis("222.73.34.96", 6390)
+    jedis.auth("7ifW4i@M")
     val pipeline = jedis.pipelined()
 
     wordList.map(x => {
-      pipeline.hset("hotwordsrank:" + TimeUtil.getDay + "-" + TimeUtil.getCurrentHour, x._1, x._2)
-      pipeline.expire("hotwordsrank:" + TimeUtil.getDay + "-" + TimeUtil.getCurrentHour, 60 * 60 * 2)
+      if (x._1.length > x._1.indexOf('_') + 1) {
+        pipeline.hset("hotwordsrank:" + TimeUtil.getDay + "-" + TimeUtil.getCurrentHour, x._1, x._2)
+        pipeline.expire("hotwordsrank:" + TimeUtil.getDay + "-" + TimeUtil.getCurrentHour, 60 * 60 * 2)
+      }
     })
 
     pipeline.sync()
@@ -218,9 +220,6 @@ object Scheduler {
         })
       }
 
-
-
-
       val list = result.toSeq.sortWith(_._2 > _._2).toList
 
       var size = result.size
@@ -240,8 +239,6 @@ object Scheduler {
       }
 
     }).collect()
-
-    sc.stop()
 
     total = pairs.length
 
@@ -269,12 +266,8 @@ object Scheduler {
       val paramMap = new mutable.HashMap[String, String]
       paramMap.clear()
       paramMap.+=("hot_words" -> pair._2, key -> keyValue)
-      HWLogger.warn(pair._2)
-      HWLogger.warn(pair._1)
-      HotWordHttp.sendNew("http://120.55.189.211/cgi-bin/northsea/prsim/subscribe/1/hot_words_notice.fcgi", paramMap)
+      HotWordHttp.sendNew("http://222.73.34.104/cgi-bin/northsea/prsim/subscribe/1/hot_words_notice.fcgi", paramMap)
     })
-
-    val a = 111
 
   }
 
@@ -337,11 +330,11 @@ object Scheduler {
     val format = new SimpleDateFormat("yyyy-MM-dd HH")
     val time = format.format(date)
     val time1 = format.format(new Date().getTime)
-    val starttime = time + "-00-00"
-    val stoptime = time1 + "-00-00"
+    val startTime = time + "-00-00"
+    val stopTime = time1 + "-00-00"
     val sdf: SimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss")
-    val startRow: Long = sdf.parse(starttime).getTime
-    val stopRow: Long = sdf.parse(stoptime).getTime
+    val startRow: Long = sdf.parse(startTime).getTime
+    val stopRow: Long = sdf.parse(stopTime).getTime
 
 
     scan.setTimeRange(startRow, stopRow)
@@ -362,7 +355,15 @@ object Scheduler {
   }
 
   def main(args: Array[String]) {
-    initRdd()
+    try {
+      initRdd()
+      HWLogger.warn("finish init")
+    } catch {
+      case e: Exception =>
+        HWLogger.exception(e)
+    } finally {
+      sc.stop
+    }
   }
 
 }
