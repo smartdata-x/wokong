@@ -19,14 +19,17 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
 
+/**
+ * 此类是上海电信和江苏电信
+ * 用来获取股票的查看和搜索量的
+ */
 public class VisitAndSearch {
     public VisitAndSearch() {
     }
 
     public static void main(String[] args) throws Exception {
         Configuration conf = new Configuration();
-        String[] otherArgs = (new GenericOptionsParser(conf, args)).getRemainingArgs();
-        if(otherArgs.length < 2) {
+        if(args.length < 2) {
             System.err.println("Usage: TimeAndUrl <in> [<in>...] <out>");
             System.exit(2);
         }
@@ -39,11 +42,11 @@ public class VisitAndSearch {
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
 
-        for(int i = 0; i < otherArgs.length - 1; ++i) {
-            FileInputFormat.addInputPath(job, new Path(otherArgs[i]));
+        for(int i = 0; i < args.length - 1; ++i) {
+            FileInputFormat.addInputPath(job, new Path(args[i]));
         }
 
-        FileOutputFormat.setOutputPath(job, new Path(otherArgs[otherArgs.length - 1]));
+        FileOutputFormat.setOutputPath(job, new Path(args[args.length - 1]));
         System.exit(job.waitForCompletion(true)?0:1);
     }
 
