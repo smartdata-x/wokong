@@ -59,10 +59,10 @@ public class VisitAndSearch {
     public static class IntSumReducer extends Reducer<Text, Text, Text, Text> {
 
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
-            Iterator var5 = values.iterator();
+            Iterator var = values.iterator();
 
-            while (var5.hasNext()) {
-                Text val = (Text) var5.next();
+            while (var.hasNext()) {
+                Text val = (Text) var.next();
                 context.write(key, val);
             }
 
