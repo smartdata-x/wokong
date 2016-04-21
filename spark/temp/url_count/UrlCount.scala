@@ -4,6 +4,7 @@ import org.apache.spark.{SparkContext, SparkConf}
 
 /**
  * Created by lcm on 2016/4/21.
+ * 统计url的访问次数
  */
 object UrlCount {
 
@@ -12,7 +13,7 @@ object UrlCount {
   def main(args: Array[String]) {
     val in = args(0)
     val out = args(1)
-    val sparkConf = new SparkConf().setAppName("FILTER AD").setMaster("local")
+    val sparkConf = new SparkConf().setAppName("FILTER AD")
     val sc = new SparkContext(sparkConf)
 
     val writerUrlCount = new PrintWriter(new File(out), "UTF-8")
