@@ -206,7 +206,7 @@ object EventLibrary {
     /**
       * 4.计算IDF值，创建语料库
       */
-    //3.1 计算词项频率TF值,取标题与正文
+    //4.1 计算词项频率TF值,取标题与正文
     val totalWords = segWord.map(x=>x._2).map(_.replace(",111111,", "")).map(_.split(",")).map(x => x.toSeq)
     val docTermFreqs = totalWords.map(terms => {
       val termFreqs = terms.foldLeft(new scala.collection.mutable.HashMap[String, Int]()) {
@@ -219,7 +219,7 @@ object EventLibrary {
     })
     docTermFreqs.cache()
 
-    //3.2 计算逆文档频率idf值
+    //4.2 计算逆文档频率idf值
     val docFreqs = docTermFreqs.flatMap(_.keySet).map((_, 1)).reduceByKey(_ + _)
     val numDocs = totalWords.count()
     val idfs = docFreqs.map {
@@ -229,7 +229,7 @@ object EventLibrary {
     /**
       * 5. 筛选出有金融价值的文章，并获取这些文章的标题
       */
-    //4.1 建立三个实体词典：股票，行业，概念
+    //5.1 建立三个实体词典：股票，行业，概念
     val industryFile = sc.textFile("C:/Users/Administrator/Desktop/分词/实体词典/industry_words.words")
     val sectionFile = sc.textFile("C:/Users/Administrator/Desktop/分词/实体词典/section_words.words")
     val stockFile = sc.textFile("C:/Users/Administrator/Desktop/分词/实体词典/stock_words.words")
@@ -241,7 +241,7 @@ object EventLibrary {
     val stockWords3 = sectionFile.map(_.split("\t")).flatMap(x => x(1).split(",")).distinct()
     val stockWord = stockWords1.union(stockWords2).union(stockWords3).distinct()
 
-    //4.2 统计每篇文章出现三类实体词库的次数
+    //5.2 统计每篇文章出现三类实体词库的次数
     val articles = segWord
     val arr1 = industryWords.collect
     val arr2 = sectionWords.collect
@@ -271,7 +271,7 @@ object EventLibrary {
       j + "\t" + p + "\t" + q + "\t" + x._1 +"\t" + news
     })
 
-    //4.3 过滤掉没有出现实体词的文章,剩余为有金融价值的文章(url,title)
+    //5.3 过滤掉没有出现实体词的文章,剩余为有金融价值的文章(url,title)
     val newsStatFilter = newsStat.map(_.split("\t")).filter(x => x(0).toDouble > 0 || x(1).toDouble > 0 || x(2).toDouble > 0)
       .map(x => (x(3),x(4).split("111111")(0).replaceAll("[0-9]*", "").replace(".","").replace("%","").replace(",,","")))
 
