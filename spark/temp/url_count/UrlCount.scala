@@ -16,11 +16,10 @@ object UrlCount {
   def main(args: Array[String]) {
     val in = args(0)
     val out = args(1)
-    val sparkConf = new SparkConf().setAppName("FILTER AD").setMaster("local")
+    val sparkConf = new SparkConf().setAppName("FILTER AD")
     val sc = new SparkContext(sparkConf)
 
     sc.textFile(in).map(x => x.split("\t")).filter(_.length > 4)
-      .filter(_ (3).contains("/"))
       .map(x => {
         val url = x(3)
         if (url.startsWith("http") && url.split("/").length > 2) {
