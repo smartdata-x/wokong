@@ -3,6 +3,8 @@ import _root_.java.io.PrintWriter
 import java.io.{File, PrintWriter}
 
 import _root_.org.apache.spark.SparkConf
+import org.apache.spark.SparkConf
+import org.apache.spark.SparkContext
 import org.apache.spark.{SparkContext, SparkConf}
 
 /**
@@ -14,7 +16,7 @@ object UrlCount {
   def main(args: Array[String]) {
     val in = args(0)
     val out = args(1)
-    val sparkConf = new SparkConf().setAppName("FILTER AD")
+    val sparkConf = new SparkConf().setAppName("FILTER AD").setMaster("local")
     val sc = new SparkContext(sparkConf)
 
     sc.textFile(in).map(x => x.split("\t")).filter(_.length > 4)
@@ -28,9 +30,8 @@ object UrlCount {
         }
       })
       .reduceByKey(_ + _)
-      .map(x => (x._2, x._1))
-      .sortByKey(false)
-      .map(x => (x._2 + "\t" + x._1))
+      .sortBy(_._2,ascending = false)
+      .map(x => x._1 + "\t" + x._2)
       .saveAsTextFile(out)
   }
 }
