@@ -247,9 +247,9 @@ object EventLibrary {
       * 5. 筛选出有金融价值的文章，并获取这些文章的标题
       */
     //5.1 建立三个实体词典：股票，行业，概念
-    val industryFile = sc.textFile("/user/wangcao/industry_words.words")
-    val sectionFile = sc.textFile("/user/wangcao/section_words.words")
-    val stockFile = sc.textFile("/user/wangcao/stock_words.words")
+    val industryFile = sc.textFile(args(0))
+    val sectionFile = sc.textFile(args(1))
+    val stockFile = sc.textFile(args(2))
 
     val industryWords = industryFile.map(_.split("\t")).map(x => x(0)).distinct()
     val sectionWords = sectionFile.map(_.split("\t")).map(x => x(0)).distinct()
@@ -344,7 +344,7 @@ object EventLibrary {
 
     //所有词库合并
     val keyWord = stockKeyWord.union(industryKeyWord).union(sectionKeyWord)
-    keyWord.coalesce(1).saveAsTextFile("/user/wangcao/eventWord")
+    keyWord.coalesce(1).saveAsTextFile(args(3))
 
     table1.unpersist()
     table2.unpersist()
