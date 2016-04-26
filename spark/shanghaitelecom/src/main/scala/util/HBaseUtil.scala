@@ -12,7 +12,7 @@ import org.apache.hadoop.hbase.client._
 object HBaseUtil {
 
   private lazy val connection = getConnection
-  private case class RowTelecomData(row:String,ts:String,ad:String,ua:String,url:String,ref:String,cookie:String)
+  private case class RowTelecomData(row:String,ts:String,ad:String,ua:String,host:String,url:String,ref:String,cookie:String,keyWord:String)
 
   /**
     * 获取hbase的连接器
@@ -89,16 +89,18 @@ object HBaseUtil {
     put.addColumn(Bytes.toBytes("info"), Bytes.toBytes("ts"), Bytes.toBytes(data.ts))
     put.addColumn(Bytes.toBytes("info"), Bytes.toBytes("ad"), Bytes.toBytes(data.ad))
     put.addColumn(Bytes.toBytes("info"), Bytes.toBytes("ua"), Bytes.toBytes(data.ua))
+    put.addColumn(Bytes.toBytes("info"), Bytes.toBytes("host"), Bytes.toBytes(data.host))
     put.addColumn(Bytes.toBytes("info"), Bytes.toBytes("url"), Bytes.toBytes(data.url))
     put.addColumn(Bytes.toBytes("info"), Bytes.toBytes("ref"), Bytes.toBytes(data.ref))
     put.addColumn(Bytes.toBytes("info"), Bytes.toBytes("cookie"), Bytes.toBytes(data.cookie))
+    put.addColumn(Bytes.toBytes("info"), Bytes.toBytes("keyword"), Bytes.toBytes(data.keyWord))
     table.put(put)
     true
   }
 
   private def formatData(string:String) : RowTelecomData ={
      val arr = string.split("\t")
-     RowTelecomData(TimeUtil.getTimeStamp+"_"+ arr(1),arr(0),arr(1),arr(2),arr(3),arr(4),arr(5))
+     RowTelecomData(TimeUtil.getTimeStamp+"_"+ arr(1),arr(0),arr(1),arr(2),arr(3),arr(4),arr(5),arr(6),arr(7))
   }
 
   def saveData(arr:Array[String]): Unit ={

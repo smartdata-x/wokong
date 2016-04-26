@@ -1,10 +1,10 @@
-package util
+package test
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import java.security.SecureRandom
-import java.util.zip.{InflaterOutputStream, GZIPInputStream}
-import javax.crypto.{SecretKeyFactory, Cipher}
+import java.util.zip.{DeflaterOutputStream, GZIPInputStream, InflaterOutputStream}
 import javax.crypto.spec.DESKeySpec
+import javax.crypto.{Cipher, SecretKeyFactory}
 
 import config.FileConfig
 import log.SUELogger
@@ -14,7 +14,7 @@ import sun.misc.BASE64Decoder
 /**
   * Created by C.J.YOU on 2016/3/16.
   */
-object StringUtil extends Serializable{
+object TestStringUtil extends Serializable{
 
 
   // 解压缩
@@ -77,9 +77,32 @@ object StringUtil extends Serializable{
     data
   }
 
-  private def decodeBase64(base64String : String): String = {
+   def decodeBase64(base64String : String): String = {
     val decoded = new BASE64Decoder().decodeBuffer(base64String)
-    new String(decoded,"utf-8")
+    new String(decoded,"GBK")
+  }
+
+   def  zlibZip(primStr:String):String = {
+    if (primStr == null || primStr.length () == 0) {
+      return primStr
+    }
+    val out = new ByteArrayOutputStream ()
+    val gzip = new DeflaterOutputStream (out)
+    try {
+      gzip.write (primStr.getBytes())
+    } catch {
+
+      case e: Exception => e.printStackTrace ();
+    } finally {
+      if (gzip != null) {
+        try {
+          gzip.close ()
+        } catch {
+          case e: Exception => e.printStackTrace ();
+        }
+      }
+    }
+    new sun.misc.BASE64Encoder().encode(out.toByteArray)
   }
 
   def parseJsonObject(str:String): String ={
@@ -92,7 +115,7 @@ object StringUtil extends Serializable{
       // println(json)
       val id = json.get ("id").toString
       val value = json.get ("value").toString
-      val desDe = zlibUnzip(value.replace("-<","\n"))
+      val desDe = zlibUnzip(value.replace("-<","\r\n"))
       val resultJson = desDe.split("\t")
       val ad = resultJson(0)
       val ts = resultJson(1)
@@ -103,10 +126,11 @@ object StringUtil extends Serializable{
       val cookie = resultJson(6).replace("\n","")
       val keyword = resultJson(7)
       result = ts + "\t" + ad + "\t" + ua + "\t" + host +"\t"+ url + "\t" + ref + "\t" +cookie + "\t" + keyword
+      // println(result)
     } catch {
       case e:Exception  =>
         SUELogger.error("praseJsonObject ERROR")
-        FileUtil.saveErrorData(FileConfig.TOO_BIG_VALUE,str)
+        println("error")
     }
     result
   }

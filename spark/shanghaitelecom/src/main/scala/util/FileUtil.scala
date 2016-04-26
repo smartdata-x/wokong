@@ -2,6 +2,8 @@ package util
 
 import java.io._
 
+import config.FileConfig
+
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
@@ -16,19 +18,20 @@ object FileUtil {
     file.exists()
   }
   /** 创建目录 */
-  def mkDir(name: String): Unit = {
+  private def mkDir(name: String): Unit = {
     val dir = new File(name)
     if(!isExist(name)){
       dir.mkdir
     }
   }
-  def createFile(path:String): Unit ={
+  private def createFile(path:String): Unit ={
     val file = new File(path)
     if(!isExist(path)){
       file.createNewFile()
     }
   }
-  def writeToFile(path: String, array:Array[String]): Unit = {
+
+  private def writeToFile(path: String, array:Array[String]): Unit = {
     val out = new FileOutputStream(new File(path),true)
     val writer = new PrintWriter(out, false)
     for (arr <- array){
@@ -36,5 +39,29 @@ object FileUtil {
     }
     writer.flush()
     writer.close()
+  }
+
+  private def writeStringToFile(path: String, str:String): Unit = {
+    val out = new FileOutputStream(new File(path),true)
+    val writer = new PrintWriter(out, false)
+    writer.append(str + "\n")
+    writer.flush()
+    writer.close()
+  }
+
+  def saveData(rootDir:String,data:Array[String]):Unit ={
+    val searchEngineDir = rootDir + "/" + TimeUtil.getDay
+    val searchEngineFile = rootDir + "/" + TimeUtil.getDay +"/"+TimeUtil.getCurrentHour
+    FileUtil.mkDir(searchEngineDir)
+    FileUtil.createFile(searchEngineFile)
+    FileUtil.writeToFile(searchEngineFile,data)
+  }
+
+  def saveErrorData(rootDir:String,data:String): Unit ={
+    val dir = rootDir + "/" + TimeUtil.getDay
+    val file = rootDir + "/" + TimeUtil.getDay +"/"+TimeUtil.getCurrentHour+"_tbv"
+    FileUtil.mkDir(dir)
+    FileUtil.createFile(file)
+    FileUtil.writeStringToFile(file,data)
   }
 }
