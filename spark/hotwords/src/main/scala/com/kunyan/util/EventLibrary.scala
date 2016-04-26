@@ -1,4 +1,5 @@
-package com.kunyan.util
+package com.wangcao.learning
+
 import java.text.SimpleDateFormat
 import java.util.Date
 
@@ -14,32 +15,35 @@ import org.apache.hadoop.hbase.util.{Bytes, Base64}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkContext, SparkConf}
 import com.kunyan.nlpsuit.util.TextPreprocessing.process
-
-import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 /**
   * Created by cc on 2016/4/22.
   */
+  
 object EventLibrary {
 
-  val tablePrefix = List[Int](3, 5, 6, 7, 8, 9)
+  val tablePrefix = List[Int](3, 5, 6, 7, 8)
   val hbaseConf = HBaseConfiguration.create()
-  val sparkConf = new SparkConf().setMaster("local").setAppName("eventLibrary")
-  //sparkConf.set("executor-memory","15g").set("executor-cores","4").set("total-executor-cores","8")
+  val sparkConf = new SparkConf().setAppName("eventLibrary")//.setMaster("local")
   val sc = new SparkContext(sparkConf)
 
+
   def getHbaseConf(): Configuration = {
-    hbaseConf.set("hbase.rootdir", "hdfs://222.73.57.12/hbase")
-    hbaseConf.set("hbase.zookeeper.quorum", "222.73.57.12,222.73.57.3,222.73.57.7,222.73.57.8,222.73.57.11")
+
+    hbaseConf.set("hbase.rootdir", "hdfs://master/hbase")
+    hbaseConf.set("hbase.zookeeper.quorum", "master,slave1,slave2,slave3,slave4")
     hbaseConf
+
   }
 
   def judgeCharser(html: Array[Byte]): String = {
+
     val icu4j = new CharsetDetector()
     icu4j.setText(html)
     val encoding = icu4j.detect()
     encoding.getName
+
   }
 
   def setTimeRange(): Unit = {
@@ -59,12 +63,12 @@ object EventLibrary {
     val proto: ClientProtos.Scan = ProtobufUtil.toScan(scan)
     val scanToString = Base64.encodeBytes(proto.toByteArray)
     hbaseConf.set(TableInputFormat.SCAN, scanToString)
+
   }
 
   def getHbaseRdd(tableName: String): RDD[(ImmutableBytesWritable, Result)] = {
 
     System.setProperty("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-    //    System.setProperty("hadoop.home.dir", "D:\\hadoop-2.7.1\\hadoop-2.7.1")
 
     val hbaseConf = getHbaseConf()
     hbaseConf.set(TableInputFormat.INPUT_TABLE, tableName)
@@ -75,7 +79,7 @@ object EventLibrary {
 
   }
 
-  def getTable1(): RDD[String] = {
+  def getTableA(): RDD[String] = {
 
     val news = getHbaseRdd("wk_detail").map(x => {
       val a = x._2.getValue(Bytes.toBytes("basic"), Bytes.toBytes("url"))
@@ -101,9 +105,10 @@ object EventLibrary {
       .map(x => x(0) + "\t" + x(1) + "\t" + x(2))
 
     processedNews
+
   }
 
-  def getTable2(): RDD[(String,String)] = {
+  def getTableB(): RDD[(String,String)] = {
 
     var rddUnion = getHbaseRdd(tablePrefix.head + "_analyzed")
 
@@ -124,10 +129,13 @@ object EventLibrary {
       val formatd = judgeCharser(d)
       new String(a, formata) + "\t" + new String(b, formatb) + "\t" + new String(c, formatc) + "\t" + new String(d, formatd)
     })
+
     val processedNews = news.map(_.split("\t")).filter(x => x.length == 4)
       .filter(x => x(1) != "" && x(2) != "" && x(3) != "" )
       .map(x=>(x(0),x(1)+" "+x(2)+" "+x(3)))
+
     processedNews
+
   }
 
   def processWord (hotWords:RDD[(String,String)],pre:String): RDD[(String,Set[String])] = {
@@ -142,72 +150,81 @@ object EventLibrary {
     }
 
     val arrRdd = sc.parallelize(arr).map(_.split("\t")).map(x => (x(0),x(1).split(" ").toSet))
+
     arrRdd
+
   }
 
   def main(args: Array[String]): Unit = {
 
     /**
       * 1.分别读取hbase的两类表
-      * table1: url category industry section
-      * table2: url title content
+      * tableA:  url title content
+      * tableB:  url category  industry  section
       */
 
-    val table1 = getTable1
-    val table2 = getTable2
-    //table1.cache()
-    // table2.cache()
-    //table1.take(10).foreach(println)
-    //table2.take(10).foreach(println)
+    val table1 = getTableA
+    val table2 = getTableB
+    table1.cache()
+    table2.cache()
 
     /**
       * 2.筛选出标题中长度为2-8的引号中的词，这些词默认为关键词，
       */
     val title = table1.map(_.split("\t")).map(x => (x(0),x(1))).filter(x => x._2.contains("“") && x._2.contains("”"))
-
+    title.cache()
     val specialWord1 = title
       .map(x => {
         val title = x._2
-        val word = title.substring(title.indexOf("“")+1, title.indexOf("”"))
+        val word =
+          try {
+            title.substring(title.indexOf("“")+1, title.indexOf("”"))
+          } catch {
+            case e: Exception =>
+              null
+          }
         (x._1,word)
-      })
+      }).filter(x => x._1 !=  null && x._2 != null)
 
     val specialWord2 = title
       .map(x => {
         var word = "1"
         val title = x._2
-        val backTitle = title.substring(title.indexOf("”")+1,title.length())
+        val backTitle =
+          try {
+            title.substring(title.indexOf("”")+1,title.length())
+          } catch {
+            case e: Exception =>
+              null
+          }
         if (backTitle.contains("“") && backTitle.contains("”")) {
          word = backTitle.substring(backTitle.indexOf("“")+1,backTitle.indexOf("”"))
         } else {
           word = null
         }
         (x._1,word)
-      }).filter(x => x !=  null)
+      }).filter(x => x._1 !=  null && x._2 != null)
 
-    val specialWord = specialWord1.union(specialWord2).filter(x => x._2.length >= 2 && x._2.length <= 8)
-      .join(table2).map(x => (x._2._2,x._2._1))
-    //specialWord.take(20).foreach(println)
+    val specialWord = specialWord1.union(specialWord2).filter(x => x._2.length >= 2 && x._2.length <= 8).join(table2).map(x => (x._2._2,x._2._1))
 
     /**
       * 3. 标题与正文分词
       */
-    //停用词
+    //3.1 获取停用词
     val stopWords = sc.textFile("/user/wangcao/stop_words_CN").collect
     val stopWordsBr = sc.broadcast(stopWords)
 
-    //调用分词程序
+    //3.2调用分词程序
     val segWord = table1.map(_.split("\t"))
-     .map(x => (x(0),x(1) + "111111" + x(2)))
-     .map(x => (x._1,process(x._2,stopWordsBr).mkString(",")))
-    segWord.take(20).foreach(println)
-
+      .map(x => (x(0),x(1) + "111111" + x(2)))
+      .map(x => (x._1,process(x._2,stopWordsBr).mkString(",")))
+    segWord.cache()
 
     /**
       * 4.计算IDF值，创建语料库
       */
     //4.1 计算词项频率TF值,取标题与正文
-    val totalWords = segWord.map(x=>x._2).map(_.replace(",111111,", "")).map(_.split(",")).map(x => x.toSeq)
+    val totalWords = segWord.map(x=>x._2).map(_.replace("111111", "")).map(_.split(",")).map(x => x.toSeq)
     val docTermFreqs = totalWords.map(terms => {
       val termFreqs = terms.foldLeft(new scala.collection.mutable.HashMap[String, Int]()) {
         (map, term) => {
@@ -230,9 +247,9 @@ object EventLibrary {
       * 5. 筛选出有金融价值的文章，并获取这些文章的标题
       */
     //5.1 建立三个实体词典：股票，行业，概念
-    val industryFile = sc.textFile("C:/Users/Administrator/Desktop/分词/实体词典/industry_words.words")
-    val sectionFile = sc.textFile("C:/Users/Administrator/Desktop/分词/实体词典/section_words.words")
-    val stockFile = sc.textFile("C:/Users/Administrator/Desktop/分词/实体词典/stock_words.words")
+    val industryFile = sc.textFile("/user/wangcao/industry_words.words")
+    val sectionFile = sc.textFile("/user/wangcao/section_words.words")
+    val stockFile = sc.textFile("/user/wangcao/stock_words.words")
 
     val industryWords = industryFile.map(_.split("\t")).map(x => x(0)).distinct()
     val sectionWords = sectionFile.map(_.split("\t")).map(x => x(0)).distinct()
@@ -271,54 +288,72 @@ object EventLibrary {
       j + "\t" + p + "\t" + q + "\t" + x._1 +"\t" + news
     })
 
-    //5.3 过滤掉没有出现实体词的文章,剩余为有金融价值的文章(url,title)
+    //5.3 过滤掉没有出现实体词的文章,剩余为有金融价值的文章。格式为：(url,title)
     val newsStatFilter = newsStat.map(_.split("\t")).filter(x => x(0).toDouble > 0 || x(1).toDouble > 0 || x(2).toDouble > 0)
-      .map(x => (x(3),x(4).split("111111")(0).replaceAll("[0-9]*", "").replace(".","").replace("%","").replace(",,","")))
+      .map(x => (x(3),x(4).split("111111")(0))).filter(x => x._1 != null && x._2 != null)
 
     /**
       * 6. 为每个标题词匹配行业等属性，并且根据idf值提取出最关键的前两个词
       */
-    val wordAndProperty = newsStatFilter.join(table2).map(x => (x._2._1,x._2._2))
+    val wordAndProperty = newsStatFilter.join(table2).map(x => (x._2._1,x._2._2)).filter(x => x._1 != null && x._2 != null)
 
     val topWord = wordAndProperty.map(x => {
-      val title =
-      try {
-         x._1.split(",").filter(x => x.length > 1).map(x => (x, idfs(x))).filter(x => x._1 != "")
+      val part2 = x._2
+      val part1 =
+        try {
+          x._1.split(",").filter(x => x.length > 1)
+            .filter(x => !x.matches(".*[0-9]+.*"))
+            .filter(x => x != "")
+            .filter(x => x != " ")
+            .filter(x => x != null)
+            .map(x => (x, idfs(x)))
         } catch {
-          case e: Exception =>
+        case e: Exception =>
             null
         }
-      val topSeg = title.filter(x => x != null).sortBy(x => x._2).takeRight(2).map(x => x._1).mkString(",")
-      val property = x._2
-      property + "\t" + topSeg
+
+      var topWords:Array[String] = null
+      if (part1.length == 1) {
+        topWords = part1.map(x => x._1)
+      } else if (part1.length >1) {
+        topWords = part1.sortBy(x => x._2).takeRight(2).map(x => x._1)
+      }
+
+      part2 + "\t" + topWords.filter(x => x != null).mkString(",")
+
     })
+    topWord.cache()
 
     /**
-      * 7. 处理格式，将所有记录转换为 (se_xxx,set(word1,word2...))格式
+      * 7. 处理格式，将所有记录转换为 如(se_xxx,set(word1,word2...))格式
       *
       */
-    //val topWord = sc.textFile("file:///home/cc/property.txt")
-    //val topWord = sc.textFile("D:\\Documents\\cc\\property.txt")//.map(_.split("\t")).map(x=>(x(0),x(1)))
     val word1 = topWord.map(_.split("\t")).map(x => (x(0),x(1).split(",")(0)))
     val word2 = topWord.map(_.split("\t")).map(x => (x(0),x(1).split(",")(1)))
     val word = word1.union(word2).union(specialWord).filter(x => x._1.split(" ").length == 3)
-    word.collect().foreach(println)
+    word.cache()
 
     //股票词库
     val stockKeyWord =  processWord(word.map(x=>(x._1.split(" ")(0),x._2)).reduceByKey((a,b) => a + " " + b),"st_")
-    stockKeyWord.collect().foreach(println)
 
     //行业词库
     val industryKeyWord = processWord(word.map(x=>(x._1.split(" ")(1),x._2)).reduceByKey((a,b) => a + " " + b),"in_")
-    industryKeyWord.collect().foreach(println)
 
     //概念词库
     val sectionKeyWord = processWord(word.map(x=>(x._1.split(" ")(2),x._2)).reduceByKey((a,b) => a + " " + b),"se_")
-    sectionKeyWord.collect().foreach(println)
 
     //所有词库合并
-    val KeyWord = stockKeyWord.union(industryKeyWord).union(sectionKeyWord)
+    val keyWord = stockKeyWord.union(industryKeyWord).union(sectionKeyWord)
+    keyWord.coalesce(1).saveAsTextFile("/user/wangcao/eventWord")
 
+    table1.unpersist()
+    table2.unpersist()
+    title.unpersist()
+    segWord.unpersist()
+    topWord.unpersist()
+    word.unpersist()
+
+    sc.stop()
 
   }
 
