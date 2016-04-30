@@ -31,7 +31,7 @@ object FileUtil {
     }
   }
 
-  private def writeToFile(path: String, array:Array[String]): Unit = {
+   def writeToFile(path: String, array:Array[String]): Unit = {
     val out = new FileOutputStream(new File(path),true)
     val writer = new PrintWriter(out, false)
     for (arr <- array){

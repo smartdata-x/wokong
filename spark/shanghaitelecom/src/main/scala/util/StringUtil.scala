@@ -1,6 +1,7 @@
 package util
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
+import java.net.URLDecoder
 import java.security.SecureRandom
 import java.util.zip.{InflaterOutputStream, GZIPInputStream}
 import javax.crypto.{SecretKeyFactory, Cipher}
@@ -79,16 +80,59 @@ object StringUtil extends Serializable{
 
   private def decodeBase64(base64String : String): String = {
     val decoded = new BASE64Decoder().decodeBuffer(base64String)
-    new String(decoded,"utf-8")
+    new String(decoded)
   }
 
-  def parseJsonObject(str:String): String ={
-
-    var result = ""
+  // 字符编码格式确定
+   private def getEncoding(str:String):String ={
+    var encode = "GB2312"
     try {
-      val res = decodeBase64 (str)
+      if (str.equals(new String(str.getBytes(encode), encode))) {
+        val s = encode
+        return s
+      }
+    } catch {
+      case e:Exception =>
+    }
+    encode = "ISO-8859-1"
+    try {
+      if (str.equals(new String(str.getBytes(encode), encode))) {
+        val s1 = encode
+        return s1
+      }
+    } catch {
+      case e:Exception =>
+    }
+    encode = "UTF-8"
+    try {
+      if (str.equals(new String(str.getBytes(encode), encode))) {
+        val s2 = encode
+        return s2
+      }
+    } catch {
+      case e:Exception =>
+    }
+    encode = "GBK"
+    try {
+      if (str.equals(new String(str.getBytes(encode), encode))) {
+        val s3 = encode
+        return s3
+      }
+    } catch {
+      case e:Exception =>
+    }
+    return ""
+  }
+
+def parseJsonObject(str:String): String ={
+
+    var finalValue = ""
+    try {
+      val result = decodeBase64 (str)
       // println(res)
-      val json = getJsonObject (res)
+      val resultSplit = result.split("_kunyan_")
+      val json = getJsonObject(resultSplit(0))
+      val keyword = resultSplit(1)
       // println(json)
       val id = json.get ("id").toString
       val value = json.get ("value").toString
@@ -101,13 +145,13 @@ object StringUtil extends Serializable{
       val ref = resultJson(4).replace("\n","")
       val ua = resultJson(5).replace("\n","")
       val cookie = resultJson(6).replace("\n","")
-      val keyword = resultJson(7)
-      result = ts + "\t" + ad + "\t" + ua + "\t" + host +"\t"+ url + "\t" + ref + "\t" +cookie + "\t" + keyword
+      // val keyword = resultJson(7)
+      finalValue = ts + "\t" + ad + "\t" + ua + "\t" + host +"\t"+ url + "\t" + ref + "\t" +cookie + "\t" + keyword
     } catch {
       case e:Exception  =>
         SUELogger.error("praseJsonObject ERROR")
         FileUtil.saveErrorData(FileConfig.TOO_BIG_VALUE,str)
     }
-    result
+  finalValue
   }
 }
