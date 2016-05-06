@@ -158,7 +158,10 @@ object EventLibrary {
       val formatStock = judgeCharset(stock)
       val formatIndustry = judgeCharset(industry)
       val formatSection = judgeCharset(section)
-      new String(url, formatUrl) + "\t" + new String(stock, formatStock) + "\t" + new String(industry, formatIndustry) + "\t" + new String(section, formatSection)
+      new String(url, formatUrl) + "\t" +
+        new String(stock, formatStock) + "\t" +
+        new String(industry, formatIndustry) + "\t" +
+        new String(section, formatSection)
 
     })
 
@@ -210,7 +213,8 @@ object EventLibrary {
 
 
     //2.筛选出标题中长度为2-8的引号中的词，这些词默认为关键词，
-    val specialTitle = contentTable.map(_.split("\t")).map(x => (x(0), x(1))).filter(x => x._2.contains("“") && x._2.contains("”"))
+    val specialTitle = contentTable.map(_.split("\t")).map(x => (x(0), x(1)))
+      .filter(x => x._2.contains("“") && x._2.contains("”"))
     specialTitle.cache()
 
     val specialWordFirst = specialTitle
@@ -271,7 +275,8 @@ object EventLibrary {
 
     //4.计算IDF值，创建语料库
     //4.1 计算词项频率TF值,取标题与正文
-    val totalWords = segWord.map(x=>x._2).map(_.replace("111111", "")).map(_.split(",")).map(x => x.toSeq)
+    val totalWords = segWord.map(x=>x._2).map(_.replace("111111", ""))
+      .map(_.split(",")).map(x => x.toSeq)
     val docTermFreqs = totalWords.map(terms => {
 
       val termFreqs = terms.foldLeft(new scala.collection.mutable.HashMap[String, Int]()) {
@@ -305,7 +310,8 @@ object EventLibrary {
     val stockWordsPartFirst = stockFile.map(_.split("\t")).flatMap(x => x(1).split(","))
     val stockWordsPartSecond = industryFile.map(_.split("\t")).flatMap(x => x(1).split(",")).distinct()
     val stockWordsPartThird = sectionFile.map(_.split("\t")).flatMap(x => x(1).split(",")).distinct()
-    val stockWords = stockWordsPartFirst.union(stockWordsPartSecond).union(stockWordsPartThird).distinct()
+    val stockWords = stockWordsPartFirst.union(stockWordsPartSecond)
+      .union(stockWordsPartThird).distinct()
 
     //5.2 统计每篇文章出现三类实体词库的次数
     val industyArr = industryWords.collect
@@ -360,7 +366,8 @@ object EventLibrary {
         })
       (property, words)
     })
-    val topWord = wordAndidf.filter(x => x._2.length >= 2).map(x => x._1 + "\t" + x._2.sortBy(a => a._2).takeRight(2).map(_._1).mkString(","))
+    val topWord = wordAndidf.filter(x => x._2.length >= 2)
+      .map(x => x._1 + "\t" + x._2.sortBy(a => a._2).takeRight(2).map(_._1).mkString(","))
 
 
     //7. 处理格式，将所有记录转换为 如(se_xxx,set(word1,word2...))格式
@@ -369,13 +376,16 @@ object EventLibrary {
     }).union(specialWord).filter(x => x._1.split(" ").length == 3)
 
     //股票词库
-    val stockKeyWord =  processWord(word.map(x=>(x._1.split(" ")(0), x._2)).reduceByKey((stock,word) => stock + " " + word), "st_")
+    val stockKeyWord =  processWord(word.map(x=>(x._1.split(" ")(0), x._2))
+      .reduceByKey((stock,word) => stock + " " + word), "st_")
 
     //行业词库
-    val industryKeyWord = processWord(word.map(x=>(x._1.split(" ")(1), x._2)).reduceByKey((industry,word) => industry + " " + word), "in_")
+    val industryKeyWord = processWord(word.map(x=>(x._1.split(" ")(1), x._2))
+      .reduceByKey((industry,word) => industry + " " + word), "in_")
 
     //概念词库
-    val sectionKeyWord = processWord(word.map(x=>(x._1.split(" ")(2), x._2)).reduceByKey((section,word) => section + " " + word), "se_")
+    val sectionKeyWord = processWord(word.map(x=>(x._1.split(" ")(2), x._2))
+      .reduceByKey((section,word) => section + " " + word), "se_")
 
     //所有词库合并
     val keyWord = stockKeyWord.union(industryKeyWord).union(sectionKeyWord)
