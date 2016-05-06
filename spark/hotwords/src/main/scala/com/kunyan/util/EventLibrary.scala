@@ -41,7 +41,6 @@ object EventLibrary {
 
   /**
     * 判断字符编码
- *
     * @param html 待识别编码的文本
     * @return 字符编码
     */
@@ -78,7 +77,6 @@ object EventLibrary {
 
   /**
     * 获取hbase中的表格并存储成HbaseRDD
- *
     * @param tableName 欲获取的hbase中的表格的名字
     * @return 读取后的hbaseRdd
     */
@@ -100,7 +98,6 @@ object EventLibrary {
 
   /**
     * 读取第一类表格的数据：url+title+content
-    *
     * @return 新闻链接，标题，内容
     */
 
@@ -138,7 +135,6 @@ object EventLibrary {
 
   /**
     * 读取第二类表格的数据：url+category+industry+section
-    *
     * @return 新闻链接与新闻属性
     */
   def getPropertyTable: RDD[(String, String)] = {
@@ -176,7 +172,6 @@ object EventLibrary {
 
   /**
     * 转换数据格式，将数据转换成如：se_xxx,set(word1,word2...)这样的格式
- *
     * @param hotWords 以如(industy,word)形式输入的RDD
     * @param pre 前缀，se_表示section（板块）,in_表示industry(行业）,st_表示stock(股票号)
     * @return
