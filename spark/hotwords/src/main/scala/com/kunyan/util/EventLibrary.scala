@@ -20,7 +20,6 @@ import scala.collection.mutable.ArrayBuffer
   * Created by WangCao on 2016/4/22
   * 金融事件词库的建立
   */
-
 object EventLibrary {
 
   val TABLE_PREFIX = List[Int](3, 5, 6, 7, 8, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25)
@@ -42,7 +41,9 @@ object EventLibrary {
 
   /**
     * 判断字符编码
+ *
     * @param html 待识别编码的文本
+    * @return 字符编码
     */
   def judgeCharset(html: Array[Byte]): String = {
 
@@ -77,8 +78,9 @@ object EventLibrary {
 
   /**
     * 获取hbase中的表格并存储成HbaseRDD
+ *
     * @param tableName 欲获取的hbase中的表格的名字
-    * @return
+    * @return 读取后的hbaseRdd
     */
   def getHbaseRdd(tableName: String): RDD[(ImmutableBytesWritable, Result)] = {
 
@@ -97,11 +99,12 @@ object EventLibrary {
   }
 
   /**
-    * 读取第一类表格的数据：url+tile+content
-    * @return
+    * 读取第一类表格的数据：url+title+content
+    *
+    * @return 新闻链接，标题，内容
     */
 
-  def getTableContent(): RDD[String] = {
+  def getContentTable: RDD[String] = {
 
     val news = getHbaseRdd("wk_detail").map(x => {
 
@@ -135,9 +138,10 @@ object EventLibrary {
 
   /**
     * 读取第二类表格的数据：url+category+industry+section
-    * @return
+    *
+    * @return 新闻链接与新闻属性
     */
-  def getTableProperty(): RDD[(String, String)] = {
+  def getPropertyTable: RDD[(String, String)] = {
 
     var rddUnion = getHbaseRdd(TABLE_PREFIX.head + "_analyzed")
 
@@ -149,7 +153,7 @@ object EventLibrary {
 
     val news = rddUnion.map(x => {
 
-      val url = x._2.getRow()
+      val url = x._2.getRow
       val stock = x._2.getValue(Bytes.toBytes("info"), Bytes.toBytes("category"))
       val industry = x._2.getValue(Bytes.toBytes("info"), Bytes.toBytes("industry"))
       val section = x._2.getValue(Bytes.toBytes("info"), Bytes.toBytes("section"))
@@ -172,6 +176,7 @@ object EventLibrary {
 
   /**
     * 转换数据格式，将数据转换成如：se_xxx,set(word1,word2...)这样的格式
+ *
     * @param hotWords 以如(industy,word)形式输入的RDD
     * @param pre 前缀，se_表示section（板块）,in_表示industry(行业）,st_表示stock(股票号)
     * @return
@@ -203,17 +208,17 @@ object EventLibrary {
     //tableA:  url title content
     //tableB:  url category  industry  section
 
-    val tableContent = getTableContent()
-    val tableProperty = getTableProperty()
-    tableContent.cache()
-    tableProperty.cache()
+    val contentTable = getContentTable
+    val propertyTable = getPropertyTable
+    contentTable.cache()
+    propertyTable.cache()
 
 
     //2.筛选出标题中长度为2-8的引号中的词，这些词默认为关键词，
-    val title = tableContent.map(_.split("\t")).map(x => (x(0), x(1))).filter(x => x._2.contains("“") && x._2.contains("”"))
-    title.cache()
+    val specialTitle = contentTable.map(_.split("\t")).map(x => (x(0), x(1))).filter(x => x._2.contains("“") && x._2.contains("”"))
+    specialTitle.cache()
 
-    val specialWordFirst = title
+    val specialWordFirst = specialTitle
       .map(x => {
 
         val title = x._2
@@ -229,7 +234,7 @@ object EventLibrary {
 
       }).filter(x => x._1 !=  null && x._2 != null)
 
-    val specialWordSecond = title
+    val specialWordSecond = specialTitle
       .map(x => {
 
         var word = "1"
@@ -252,7 +257,9 @@ object EventLibrary {
 
       }).filter(x => x._1 !=  null && x._2 != null)
 
-    val specialWord = specialWordFirst.union(specialWordSecond).filter(x => x._2.length >= 2 && x._2.length <= 8).join(tableProperty).map(x => (x._2._2,x._2._1))
+    val specialWord = specialWordFirst.union(specialWordSecond)
+      .filter(x => x._2.length >= 2 && x._2.length <= 8)
+      .join(propertyTable).map(x => (x._2._2,x._2._1))
 
 
     //3. 标题与正文分词
@@ -261,7 +268,7 @@ object EventLibrary {
     val stopWordsBr = sc.broadcast(stopWords)
 
     //3.2调用分词程序
-    val segWord = tableContent.map(_.split("\t"))
+    val segWord = contentTable.map(_.split("\t"))
       .map(x => (x(0), x(1) + "111111" + x(2)))
       .map(x => (x._1, process(x._2, stopWordsBr).mkString(",")))
     segWord.cache()
@@ -300,18 +307,17 @@ object EventLibrary {
 
     val industryWords = industryFile.map(_.split("\t")).map(x => x(0)).distinct()
     val sectionWords = sectionFile.map(_.split("\t")).map(x => x(0)).distinct()
-    val stockWordsPartOne = stockFile.map(_.split("\t")).flatMap(x => x(1).split(","))
-    val stockWordsPartTwo = industryFile.map(_.split("\t")).flatMap(x => x(1).split(",")).distinct()
-    val stockWordsPartThree = sectionFile.map(_.split("\t")).flatMap(x => x(1).split(",")).distinct()
-    val stockWords = stockWordsPartOne.union(stockWordsPartTwo).union(stockWordsPartThree).distinct()
+    val stockWordsPartFirst = stockFile.map(_.split("\t")).flatMap(x => x(1).split(","))
+    val stockWordsPartSecond = industryFile.map(_.split("\t")).flatMap(x => x(1).split(",")).distinct()
+    val stockWordsPartThird = sectionFile.map(_.split("\t")).flatMap(x => x(1).split(",")).distinct()
+    val stockWords = stockWordsPartFirst.union(stockWordsPartSecond).union(stockWordsPartThird).distinct()
 
     //5.2 统计每篇文章出现三类实体词库的次数
-    val articles = segWord
     val arr1 = industryWords.collect
     val arr2 = sectionWords.collect
     val arr3 = stockWords.collect
 
-    val newsStat = articles.map(x => {
+    val newsStat = segWord.map(x => {
       val news = x._2
       var j = 0
       var p = 0
@@ -334,72 +340,56 @@ object EventLibrary {
       j + "\t" + p + "\t" + q + "\t" + x._1 +"\t" + news
     })
 
-    //5.3 过滤掉没有出现实体词的文章,剩余为有金融价值的文章。格式为：(url,title)
-    val newsStatFilter = newsStat.map(_.split("\t")).filter(x => x(0).toDouble > 0 || x(1).toDouble > 0 || x(2).toDouble > 0)
+    //5.3 过滤掉没有出现实体词的文章,剩余为有金融价值的文章,并只保留其标题
+    val newsStatFilter = newsStat.map(_.split("\t"))
+      .filter(x => x(0).toDouble > 0 || x(1).toDouble > 0 || x(2).toDouble > 0)
       .map(x => (x(3), x(4).split("111111")(0))).filter(x => x._1 != null && x._2 != null)
 
 
     //6. 为每个标题词匹配行业等属性，并且根据idf值提取出最关键的前两个词
-    val wordAndProperty = newsStatFilter.join(tableProperty).map(x => (x._2._1,x._2._2))
+    val wordAndProperty = newsStatFilter.join(propertyTable).map(x => (x._2._1,x._2._2))
     val idfsKeys = idfs.keys.mkString(",")
 
-    val topWord = wordAndProperty.map(x => {
+    val wordAndidf = wordAndProperty.map(x => {
       val property = x._2
-      val words =
-        try {
-          x._1.split(",").filter(x => x.length > 1)
-            .filter(x => !x.matches(".*[0-9]+.*"))
-            .filter(x => x != "")
-            .filter(x => x != " ")
-            .filter(x => x != null)
-            .map(x => {
-            if (idfsKeys.contains(x)) {
-              (x, idfs(x))
-            }
+      val words = x._1.split(",").filter(x => x.length > 1)
+        .filter(x => !x.matches(".*[0-9]+.*"))
+        .filter(x => x != "")
+        .filter(x => x != " ")
+        .filter(x => x != null)
+        .map(x => {
+          if (idfsKeys.contains(x)) {
             (x, idfs(x))
-          })
-        } catch {
-        case e: Exception =>
-            null
-        }
-
-      var topWords:Array[String] = Array("11")
-
-      if (words.length >=2) {
-        topWords = words.filter(x => x != null).sortBy(x => x._2).takeRight(2).map(x => x._1)
-      }
-
-      property + "\t" + topWords.mkString(",")
-
-    }).map(x => x.split("\t")).filter(x => x(1) != "11").map(x => x(0) + "\t" + x(1))
-    topWord.cache()
+          }
+          (x, idfs(x))
+        })
+      (property, words)
+    })
+    val topWord = wordAndidf.filter(x => x._2.length >= 2).map(x => x._1 + "\t" + x._2.sortBy(a => a._2).takeRight(2).map(_._1).mkString(","))
 
 
     //7. 处理格式，将所有记录转换为 如(se_xxx,set(word1,word2...))格式
-    val word1 = topWord.map(_.split("\t")).map(x => (x(0), x(1).split(",")(0)))
-    val word2 = topWord.map(_.split("\t")).map(x => (x(0), x(1).split(",")(1)))
-    val word = word1.union(word2).union(specialWord).filter(x => x._1.split(" ").length == 3)
-    word.cache()
+    val word = topWord.map(_.split("\t")).flatMap(x => {
+      Array[(String, String)]((x(0), x(1).split(",")(0)), (x(0), x(1).split(",")(1)))
+    }).union(specialWord).filter(x => x._1.split(" ").length == 3)
 
     //股票词库
-    val stockKeyWord =  processWord(word.map(x=>(x._1.split(" ")(0), x._2)).reduceByKey((a,b) => a + " " + b), "st_")
+    val stockKeyWord =  processWord(word.map(x=>(x._1.split(" ")(0), x._2)).reduceByKey((stock,word) => stock + " " + word), "st_")
 
     //行业词库
-    val industryKeyWord = processWord(word.map(x=>(x._1.split(" ")(1), x._2)).reduceByKey((a,b) => a + " " + b), "in_")
+    val industryKeyWord = processWord(word.map(x=>(x._1.split(" ")(1), x._2)).reduceByKey((industry,word) => industry + " " + word), "in_")
 
     //概念词库
-    val sectionKeyWord = processWord(word.map(x=>(x._1.split(" ")(2), x._2)).reduceByKey((a,b) => a + " " + b), "se_")
+    val sectionKeyWord = processWord(word.map(x=>(x._1.split(" ")(2), x._2)).reduceByKey((section,word) => section + " " + word), "se_")
 
     //所有词库合并
     val keyWord = stockKeyWord.union(industryKeyWord).union(sectionKeyWord)
     keyWord.coalesce(1).saveAsTextFile(args(4))
 
-    tableContent.unpersist()
-    tableProperty.unpersist()
-    title.unpersist()
+    contentTable.unpersist()
+    propertyTable.unpersist()
+    specialTitle.unpersist()
     segWord.unpersist()
-    topWord.unpersist()
-    word.unpersist()
 
     sc.stop()
 
