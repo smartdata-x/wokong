@@ -44,7 +44,7 @@ object EventLibrary {
     * 判断字符编码
     * @param html 待识别编码的文本
     */
-  def judgeCharser(html: Array[Byte]): String = {
+  def judgeCharset(html: Array[Byte]): String = {
 
     val icu4j = new CharsetDetector()
     icu4j.setText(html)
@@ -62,10 +62,8 @@ object EventLibrary {
     val scan = new Scan()
     val date = new Date(new Date().getTime - 60 * 60 * 1000 * 48)
     val format = new SimpleDateFormat("yyyy-MM-dd HH")
-    val time = format.format(date)
-    val time1 = format.format(new Date().getTime)
-    val startTime = time + "-00-00"
-    val stopTime = time1 + "-00-00"
+    val startTime = format.format(date) + "-00-00"
+    val stopTime = format.format(new Date().getTime) + "-00-00"
     val sdf: SimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss")
     val startRow: Long = sdf.parse(startTime).getTime
     val stopRow: Long = sdf.parse(stopTime).getTime
@@ -99,22 +97,23 @@ object EventLibrary {
   }
 
   /**
-    * 读取第一类表格的数据：url+title+content
+    * 读取第一类表格的数据：url+tile+content
     * @return
     */
 
-  def getTableA(): RDD[String] = {
+  def getTableContent(): RDD[String] = {
 
     val news = getHbaseRdd("wk_detail").map(x => {
 
-      val a = x._2.getValue(Bytes.toBytes("basic"), Bytes.toBytes("url"))
-      val b = x._2.getValue(Bytes.toBytes("basic"), Bytes.toBytes("title"))
-      val c = x._2.getValue(Bytes.toBytes("basic"), Bytes.toBytes("content"))
+      val url = x._2.getValue(Bytes.toBytes("basic"), Bytes.toBytes("url"))
+      val title = x._2.getValue(Bytes.toBytes("basic"), Bytes.toBytes("title"))
+      val content = x._2.getValue(Bytes.toBytes("basic"), Bytes.toBytes("content"))
 
-      val formata = judgeCharser(a)
-      val formatb = judgeCharser(b)
-      val formatc = judgeCharser(c)
-      new String(a, formata) + "\t" + new String(b, formatb) + "\t" + new String(c, formatc).replaceAll("\\&[a-zA-Z]{1,10};", "")
+      val formatUrl = judgeCharset(url)
+      val formatTitle = judgeCharset(title)
+      val formatContent = judgeCharset(content)
+      new String(url, formatUrl) + "\t" + new String(title, formatTitle) + "\t" + new String(content, formatContent)
+        .replaceAll("\\&[a-zA-Z]{1,10};", "")
         .replaceAll("<[^>]*>", "")
         .replaceAll("\n", "")
         .replaceAll("\t", "")
@@ -138,7 +137,7 @@ object EventLibrary {
     * 读取第二类表格的数据：url+category+industry+section
     * @return
     */
-  def getTableB(): RDD[(String, String)] = {
+  def getTableProperty(): RDD[(String, String)] = {
 
     var rddUnion = getHbaseRdd(TABLE_PREFIX.head + "_analyzed")
 
@@ -150,16 +149,16 @@ object EventLibrary {
 
     val news = rddUnion.map(x => {
 
-      val a = x._2.getRow()
-      val b = x._2.getValue(Bytes.toBytes("info"), Bytes.toBytes("category"))
-      val c = x._2.getValue(Bytes.toBytes("info"), Bytes.toBytes("industry"))
-      val d = x._2.getValue(Bytes.toBytes("info"), Bytes.toBytes("section"))
+      val url = x._2.getRow()
+      val stock = x._2.getValue(Bytes.toBytes("info"), Bytes.toBytes("category"))
+      val industry = x._2.getValue(Bytes.toBytes("info"), Bytes.toBytes("industry"))
+      val section = x._2.getValue(Bytes.toBytes("info"), Bytes.toBytes("section"))
 
-      val formata = judgeCharser(a)
-      val formatb = judgeCharser(b)
-      val formatc = judgeCharser(c)
-      val formatd = judgeCharser(d)
-      new String(a, formata) + "\t" + new String(b, formatb) + "\t" + new String(c, formatc) + "\t" + new String(d, formatd)
+      val formatUrl = judgeCharset(url)
+      val formatStock = judgeCharset(stock)
+      val formatIndustry = judgeCharset(industry)
+      val formatSection = judgeCharset(section)
+      new String(url, formatUrl) + "\t" + new String(stock, formatStock) + "\t" + new String(industry, formatIndustry) + "\t" + new String(section, formatSection)
 
     })
 
@@ -204,17 +203,17 @@ object EventLibrary {
     //tableA:  url title content
     //tableB:  url category  industry  section
 
-    val table1 = getTableA()
-    val table2 = getTableB()
-    table1.cache()
-    table2.cache()
+    val tableContent = getTableContent()
+    val tableProperty = getTableProperty()
+    tableContent.cache()
+    tableProperty.cache()
 
 
     //2.筛选出标题中长度为2-8的引号中的词，这些词默认为关键词，
-    val title = table1.map(_.split("\t")).map(x => (x(0), x(1))).filter(x => x._2.contains("“") && x._2.contains("”"))
+    val title = tableContent.map(_.split("\t")).map(x => (x(0), x(1))).filter(x => x._2.contains("“") && x._2.contains("”"))
     title.cache()
 
-    val specialWord1 = title
+    val specialWordFirst = title
       .map(x => {
 
         val title = x._2
@@ -230,7 +229,7 @@ object EventLibrary {
 
       }).filter(x => x._1 !=  null && x._2 != null)
 
-    val specialWord2 = title
+    val specialWordSecond = title
       .map(x => {
 
         var word = "1"
@@ -253,7 +252,7 @@ object EventLibrary {
 
       }).filter(x => x._1 !=  null && x._2 != null)
 
-    val specialWord = specialWord1.union(specialWord2).filter(x => x._2.length >= 2 && x._2.length <= 8).join(table2).map(x => (x._2._2,x._2._1))
+    val specialWord = specialWordFirst.union(specialWordSecond).filter(x => x._2.length >= 2 && x._2.length <= 8).join(tableProperty).map(x => (x._2._2,x._2._1))
 
 
     //3. 标题与正文分词
@@ -262,7 +261,7 @@ object EventLibrary {
     val stopWordsBr = sc.broadcast(stopWords)
 
     //3.2调用分词程序
-    val segWord = table1.map(_.split("\t"))
+    val segWord = tableContent.map(_.split("\t"))
       .map(x => (x(0), x(1) + "111111" + x(2)))
       .map(x => (x._1, process(x._2, stopWordsBr).mkString(",")))
     segWord.cache()
@@ -301,16 +300,16 @@ object EventLibrary {
 
     val industryWords = industryFile.map(_.split("\t")).map(x => x(0)).distinct()
     val sectionWords = sectionFile.map(_.split("\t")).map(x => x(0)).distinct()
-    val stockWords1 = stockFile.map(_.split("\t")).flatMap(x => x(1).split(","))
-    val stockWords2 = industryFile.map(_.split("\t")).flatMap(x => x(1).split(",")).distinct()
-    val stockWords3 = sectionFile.map(_.split("\t")).flatMap(x => x(1).split(",")).distinct()
-    val stockWord = stockWords1.union(stockWords2).union(stockWords3).distinct()
+    val stockWordsPartOne = stockFile.map(_.split("\t")).flatMap(x => x(1).split(","))
+    val stockWordsPartTwo = industryFile.map(_.split("\t")).flatMap(x => x(1).split(",")).distinct()
+    val stockWordsPartThree = sectionFile.map(_.split("\t")).flatMap(x => x(1).split(",")).distinct()
+    val stockWords = stockWordsPartOne.union(stockWordsPartTwo).union(stockWordsPartThree).distinct()
 
     //5.2 统计每篇文章出现三类实体词库的次数
     val articles = segWord
     val arr1 = industryWords.collect
     val arr2 = sectionWords.collect
-    val arr3 = stockWord.collect
+    val arr3 = stockWords.collect
 
     val newsStat = articles.map(x => {
       val news = x._2
@@ -335,18 +334,18 @@ object EventLibrary {
       j + "\t" + p + "\t" + q + "\t" + x._1 +"\t" + news
     })
 
-    //5.3 过滤掉没有出现实体词的文章,剩余为有金融价值的文章。
+    //5.3 过滤掉没有出现实体词的文章,剩余为有金融价值的文章。格式为：(url,title)
     val newsStatFilter = newsStat.map(_.split("\t")).filter(x => x(0).toDouble > 0 || x(1).toDouble > 0 || x(2).toDouble > 0)
       .map(x => (x(3), x(4).split("111111")(0))).filter(x => x._1 != null && x._2 != null)
 
 
     //6. 为每个标题词匹配行业等属性，并且根据idf值提取出最关键的前两个词
-    val wordAndProperty = newsStatFilter.join(table2).map(x => (x._2._1,x._2._2))
+    val wordAndProperty = newsStatFilter.join(tableProperty).map(x => (x._2._1,x._2._2))
     val idfsKeys = idfs.keys.mkString(",")
 
     val topWord = wordAndProperty.map(x => {
-      val part2 = x._2
-      val part1 =
+      val property = x._2
+      val words =
         try {
           x._1.split(",").filter(x => x.length > 1)
             .filter(x => !x.matches(".*[0-9]+.*"))
@@ -366,11 +365,11 @@ object EventLibrary {
 
       var topWords:Array[String] = Array("11")
 
-      if (part1.length >=2) {
-        topWords = part1.filter(x => x != null).sortBy(x => x._2).takeRight(2).map(x => x._1)
+      if (words.length >=2) {
+        topWords = words.filter(x => x != null).sortBy(x => x._2).takeRight(2).map(x => x._1)
       }
 
-      part2 + "\t" + topWords.mkString(",")
+      property + "\t" + topWords.mkString(",")
 
     }).map(x => x.split("\t")).filter(x => x(1) != "11").map(x => x(0) + "\t" + x(1))
     topWord.cache()
@@ -395,8 +394,8 @@ object EventLibrary {
     val keyWord = stockKeyWord.union(industryKeyWord).union(sectionKeyWord)
     keyWord.coalesce(1).saveAsTextFile(args(4))
 
-    table1.unpersist()
-    table2.unpersist()
+    tableContent.unpersist()
+    tableProperty.unpersist()
     title.unpersist()
     segWord.unpersist()
     topWord.unpersist()
