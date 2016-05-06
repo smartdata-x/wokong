@@ -99,7 +99,7 @@ object EventLibrary {
   }
 
   /**
-    * 读取第一类表格的数据：url+tile+content
+    * 读取第一类表格的数据：url+title+content
     * @return
     */
 
@@ -335,7 +335,7 @@ object EventLibrary {
       j + "\t" + p + "\t" + q + "\t" + x._1 +"\t" + news
     })
 
-    //5.3 过滤掉没有出现实体词的文章,剩余为有金融价值的文章。格式为：(url,title)
+    //5.3 过滤掉没有出现实体词的文章,剩余为有金融价值的文章。
     val newsStatFilter = newsStat.map(_.split("\t")).filter(x => x(0).toDouble > 0 || x(1).toDouble > 0 || x(2).toDouble > 0)
       .map(x => (x(3), x(4).split("111111")(0))).filter(x => x._1 != null && x._2 != null)
 
