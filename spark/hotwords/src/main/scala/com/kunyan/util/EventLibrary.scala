@@ -308,26 +308,26 @@ object EventLibrary {
     val stockWords = stockWordsPartFirst.union(stockWordsPartSecond).union(stockWordsPartThird).distinct()
 
     //5.2 统计每篇文章出现三类实体词库的次数
-    val arr1 = industryWords.collect
-    val arr2 = sectionWords.collect
-    val arr3 = stockWords.collect
+    val industyArr = industryWords.collect
+    val sectionArr = sectionWords.collect
+    val stockArr = stockWords.collect
 
     val newsStat = segWord.map(x => {
       val news = x._2
       var j = 0
       var p = 0
       var q = 0
-      for (i <- arr1) {
+      for (i <- industyArr) {
         if (news.contains(i)) {
           j = j + 1
         }
       }
-      for (i <- arr2) {
+      for (i <- sectionArr) {
         if (news.contains(i)) {
           p = p + 1
         }
       }
-      for (i <- arr3) {
+      for (i <- stockArr) {
         if (news.contains(i)) {
           q = q + 1
         }
