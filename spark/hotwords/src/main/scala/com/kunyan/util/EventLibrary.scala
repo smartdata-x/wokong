@@ -203,17 +203,17 @@ object EventLibrary {
   def main(args: Array[String]): Unit = {
 
     // 1.分别读取hbase的两类表
-    //tableA:  url title content
-    //tableB:  url category  industry  section
+    //contentTable:  url title content
+    //propertyTable:  url category  industry  section
 
-    val contentTable = getContentTable
+    val contentTable = getContentTable.map(_.split("\t"))
     val propertyTable = getPropertyTable
     contentTable.cache()
     propertyTable.cache()
 
 
     //2.筛选出标题中长度为2-8的引号中的词，这些词默认为关键词，
-    val specialTitle = contentTable.map(_.split("\t")).map(x => (x(0), x(1)))
+    val specialTitle = contentTable.map(x => (x(0), x(1)))
       .filter(x => x._2.contains("“") && x._2.contains("”"))
     specialTitle.cache()
 
@@ -267,7 +267,7 @@ object EventLibrary {
     val stopWordsBr = sc.broadcast(stopWords)
 
     //3.2调用分词程序
-    val segWord = contentTable.map(_.split("\t"))
+    val segWord = contentTable
       .map(x => (x(0), x(1) + "111111" + x(2)))
       .map(x => (x._1, process(x._2, stopWordsBr).mkString(",")))
     segWord.cache()
@@ -277,6 +277,7 @@ object EventLibrary {
     //4.1 计算词项频率TF值,取标题与正文
     val totalWords = segWord.map(x=>x._2).map(_.replace("111111", ""))
       .map(_.split(",")).map(x => x.toSeq)
+
     val docTermFreqs = totalWords.map(terms => {
 
       val termFreqs = terms.foldLeft(new scala.collection.mutable.HashMap[String, Int]()) {
