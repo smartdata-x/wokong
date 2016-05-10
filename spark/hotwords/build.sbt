@@ -8,6 +8,10 @@ resolvers += "Kunyan Repo" at "http://222.73.34.92:8081/nexus/content/groups/pub
 
 resolvers += "OSChina" at "http://maven.oschina.net/content/groups/public/"
 
+resolvers += "Kunyan Repo" at "http://222.73.34.92:8081/nexus/content/groups/public/"
+
+libraryDependencies += "com.kunyan" % "nlpsuit" % "0.2"
+
 libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.10.4" % "provided"
 
 libraryDependencies += "net.databinder.dispatch" % "dispatch-core_2.10" % "0.11.0"
