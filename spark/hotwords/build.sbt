@@ -36,6 +36,8 @@ libraryDependencies += "redis.clients" % "jedis" % "2.8.0"
 
 libraryDependencies += "mysql" % "mysql-connector-java" % "5.1.38" % "provided"
 
+libraryDependencies += "com.ibm.icu" % "icu4j" % "56.1"
+
 assemblyMergeStrategy in assembly := {
   case PathList("javax", "servlet", xs @ _*) => MergeStrategy.last
   case PathList("javax", "activation", xs @ _*) => MergeStrategy.last
