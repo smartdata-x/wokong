@@ -1,14 +1,15 @@
-package scheduler
+package test
 
-import util.{HBaseUtil, TimeUtil, FileUtil, StringUtil}
-import classification._
+import java.text.SimpleDateFormat
+import java.util.Date
+
 import config.FileConfig
 import kafka.serializer.StringDecoder
 import log.SUELogger
-
 import org.apache.spark.streaming.kafka.KafkaUtils
-import org.apache.spark.streaming.{StreamingContext, Seconds}
+import org.apache.spark.streaming.{Seconds, StreamingContext}
 import org.apache.spark.{SparkConf, SparkContext}
+import util.{FileUtil, HBaseUtil, StringUtil, TimeUtil}
 
 import scala.collection.mutable
 
@@ -17,11 +18,11 @@ import scala.collection.mutable
   * Created by C.J.YOU on 2016/2/23.
   * 电信数据解析主程序
   */
-object Scheduler {
+object TestScheduler {
 
   def flatMapFun(line: String): mutable.MutableList[String] = {
     val lineList: mutable.MutableList[String] = mutable.MutableList[String]()
-    val res = StringUtil.parseJsonObject(line)
+    val res = TestStringUtil.parseJsonObject(line)
     // val res = line
     if(res.nonEmpty){
       lineList.+=(res)
@@ -29,32 +30,24 @@ object Scheduler {
     lineList
   }
 
-  def isSearchEngineURL(str:String):Boolean = {
-    val keyWord = str.split("\t")(7)
-    if(keyWord !="NoDef") true else false
-    // if(url.contains("so.com")|| url.contains("bing.com") || url.contains("baidu.com") || url.contains("sogou.com")) true else false
+  val sdf: SimpleDateFormat = new SimpleDateFormat("yyyyMMddHHmm")
+
+  def getTime: String = {
+    sdf.format(new Date())
   }
 
-  def showWarning(args: Array[String]): Unit ={
-    if (args.length < 5) {
+  def main(args: Array[String]) {
+    if (args.length < 2) {
       System.err.println(
         """
-          |Usage: LoadData <brokers> <topics> <zkhosts> <dataDir> <searchEngineDataDir>
+          |Usage: LoadData <RedisConf> <brokers> <topics> <zkhosts>
           |<brokers> is a list of one or more Kafka brokers
           |<topics> is a list of one or more kafka topics to consume from
           |<zkhosts> is a list of zookeeper to consume from
-          |<dataDir> is the data saving path
-          |<searchEngineDataDir> is the search engine data saving path
 
         """.stripMargin)
       System.exit(1)
     }
-  }
-
-  def main(args: Array[String]) {
-
-    showWarning(args)
-
     val sparkConf = new SparkConf()
       .setAppName("Data_Analysis")
       .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
@@ -62,36 +55,35 @@ object Scheduler {
       .set("spark.driver.allowMultipleContexts","true")
       .set("spark.cleaner.ttl", "10000")
       .setMaster("local")
-    val sc = new SparkContext(sparkConf)
-    val Array(brokers, topics, zkhosts,dataDir,searchEngineDataDir,errorDataDir) = args
-     // val Array(brokers, topics, zkhosts) = args
-    // 配置数据保存的路径
-    FileConfig.rootDir(dataDir)
-    FileConfig.searchEngineDir(searchEngineDataDir)
-    FileConfig.errorDataDir(errorDataDir)
-
+    val Array(brokers, topics, zkhosts) = args
     val ssc = new StreamingContext(sparkConf,Seconds(60))
     val numStream = 5
+    val sc = ssc.sparkContext
 
     val lineData = (1 to numStream).map{ i => KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder] (
       ssc,
       kafkaParams = Map[String,String]("metadata.broker.list" -> brokers,"group.id" -> "Telecom","zookeeper.connect" -> zkhosts,"serializer.class" -> "kafka.serializer.StringEncoder"),
       topics = topics.split(",").toSet
     ) }
-
+   /* val text = KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder] (
+      ssc,
+      kafkaParams = Map[String,String]("metadata.broker.list" -> brokers,"group.id" -> "Telecom","zookeeper.connect" -> zkhosts,"serializer.class" -> "kafka.serializer.StringEncoder"),
+      topics = topics.split(",").toSet
+    )*/
     val text = ssc.union(lineData)
     SUELogger.warn("write data")
     val result = text.flatMap(x =>flatMapFun(x._2))
 
     /** write data to local file */
     try {
+      val accValue = sc.accumulator(0)
+      val ts  = getTime
+      var index = accValue.value
       result.foreachRDD(rdd => {
-        val searchEngineData = rdd.filter(isSearchEngineURL).collect()
-        FileUtil.saveData(FileConfig.SEARCH_ENGINE_DATA,searchEngineData)
-        // HBaseUtil.saveData(searchEngineData)
-        val resArray = rdd.collect()
-        FileUtil.saveData(FileConfig.ROOT_DIR,resArray)
-        // HBaseUtil.saveData(resArray)
+        rdd.foreach(record =>{
+          // FileUtil.writeStringToFile("F:\\datatest\\data\\"+ts,ts + "_ky_" +index+"--->" + record)
+          index = index + 1
+        })
       })
     } catch {
       case e:Exception =>

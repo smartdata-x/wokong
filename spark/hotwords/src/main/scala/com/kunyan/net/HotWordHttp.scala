@@ -1,7 +1,7 @@
 package com.kunyan.net
 
 import scala.collection.mutable
-/*
+
 /**
   * Created by Administrator on 2016/1/26.
   */
@@ -14,4 +14,3 @@ object HotWordHttp extends BaseHttp {
   }
 
 }
-*/

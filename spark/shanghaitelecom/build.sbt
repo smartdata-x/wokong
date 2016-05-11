@@ -4,7 +4,6 @@ version := "1.0"
 
 scalaVersion := "2.10.4"
 
-
 libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.10.4"
 
 libraryDependencies += "org.apache.hadoop" % "hadoop-common" % "2.7.1"
@@ -29,25 +28,13 @@ libraryDependencies += "org.apache.spark" % "spark-streaming-kafka_2.10" % "1.5.
 
 libraryDependencies += "org.apache.spark" % "spark-sql_2.10" % "1.5.2"
 
-libraryDependencies += "com.ning" % "async-http-client" % "1.7.16"
-
-libraryDependencies += "net.databinder.dispatch" % "dispatch-core_2.10" % "0.11.0"
-
 libraryDependencies += "org.scalactic" %% "scalactic" % "2.2.5"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.5" % "test"
 
-libraryDependencies += "redis.clients" % "jedis" % "2.8.0"
-
 libraryDependencies += "org.apache.spark" % "spark-streaming_2.10" % "1.5.2"
 
 libraryDependencies += "org.json" % "json" % "20140107"
-
-
-
-resolvers += "Kunyan Repo" at "http://222.73.34.92:8081/nexus/content/groups/public/"
-libraryDependencies += "com.kunyan" % "scalautil" % "1.1"
-
 
 assemblyMergeStrategy in assembly := {
   case PathList("javax", "servlet", xs @ _*) => MergeStrategy.last

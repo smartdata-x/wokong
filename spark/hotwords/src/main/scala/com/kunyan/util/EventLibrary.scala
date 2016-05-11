@@ -260,8 +260,6 @@ object EventLibrary {
       .filter(x => x._2.length >= 2 && x._2.length <= 8)
       .join(propertyTable).map(x => (x._2._2,x._2._1))
 
-    specialWord.take(10).foreach(println)
-
 
     //3. 标题与正文分词
     //3.1 获取停用词
@@ -278,6 +276,7 @@ object EventLibrary {
     //4.1 计算词项频率TF值,取标题与正文
     val totalWords = segWord.map(x=>x._2).map(_.replace("111111", ""))
       .map(_.split(",")).map(x => x.toSeq)
+
     val docTermFreqs = totalWords.map(terms => {
 
       val termFreqs = terms.foldLeft(new scala.collection.mutable.HashMap[String, Int]()) {
