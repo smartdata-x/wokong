@@ -36,7 +36,6 @@ object Scheduler {
 
   //至少保证此list在初始化时有一个元素
   val tablePrefix = List[Int](3, 5, 6, 7, 8, 9)
-
   var timer = 0
   var total = 0
 
@@ -367,6 +366,7 @@ object Scheduler {
   }
 
   def main(args: Array[String]) {
+
     try {
       initRdd()
       HWLogger.warn("finish init")
@@ -376,6 +376,7 @@ object Scheduler {
     } finally {
       sc.stop
     }
+
   }
 
 }

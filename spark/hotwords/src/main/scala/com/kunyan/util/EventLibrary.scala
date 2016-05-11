@@ -30,7 +30,7 @@ object EventLibrary {
   /**
     *配置hbase接口
     */
-  def getHbaseConf(): Configuration = {
+  def getHbaseConf: Configuration = {
 
     hbaseConf.set("hbase.rootdir", "hdfs://master:9000/hbase")
     hbaseConf.set("hbase.zookeeper.quorum", "master,slave1,slave2,slave3,slave4")
@@ -86,7 +86,7 @@ object EventLibrary {
 
     System.setProperty("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
 
-    val hbaseConf = getHbaseConf()
+    val hbaseConf = getHbaseConf
     hbaseConf.set(TableInputFormat.INPUT_TABLE, tableName)
 
     setTimeRange()
