@@ -1,13 +1,10 @@
 package com.kunyan.scheduler
 
-import java.io.{File, StringReader}
+import java.io.StringReader
 import java.text.SimpleDateFormat
 import java.util.Date
-import javax.xml.parsers.DocumentBuilderFactory
 
 import _root_.redis.clients.jedis.Jedis
-import akka.io.Udp.SO.Broadcast
-import com.kunyan.config.RedisConfig
 import com.kunyan.log.HWLogger
 import com.kunyan.net.HotWordHttp
 import com.kunyan.util.TimeUtil
@@ -21,42 +18,58 @@ import org.apache.hadoop.hbase.util.{Base64, Bytes}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.{SparkConf, SparkContext}
-import org.w3c.dom.Element
 import org.wltea.analyzer.IKSegmentation
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.io.Source
+import scala.xml.{Elem, XML}
 
 /**
   * Created by yangshuai on 2016/2/25.
+  * 工程主流程类
   */
 object Scheduler {
 
   //至少保证此list在初始化时有一个元素
-  val tablePrefix = List[Int](3, 5, 6, 7, 8, 9)
+  val TABLE_PREFIX = List[Int](3, 5, 6, 7, 8, 9)
   var timer = 0
   var total = 0
 
   val mapAfter = new mutable.HashMap[String, Int]()
   val mapBefore = new mutable.HashMap[String, Int]()
   val mapDiff = new mutable.HashMap[String, Int]()
+
+  var jedis: Jedis = null
+
   val hbaseConf = HBaseConfiguration.create()
+
   val conf = new SparkConf().setAppName("hot words")
   val sc = new SparkContext(conf)
 
+  /**
+    * 从 hbase 读取数据
+    *
+    * @param tableName hbase 的表名
+    * @return 读取出来的数据对应的 rdd 对象
+    */
   def getRddByTableName(tableName: String): RDD[(ImmutableBytesWritable, Result)] = {
-    init(tableName)
+
+    hbaseConf.set(TableInputFormat.INPUT_TABLE, tableName)
     sc.newAPIHadoopRDD(hbaseConf, classOf[TableInputFormat]
       , classOf[ImmutableBytesWritable], classOf[Result])
+
   }
 
+  /**
+    *
+    * @param pair
+    * @return
+    */
   def getWordRank(pair: (String, Iterable[String])): (String, Seq[(String, Int)]) = {
 
     val key = pair._1
     val iterator = pair._2
-
     var list = ListBuffer[String]()
 
     iterator.foreach(x => {
@@ -64,30 +77,34 @@ object Scheduler {
     })
 
     val map = mutable.HashMap[String, Int]()
+
     for (elem <- list) {
+
       if (map.get(elem).isEmpty) {
         map.put(elem, 1)
       } else {
         val count = map.get(elem).get
         map.put(elem, count + 1)
       }
+
     }
 
     val seq = map.toSeq.sortWith(_._2 > _._2)
-
     val rankMap = mutable.HashMap[String, Int]()
-
     var rank = 0
     var i = 0
     var preCount = Int.MaxValue
 
     seq.foreach(x => {
+
       i += 1
       val count = x._2
+
       if (count < preCount) {
         rank = i
         preCount = count
       }
+
       rankMap.put(x._1, rank)
     })
 
@@ -108,12 +125,9 @@ object Scheduler {
   /**
     * 获取前一个小时的热词数据
     *
-    * @return
+    * @return 从 redis 中获取前一个小时的热词数据
     */
   def getLastHourHotWords: mutable.HashMap[String, ListBuffer[(String, Int)]] = {
-
-    val jedis = new Jedis("222.73.34.96", 6390)
-    jedis.auth("7ifW4i@M")
 
     val map = mutable.HashMap[String, ListBuffer[(String, Int)]]()
     val list = ListBuffer[(String, Int)]()
@@ -134,15 +148,15 @@ object Scheduler {
     */
   def sendHotWords(wordList: Seq[(String, String)]): Unit = {
 
-    val jedis = new Jedis("222.73.34.96", 6390)
-    jedis.auth("7ifW4i@M")
     val pipeline = jedis.pipelined()
 
     wordList.map(x => {
+
       if (x._1.length > x._1.indexOf('_') + 1) {
         pipeline.hset("hotwordsrank:" + TimeUtil.getDay + "-" + TimeUtil.getCurrentHour, x._1, x._2)
         pipeline.expire("hotwordsrank:" + TimeUtil.getDay + "-" + TimeUtil.getCurrentHour, 60 * 60 * 2)
       }
+
     })
 
     pipeline.sync()
@@ -151,35 +165,40 @@ object Scheduler {
 
   /**
     * 初始化 redis
-    * @param path 配置文件路径
+    *
+    * @param configFile 配置文件对应的 xml 对象
     */
-  def initRedis(path: String) = {
+  def initRedis(configFile: Elem) = {
 
-    val file = new File(path)
+    val redisIp = (configFile \ "redis" \ "ip").text
+    val redisPort = (configFile \ "redis" \ "port").text.toInt
+    val redisDB = (configFile \ "redis" \ "db").text.toInt
+    val redisAuth = (configFile \ "redis" \ "auth").text
 
-    val document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file)
-    val redisRoot = document.getElementsByTagName("redis").item(0).asInstanceOf[Element]
-    val ip = redisRoot.getElementsByTagName("ip").item(0).getTextContent
-    val port = redisRoot.getElementsByTagName("port").item(0).getTextContent
-    val auth = redisRoot.getElementsByTagName("auth").item(0).getTextContent
+    jedis = new Jedis(redisIp, redisPort)
+    jedis.auth(redisAuth)
+    jedis.select(redisDB)
 
-    RedisConfig.init(ip, port.toInt, auth)
   }
 
   /**
-    * 得到hbase里的数据并作为RDD
+    * 得到hbase里的数据并转化成RDD并进行计算
+    *
+    * @param serviceIp 服务IP
     */
-  def initRdd(): Unit = {
+  def calculate(serviceIp: String): Unit = {
 
     //为conf设置时间范围
     setTimeRange()
 
-    var rdd = getRddByTableName(tablePrefix.head + "_analyzed")
+    var rdd = getRddByTableName(TABLE_PREFIX.head + "_analyzed")
 
-    tablePrefix.slice(1, tablePrefix.size).foreach(x => {
+    TABLE_PREFIX.slice(1, TABLE_PREFIX.size).foreach(x => {
+
       val tableName = x + "_analyzed"
       val tempRdd = getRddByTableName(tableName)
       rdd = rdd.union(tempRdd)
+
     })
 
     //排序+topn
@@ -200,16 +219,16 @@ object Scheduler {
       HWLogger.warn("enter rdd loop")
 
       val newWords = x._2
-
       val result = mutable.HashMap[String, Int]()
-
-      var oldWords:scala.collection.immutable.Map[String, Int] = null
+      var oldWords: scala.collection.immutable.Map[String, Int] = null
 
       if (oldMapBr.value.get(x._1).nonEmpty) {
 
         oldWords = oldMapBr.value.get(x._1).get.toMap[String, Int]
         val oldSize = oldWords.size + 1
+
         newWords.foreach(newWord => {
+
           val hotWord = newWord._1
           val newRank = newWord._2
 
@@ -220,14 +239,16 @@ object Scheduler {
         })
 
       } else {
+
         newWords.foreach(newWord => {
           result.put(newWord._1, 0 - newWord._2)
         })
+
       }
 
       val list = result.toSeq.sortWith(_._2 > _._2).toList
-
       var size = result.size
+
       if (size > 5)
         size = 5
 
@@ -249,16 +270,17 @@ object Scheduler {
 
     pairs.foreach(x => {
 
-      val pair = x.asInstanceOf[Tuple2[String, String]]
-
+      val pair = x.asInstanceOf[(String, String)]
       val arr = pair._1.split("_")
       var keyValue = ""
+
       if (arr.length > 1)
         keyValue = arr(1)
 
 
       val ttype = pair._1.split("_")(0)
       var key = ""
+
       if (ttype == "se") {
         key = "section"
       } else if (ttype == "in") {
@@ -272,7 +294,7 @@ object Scheduler {
       paramMap.clear()
       paramMap.+=("hot_words" -> pair._2, key -> keyValue)
 
-      HotWordHttp.sendNew("http://222.73.34.104/cgi-bin/northsea/prsim/subscribe/1/hot_words_notice.fcgi", paramMap)
+      HotWordHttp.sendNew("http://" + serviceIp + "/cgi-bin/northsea/prsim/subscribe/1/hot_words_notice.fcgi", paramMap)
 
     })
 
@@ -286,7 +308,6 @@ object Scheduler {
   def splitWords(title: String): ListBuffer[String] = {
 
     var list = ListBuffer[String]()
-
     val reader: StringReader = new StringReader(title)
     val ik = new IKSegmentation(reader, true)
     var lexeme = ik.next()
@@ -296,6 +317,7 @@ object Scheduler {
       val word = lexeme.getLexemeText
       list += word.toString
       lexeme = ik.next()
+
     }
 
     list
@@ -303,7 +325,7 @@ object Scheduler {
   }
 
   /**
-    * 将hbase里面的数据转换为map
+    * 将从hbase中读取的数据转换为map
     */
   def convertRawToMap(tuple: (ImmutableBytesWritable, Result)): mutable.HashMap[String, String] = {
 
@@ -312,7 +334,6 @@ object Scheduler {
     val section = Bytes.toString(result.getValue(Bytes.toBytes("info"), Bytes.toBytes("section"))).split(",")
     val stock = Bytes.toString(result.getValue(Bytes.toBytes("info"), Bytes.toBytes("category"))).split(",")
     val industry = Bytes.toString(result.getValue(Bytes.toBytes("info"), Bytes.toBytes("industry"))).split(",")
-
     val map = mutable.HashMap[String, String]()
 
     section.foreach(x => {
@@ -332,7 +353,7 @@ object Scheduler {
   }
 
   /**
-    * 获取时间戳
+    * 为 hbase 的查询设定时间范围
     */
   def setTimeRange(): Unit = {
 
@@ -354,11 +375,18 @@ object Scheduler {
 
   }
 
-  def init(tb: String): Unit = {
+  /**
+    * 初始化 hbase
+    *
+    * @param configFile 配置文件对应的 xml 对象
+    */
+  def initHbase(configFile: Elem): Unit = {
 
-    hbaseConf.set("hbase.rootdir", "hdfs://ns1/hbase")
-    hbaseConf.set("hbase.zookeeper.quorum", "server0,server1,server2")
-    hbaseConf.set(TableInputFormat.INPUT_TABLE, tb)
+    val hbaseDir = (configFile \ "hbase" \ "rootDir").text
+    val hbaseIp = (configFile \ "hbase" \ "ip").text
+
+    hbaseConf.set("hbase.rootdir", hbaseDir)
+    hbaseConf.set("hbase.zookeeper.quorum", hbaseIp)
     hbaseConf.set(TableInputFormat.SCAN_COLUMN_FAMILY, "info")
     hbaseConf.set(TableInputFormat.SCAN_COLUMNS, "title")
 
@@ -367,8 +395,13 @@ object Scheduler {
 
   def main(args: Array[String]) {
 
+    val configFile = XML.loadFile(args(0))
+
+    initRedis(configFile)
+    initHbase(configFile)
+
     try {
-      initRdd()
+      calculate((configFile \ "service" \ "ip").text)
       HWLogger.warn("finish init")
     } catch {
       case e: Exception =>
