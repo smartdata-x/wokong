@@ -1,4 +1,4 @@
-package com.wangcao.learning
+package com.kunyan.util
 
 import java.text.SimpleDateFormat
 import java.util.Date
