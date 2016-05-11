@@ -29,6 +29,8 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
 
+
+
 /**
   * Created by yangshuai on 2016/2/25.
   */
@@ -239,6 +241,7 @@ object Scheduler {
       }
 
     }).collect()
+
 
     total = pairs.length
 
