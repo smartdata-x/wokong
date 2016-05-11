@@ -150,7 +150,11 @@ object Scheduler {
     jedis.quit
   }
 
-  def initRedis(path: String): Unit = {
+  /**
+    * 初始化 redis
+    * @param path 配置文件路径
+    */
+  def initRedis(path: String) = {
 
     val file = new File(path)
 
@@ -163,7 +167,9 @@ object Scheduler {
     RedisConfig.init(ip, port.toInt, auth)
   }
 
-  //得到hbase里的数据并作为RDD
+  /**
+    * 得到hbase里的数据并作为RDD
+    */
   def initRdd(): Unit = {
 
     //为conf设置时间范围
@@ -186,7 +192,7 @@ object Scheduler {
 
     sendHotWords(result.toSeq)
 
-    val oldMap = sc.broadcast(getLastHourHotWords)
+    val oldMapBr = sc.broadcast(getLastHourHotWords)
 
     HWLogger.warn("before loop")
 
@@ -200,9 +206,9 @@ object Scheduler {
 
       var oldWords:scala.collection.immutable.Map[String, Int] = null
 
-      if (oldMap.value.get(x._1).nonEmpty) {
+      if (oldMapBr.value.get(x._1).nonEmpty) {
 
-        oldWords = oldMap.value.get(x._1).get.toMap[String, Int]
+        oldWords = oldMapBr.value.get(x._1).get.toMap[String, Int]
         val oldSize = oldWords.size + 1
         newWords.foreach(newWord => {
           val hotWord = newWord._1
@@ -266,7 +272,9 @@ object Scheduler {
       val paramMap = new mutable.HashMap[String, String]
       paramMap.clear()
       paramMap.+=("hot_words" -> pair._2, key -> keyValue)
+
       HotWordHttp.sendNew("http://222.73.34.104/cgi-bin/northsea/prsim/subscribe/1/hot_words_notice.fcgi", paramMap)
+
     })
 
   }
@@ -292,6 +300,7 @@ object Scheduler {
     }
 
     list
+
   }
 
   /**
@@ -320,9 +329,12 @@ object Scheduler {
     })
 
     map
+
   }
 
-  //获取时间戳
+  /**
+    * 获取时间戳
+    */
   def setTimeRange(): Unit = {
 
     val scan = new Scan()
@@ -336,11 +348,11 @@ object Scheduler {
     val startRow: Long = sdf.parse(startTime).getTime
     val stopRow: Long = sdf.parse(stopTime).getTime
 
-
     scan.setTimeRange(startRow, stopRow)
     val proto: ClientProtos.Scan = ProtobufUtil.toScan(scan)
     val scanToString = Base64.encodeBytes(proto.toByteArray)
     hbaseConf.set(TableInputFormat.SCAN, scanToString)
+
   }
 
   def init(tb: String): Unit = {
