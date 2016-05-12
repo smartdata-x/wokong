@@ -1,3 +1,5 @@
+mainClass in (Compile, packageBin) := Some("com.kunyan.util.EventLibrary")
+
 name := "hotwords"
 
 version := "1.0"
@@ -8,9 +10,7 @@ resolvers += "Kunyan Repo" at "http://222.73.34.92:8081/nexus/content/groups/pub
 
 resolvers += "OSChina" at "http://maven.oschina.net/content/groups/public/"
 
-resolvers += "Kunyan Repo" at "http://222.73.34.92:8081/nexus/content/groups/public/"
-
-libraryDependencies += "com.kunyan" % "nlpsuit-package" % "0.2.4.alpha"
+libraryDependencies += "com.kunyan" % "nlpsuit-package" % "0.2.4"
 
 libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.10.4" % "provided"
 
@@ -37,6 +37,8 @@ libraryDependencies += "redis.clients" % "jedis" % "2.8.0"
 libraryDependencies += "mysql" % "mysql-connector-java" % "5.1.38" % "provided"
 
 libraryDependencies += "com.ibm.icu" % "icu4j" % "56.1"
+
+libraryDependencies += "org.json" % "json" % "20160212"
 
 assemblyMergeStrategy in assembly := {
   case PathList("javax", "servlet", xs @ _*) => MergeStrategy.last

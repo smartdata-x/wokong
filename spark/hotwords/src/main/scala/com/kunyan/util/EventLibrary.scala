@@ -3,6 +3,8 @@ package com.kunyan.util
 import java.text.SimpleDateFormat
 import java.util.Date
 import com.ibm.icu.text.CharsetDetector
+import com.kunyan.config.SentimentConf
+import com.kunyandata.nlpsuit.util.{KunyanConf, TextPreprocessing}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.HBaseConfiguration
 import org.apache.hadoop.hbase.client.{Result, Scan}
@@ -13,7 +15,6 @@ import org.apache.hadoop.hbase.protobuf.generated.ClientProtos
 import org.apache.hadoop.hbase.util.{Bytes, Base64}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkContext, SparkConf}
-import com.kunyan.nlpsuit.util.TextPreprocessing
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -21,11 +22,12 @@ import scala.collection.mutable.ArrayBuffer
   * 金融事件词库的建立
   */
 object EventLibrary {
-
+  //val TABLE_PREFIX = List[Int](3)
   val TABLE_PREFIX = List[Int](3, 5, 6, 7, 8, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25)
   val hbaseConf = HBaseConfiguration.create()
   val sparkConf = new SparkConf().setAppName("EventLibrary").setMaster("local")
   val sc = new SparkContext(sparkConf)
+
 
   /**
     *配置hbase接口
@@ -33,7 +35,7 @@ object EventLibrary {
   def getHbaseConf(): Configuration = {
 
     hbaseConf.set("hbase.rootdir", "hdfs://master:9000/hbase")
-    hbaseConf.set("hbase.zookeeper.quorum", "master,slave1,slave2,slave3,slave4")
+    hbaseConf.set("hbase.zookeeper.quorum", "master,slave1,slave2")
 
     hbaseConf
 
@@ -41,6 +43,7 @@ object EventLibrary {
 
   /**
     * 判断字符编码
+    *
     * @param html 待识别编码的文本
     * @return 字符编码
     */
@@ -77,6 +80,7 @@ object EventLibrary {
 
   /**
     * 获取hbase中的表格并存储成HbaseRDD
+    *
     * @param tableName 欲获取的hbase中的表格的名字
     * @return 读取后的hbaseRdd
     */
@@ -98,6 +102,7 @@ object EventLibrary {
 
   /**
     * 读取第一类表格的数据：url+title+content
+    *
     * @return 新闻链接，标题，内容
     */
 
@@ -135,6 +140,7 @@ object EventLibrary {
 
   /**
     * 读取第二类表格的数据：url+category+industry+section
+    *
     * @return 新闻链接与新闻属性
     */
   def getPropertyTable: RDD[(String, String)] = {
@@ -175,6 +181,7 @@ object EventLibrary {
 
   /**
     * 转换数据格式，将数据转换成如：se_xxx,set(word1,word2...)这样的格式
+    *
     * @param hotWords 以如(industy,word)形式输入的RDD
     * @param pre 前缀，se_表示section（板块）,in_表示industry(行业）,st_表示stock(股票号)
     * @return
@@ -201,6 +208,14 @@ object EventLibrary {
   }
 
   def main(args: Array[String]): Unit = {
+
+    // 获取配置文件信息
+    val configInfo = new SentimentConf()
+    configInfo.initConfig(args(0))
+
+    // 配置kunyan分词
+    val kunyanConfig = new KunyanConf
+    kunyanConfig.set(configInfo.getValue("kunyan", "host"), configInfo.getValue("kunyan", "port").toInt)
 
     // 1.分别读取hbase的两类表
     //contentTable:  url title content
@@ -263,19 +278,19 @@ object EventLibrary {
 
     //3. 标题与正文分词
     //3.1 获取停用词
-    val stopWords = sc.textFile(args(0)).collect
-    val stopWordsBr = sc.broadcast(stopWords)
+    val stopWords = sc.textFile(args(1)).collect
+    val stopWordsBr = sc.broadcast(stopWords).value
 
     //3.2调用分词程序
     val segWord = contentTable.map(x => (x(0), x(1) + "111111" + x(2)))
-      .map(x => (x._1, TextPreprocessing.process(x._2, stopWordsBr).mkString(",")))
+      .map(x => (x._1, TextPreprocessing.process(x._2, stopWordsBr,kunyanConfig).mkString(",")))
     segWord.cache()
 
 
     //4.计算IDF值，创建语料库
     //4.1 计算词项频率TF值,取标题与正文
-    val totalWords = segWord.map(x=>x._2).map(_.replace("111111", ""))
-      .map(_.split(",")).map(x => x.toSeq)
+    val totalWords = segWord.map(x => x._2).map(_.replace("111111", "")).map(_.split(",")).map(x => x.toSeq)
+    totalWords.count()
 
     val docTermFreqs = totalWords.map(terms => {
 
@@ -301,9 +316,9 @@ object EventLibrary {
 
     //5. 筛选出有金融价值的文章，并获取这些文章的标题
     //5.1 建立三个实体词典：股票，行业，概念
-    val industryFile = sc.textFile(args(1))
-    val sectionFile = sc.textFile(args(2))
-    val stockFile = sc.textFile(args(3))
+    val industryFile = sc.textFile(args(2))
+    val sectionFile = sc.textFile(args(3))
+    val stockFile = sc.textFile(args(4))
 
     val industryWords = industryFile.map(_.split("\t")).map(x => x(0)).distinct()
     val sectionWords = sectionFile.map(_.split("\t")).map(x => x(0)).distinct()
@@ -389,7 +404,6 @@ object EventLibrary {
 
     //所有词库合并
     val keyWord = stockKeyWord.union(industryKeyWord).union(sectionKeyWord)
-    keyWord.coalesce(1).saveAsTextFile(args(4))
 
     contentTable.unpersist()
     propertyTable.unpersist()
