@@ -17,8 +17,8 @@ class SentimentConf{
     config = new JSONObject(jsObj)
   }
 
-  def getValue(key1: String, key2: String): String = {
-    config.getJSONObject(key1).getString(key2)
+  def getValue(keyMom: String, keySon: String): String = {
+    config.getJSONObject(keyMom).getString(keySon)
   }
 
 }
