@@ -411,6 +411,8 @@ object Scheduler {
     val word = topWord.map(_.split("\t")).flatMap(x => {
       Array[(String, String)]((x(0), x(1).split(",")(0)), (x(0), x(1).split(",")(1)))
     }).union(specialWord).filter(x => x._1.split(" ").length == 3)
+     word.cache()
+    saveEventWords(word)
 
     //股票词库
     val stockKeyWord =  processWord(word.map(x=>(x._1.split(" ")(0), x._2))
@@ -431,6 +433,7 @@ object Scheduler {
     propertyTable.unpersist()
     specialTitle.unpersist()
     segWord.unpersist()
+    word.unpersist()
 
     keyWord
   }
@@ -515,7 +518,6 @@ object Scheduler {
     })
 
     pipeline.sync()
-    jedis.quit
   }
 
   /**
@@ -572,6 +574,7 @@ object Scheduler {
     sendHotWords(result.toSeq)
 
     val oldMapBr = sc.broadcast(getLastHourHotWords)
+    jedis.quit
 
     HWLogger.warn("before loop")
 
@@ -655,6 +658,7 @@ object Scheduler {
       val paramMap = new mutable.HashMap[String, String]
       paramMap.clear()
       paramMap.+=("hot_words" -> pair._2, key -> keyValue)
+      paramMap.take(10).foreach(println)
 
       HotWordHttp.sendNew("http://" + serviceIp + "/cgi-bin/northsea/prsim/subscribe/1/hot_words_notice.fcgi", paramMap)
 
@@ -678,6 +682,19 @@ object Scheduler {
     hbaseConf.set(TableInputFormat.SCAN_COLUMNS, "title")
 
     System.setProperty("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+  }
+
+  /**
+    * 将每小时的事件词库实时保存到hdfs上
+    *
+    * @param words 事件词库
+    * @author wangcao
+    */
+  def saveEventWords (words: RDD[(String, String)]): Unit = {
+
+    val processWord = words.map(x => x._1 + "\t" + x._2)
+    processWord.coalesce(1).saveAsTextFile("/user/eventLibrary/" + TimeUtil.getDay + "/" + TimeUtil.getCurrentHour)
+
   }
 
   /**
