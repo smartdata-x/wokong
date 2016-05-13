@@ -22,7 +22,7 @@ import scala.collection.mutable.ArrayBuffer
   * 金融事件词库的建立
   */
 object EventLibrary {
-  //val TABLE_PREFIX = List[Int](3)
+
   val TABLE_PREFIX = List[Int](3, 5, 6, 7, 8, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25)
   val hbaseConf = HBaseConfiguration.create()
   val sparkConf = new SparkConf().setAppName("EventLibrary").setMaster("local")
@@ -32,7 +32,7 @@ object EventLibrary {
   /**
     *配置hbase接口
     */
-  def getHbaseConf(): Configuration = {
+  def getHbaseConf: Configuration = {
 
     hbaseConf.set("hbase.rootdir", "hdfs://master:9000/hbase")
     hbaseConf.set("hbase.zookeeper.quorum", "master,slave1,slave2")
@@ -88,7 +88,7 @@ object EventLibrary {
 
     System.setProperty("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
 
-    val hbaseConf = getHbaseConf()
+    val hbaseConf = getHbaseConf
     hbaseConf.set(TableInputFormat.INPUT_TABLE, tableName)
 
     setTimeRange()
@@ -284,6 +284,7 @@ object EventLibrary {
     //3.2调用分词程序
     val segWord = contentTable.map(x => (x(0), x(1) + "111111" + x(2)))
       .map(x => (x._1, TextPreprocessing.process(x._2, stopWordsBr,kunyanConfig).mkString(",")))
+
     segWord.cache()
 
 

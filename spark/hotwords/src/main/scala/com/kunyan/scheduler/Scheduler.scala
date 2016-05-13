@@ -2,7 +2,6 @@ package com.kunyan.scheduler
 
 import java.text.SimpleDateFormat
 import java.util.Date
-
 import com.ibm.icu.text.CharsetDetector
 import com.kunyan.config.SentimentConf
 import com.kunyan.log.HWLogger
@@ -21,7 +20,6 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.{SparkContext, SparkConf}
 import redis.clients.jedis.Jedis
-
 import scala.collection.mutable
 import scala.collection.mutable.{ListBuffer, ArrayBuffer}
 import scala.collection.JavaConverters._
@@ -690,6 +688,7 @@ object Scheduler {
 
     try {
      calculate(eventWord,(configFile \ "service" \ "ip").text)
+
       HWLogger.warn("finish init")
     } catch {
       case e: Exception =>
