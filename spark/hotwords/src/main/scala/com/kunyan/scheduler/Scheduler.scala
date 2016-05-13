@@ -26,7 +26,7 @@ import scala.collection.JavaConverters._
 import scala.xml.{Elem, XML}
 
 /**
-  * Created by Administration on 2016/5/11.
+  * Created by yangshuai on 2016/5/11.
   * 热词项目主流程类
   */
 object Scheduler {
@@ -46,6 +46,8 @@ object Scheduler {
 
   /**
     *配置hbase接口
+    *
+    * @author wangcao
     */
   def getHbaseConf: Configuration = {
 
@@ -60,6 +62,7 @@ object Scheduler {
     *
     * @param html 待识别编码的文本
     * @return 字符编码
+    * @author wangcao
     */
   def judgeCharset(html: Array[Byte]): String = {
 
@@ -96,6 +99,7 @@ object Scheduler {
     *
     * @param tableName 欲获取的hbase中的表格的名字
     * @return 读取后的hbaseRdd
+    * @author wangcao
     */
   def getHbaseRdd(tableName: String): RDD[(ImmutableBytesWritable, Result)] = {
 
@@ -116,6 +120,7 @@ object Scheduler {
     * 读取第一类表格的数据：url+title+content
     *
     * @return 新闻链接，标题，内容
+    * @author wangcao
     */
   def getContentTable: RDD[String] = {
 
@@ -152,6 +157,7 @@ object Scheduler {
     * 读取第二类表格的数据：url+category+industry+section
     *
     * @return 新闻链接与新闻属性
+    * @author wangcao
     */
   def getPropertyTable: RDD[(String, String)] = {
 
@@ -194,6 +200,7 @@ object Scheduler {
     * @param hotWords 以如(industy,word)形式输入的RDD
     * @param pre 前缀，se_表示section（板块）,in_表示industry(行业）,st_表示stock(股票号)
     * @return
+    * @author wangcao
     */
   def processWord (hotWords: RDD[(String, String)], pre: String): RDD[(String, Set[String])] = {
 
@@ -223,6 +230,7 @@ object Scheduler {
     * @param sectionDir 板块实体词的目录
     * @param stockDir 股票实体词的目录
     * @return (se_xx,Set(w1,w2,...))格式
+    * @author wangcao
     */
   def eventLibrary (confDir: String, stopWordDir: String, industryDir: String, sectionDir: String, stockDir: String):
   RDD[(String, Set[String])] = {
