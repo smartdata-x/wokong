@@ -199,7 +199,7 @@ object Scheduler {
     *
     * @param hotWords 以如(industy,word)形式输入的RDD
     * @param pre 前缀，se_表示section（板块）,in_表示industry(行业）,st_表示stock(股票号)
-    * @return
+    * @return se_xxx,set(word1,word2...) 将每个事件词分类
     * @author wangcao
     */
   def processWord (hotWords: RDD[(String, String)], pre: String): RDD[(String, Set[String])] = {
@@ -225,6 +225,7 @@ object Scheduler {
   /**
     * 读取hbase的数据，并建立事件词库
     *
+    * @param confDir  分词配置文件目录
     * @param stopWordDir 停用词的目录
     * @param industryDir 行业实体词的目录
     * @param sectionDir 板块实体词的目录
@@ -411,7 +412,9 @@ object Scheduler {
     val word = topWord.map(_.split("\t")).flatMap(x => {
       Array[(String, String)]((x(0), x(1).split(",")(0)), (x(0), x(1).split(",")(1)))
     }).union(specialWord).filter(x => x._1.split(" ").length == 3)
-     word.cache()
+    word.cache()
+
+    //实时保存事件词库到hdfs
     saveEventWords(word)
 
     //股票词库
