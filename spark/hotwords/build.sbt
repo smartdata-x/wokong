@@ -1,5 +1,5 @@
-mainClass in (Compile, packageBin) := Some("com.kunyan.util.EventLibrary")
-
+mainClass in (Compile, packageBin) := Some("com.kunyan.scheduler.Scheduler")
+//mainClass in (Compile, packageBin) := Some("com.kunyan.test.Test")
 name := "hotwords"
 
 version := "1.0"
@@ -30,8 +30,6 @@ libraryDependencies += "org.apache.spark" % "spark-core_2.10" % "1.5.2" % "provi
 
 libraryDependencies += "org.apache.spark" % "spark-streaming_2.10" % "1.5.2"
 
-libraryDependencies += "org.wltea.ik-analyzer" % "ik-analyzer" % "3.2.8"
-
 libraryDependencies += "redis.clients" % "jedis" % "2.8.0"
 
 libraryDependencies += "mysql" % "mysql-connector-java" % "5.1.38" % "provided"
@@ -39,6 +37,7 @@ libraryDependencies += "mysql" % "mysql-connector-java" % "5.1.38" % "provided"
 libraryDependencies += "com.ibm.icu" % "icu4j" % "56.1"
 
 libraryDependencies += "org.json" % "json" % "20160212"
+
 
 assemblyMergeStrategy in assembly := {
   case PathList("javax", "servlet", xs @ _*) => MergeStrategy.last

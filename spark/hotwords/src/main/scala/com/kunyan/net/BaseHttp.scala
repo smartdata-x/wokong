@@ -6,6 +6,7 @@ import dispatch.Defaults._
 import dispatch._
 
 import scala.collection.mutable
+import scala.io.Source
 import scala.util.{Failure, Success}
 
 /**
@@ -33,7 +34,7 @@ abstract class BaseHttp {
     var strUrl = url
     if (strParam != null) {
       if (url.indexOf("?") >= 0)
-        strUrl += "&" + strParam
+        strUrl += strParam
       else
         strUrl += "?" + strParam
     }
@@ -44,8 +45,9 @@ abstract class BaseHttp {
   def get(strUrl:String, parameters:mutable.HashMap[String,String]): Unit = {
 
     val finalUrl = getUrl(strUrl, parameters)
+    Source.fromURL(finalUrl)
 
-    val req = url(finalUrl)
+    /*val req = url(finalUrl)
     val response = Http(req OK as.String)
 
     response onComplete {
@@ -59,7 +61,7 @@ abstract class BaseHttp {
         HWLogger.warn((Scheduler.total - Scheduler.timer).toString)
         if (Scheduler.timer == Scheduler.total)
           System.exit(0)
-    }
+    }*/
   }
 
   def post(strUrl:String, parameters:mutable.HashMap[String,String], parse: String): Unit = {

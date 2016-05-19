@@ -16,6 +16,7 @@ import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil
 import org.apache.hadoop.hbase.protobuf.generated.ClientProtos
 import org.apache.hadoop.hbase.util.{Bytes, Base64}
+import org.apache.log4j.{Level, LogManager}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.{SparkContext, SparkConf}
@@ -31,7 +32,7 @@ import scala.xml.{Elem, XML}
   */
 object Scheduler {
 
-  val TABLE_PREFIX = List[Int](3, 5, 6, 7, 8, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25)
+  val TABLE_PREFIX = List[Int](3, 5, 6, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25)
 
   var total = 0
 
@@ -40,9 +41,6 @@ object Scheduler {
   var jedis: Jedis = null
 
   val hbaseConf = HBaseConfiguration.create()
-
-  val sparkConf = new SparkConf().setAppName("Scheduler").setMaster("local")
-  val sc = new SparkContext(sparkConf)
 
   /**
     *配置hbase接口
@@ -74,7 +72,7 @@ object Scheduler {
   }
 
   /**
-    * 设置读取hbase表格的时间范围
+    * 设置读取hbase表格的时间范围(过去48小时）
     */
   def setTimeRange(): Unit = {
 
@@ -101,11 +99,10 @@ object Scheduler {
     * @return 读取后的hbaseRdd
     * @author wangcao
     */
-  def getHbaseRdd(tableName: String): RDD[(ImmutableBytesWritable, Result)] = {
+  def getHbaseRdd(sc: SparkContext, tableName: String): RDD[(ImmutableBytesWritable, Result)] = {
 
     System.setProperty("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
 
-    val hbaseConf = getHbaseConf
     hbaseConf.set(TableInputFormat.INPUT_TABLE, tableName)
 
     setTimeRange()
@@ -122,9 +119,9 @@ object Scheduler {
     * @return 新闻链接，标题，内容
     * @author wangcao
     */
-  def getContentTable: RDD[String] = {
+  def getContentTable(sc: SparkContext): RDD[String] = {
 
-    val news = getHbaseRdd("wk_detail").map(x => {
+    val news = getHbaseRdd(sc, "wk_detail").map(x => {
 
       val url = x._2.getValue(Bytes.toBytes("basic"), Bytes.toBytes("url"))
       val title = x._2.getValue(Bytes.toBytes("basic"), Bytes.toBytes("title"))
@@ -159,13 +156,13 @@ object Scheduler {
     * @return 新闻链接与新闻属性
     * @author wangcao
     */
-  def getPropertyTable: RDD[(String, String)] = {
+  def getPropertyTable(sc: SparkContext): RDD[(String, String)] = {
 
-    var rddUnion = getHbaseRdd(TABLE_PREFIX.head + "_analyzed")
+    var rddUnion = getHbaseRdd(sc, TABLE_PREFIX.head + "_analyzed")
 
     TABLE_PREFIX.slice(1, TABLE_PREFIX.size).foreach(x => {
       val tableName = x + "_analyzed"
-      val tempRdd = getHbaseRdd(tableName)
+      val tempRdd = getHbaseRdd(sc, tableName)
       rddUnion = rddUnion.union(tempRdd)
     })
 
@@ -195,14 +192,14 @@ object Scheduler {
   }
 
   /**
-    * 转换数据格式，将数据转换成如：se_xxx,set(word1,word2...)这样的格式
+    * 转换数据格式，将数据转换成如：se_xxx,set(word1,word2...)格式
     *
     * @param hotWords 以如(industy,word)形式输入的RDD
     * @param pre 前缀，se_表示section（板块）,in_表示industry(行业）,st_表示stock(股票号)
     * @return se_xxx,set(word1,word2...) 将每个事件词分类
     * @author wangcao
     */
-  def processWord (hotWords: RDD[(String, String)], pre: String): RDD[(String, Set[String])] = {
+  def processWord (sc: SparkContext, hotWords: RDD[(String, String)], pre: String): RDD[(String, Set[String])] = {
 
     val arr = new ArrayBuffer[String]()
     val hotWordsList = hotWords.collect
@@ -217,7 +214,9 @@ object Scheduler {
 
     }
 
-    val arrRdd = sc.parallelize(arr).map(_.split("\t")).map(x => (x(0), x(1).split(" ").toSet))
+    val arrRdd = sc.parallelize(arr).map(_.split("\t")).map(x => (x(0),x(1)))
+      .reduceByKey((wordA,wordB) => wordA + " " + wordB)
+      .map(x => (x._1, x._2.split(" ").toSet))
 
     arrRdd
   }
@@ -225,22 +224,22 @@ object Scheduler {
   /**
     * 读取hbase的数据，并建立事件词库
     *
-    * @param confDir  分词配置文件目录
-    * @param stopWordDir 停用词的目录
-    * @param industryDir 行业实体词的目录
-    * @param sectionDir 板块实体词的目录
-    * @param stockDir 股票实体词的目录
     * @return (se_xx,Set(w1,w2,...))格式
     * @author wangcao
     */
-  def eventLibrary (confDir: String, stopWordDir: String, industryDir: String, sectionDir: String, stockDir: String):
-  RDD[(String, Set[String])] = {
+  def eventLibrary (sc: SparkContext, dir: String): RDD[(String, Set[String])] = {
+
+    val confDir = dir + "/config.json"
+    val stopWordDir = dir + "/stop_words_CN"
+    val industryDir = dir + "/industry_words.words"
+    val sectionDir = dir + "/section_words.words"
+    val stockDir = dir + "/stock_words.words"
 
     // 1.分别读取hbase的两类表
     //contentTable:  url title content
     //propertyTable:  url category  industry  section
-    val contentTable = getContentTable.map(_.split("\t"))
-    val propertyTable = getPropertyTable
+    val contentTable = getContentTable(sc).map(_.split("\t"))
+    val propertyTable = getPropertyTable(sc)
     contentTable.cache()
     propertyTable.cache()
 
@@ -305,6 +304,8 @@ object Scheduler {
 
     //3.2调用分词程序
     val segWord = contentTable.map(x => (x(0), x(1) + "111111" + x(2)))
+      .filter(x => !x._2.contains("http"))
+      .map(x => (x._1,x._2.replaceAll("\\[.*\\]", "")))
       .map(x => (x._1, TextPreprocessing.process(x._2, stopWordsBr,  kunyanConfig).mkString(",")))
 
     segWord.cache()
@@ -336,7 +337,6 @@ object Scheduler {
     val idfs = docFreqs.map {
       case (term, count) => (term, math.log(numDocs.toDouble / count))
     }.collect.toMap
-
 
     //5. 筛选出有金融价值的文章，并获取这些文章的标题
     //5.1 建立三个实体词典：股票，行业，概念
@@ -407,7 +407,6 @@ object Scheduler {
     val topWord = wordAndidf.filter(x => x._2.length >= 2)
       .map(x => x._1 + "\t" + x._2.sortBy(a => a._2).takeRight(2).map(_._1).mkString(","))
 
-
     //7. 处理格式，将所有记录转换为 如(se_xxx,set(word1,word2...))格式
     val word = topWord.map(_.split("\t")).flatMap(x => {
       Array[(String, String)]((x(0), x(1).split(",")(0)), (x(0), x(1).split(",")(1)))
@@ -418,15 +417,14 @@ object Scheduler {
     saveEventWords(word)
 
     //股票词库
-    val stockKeyWord =  processWord(word.map(x=>(x._1.split(" ")(0), x._2))
-      .reduceByKey((stock,word) => stock + " " + word), "st_")
+    val stockKeyWord =  processWord(sc, word.map(x=>(x._1.split(" ")(0), x._2)).reduceByKey((stock,word) => stock + " " + word), "st_")
 
     //行业词库
-    val industryKeyWord = processWord(word.map(x=>(x._1.split(" ")(1), x._2))
+    val industryKeyWord = processWord(sc, word.map(x=>(x._1.split(" ")(1), x._2))
       .reduceByKey((industry,word) => industry + " " + word), "in_")
 
     //概念词库
-    val sectionKeyWord = processWord(word.map(x=>(x._1.split(" ")(2), x._2))
+    val sectionKeyWord = processWord(sc, word.map(x=>(x._1.split(" ")(2), x._2))
       .reduceByKey((section,word) => section + " " + word), "se_")
 
     //所有词库合并
@@ -505,7 +503,9 @@ object Scheduler {
   }
 
   /**
-    * 计算新增自选股所占比率并存到redis
+    * 计算新增自选股所占比率并存到redis，保存有效期为2小时
+    *
+    * @param  wordList（词项，排名）数据
     */
   def sendHotWords(wordList: Seq[(String, String)]): Unit = {
 
@@ -524,9 +524,29 @@ object Scheduler {
   }
 
   /**
+    * 将最终计算的热词结果保存到redis中，保存有效期为12个小时
+    *
+    * @param hotWord 热词结果
+    */
+  def sendFinalWords (hotWord: Seq[Option[(String, String)]]): Unit = {
+
+    val pipeline = jedis.pipelined()
+
+    hotWord.map( x => {
+      if ( x.isDefined ) {
+        pipeline.hset("hotword:" + TimeUtil.getDay + "-" + TimeUtil.getCurrentHour, x.get._1, x.get._2)
+        pipeline.expire("hotword:" + TimeUtil.getDay + "-" + TimeUtil.getCurrentHour, 60 * 60 * 12)
+      }
+      })
+
+    pipeline.sync()
+    }
+
+
+  /**
     * 获取前一个小时的热词数据
     *
-    * @return 从 redis 中获取前一个小时的热词数据
+    * @return 从 redis 中获取前一个小时的（词项，排名）数据
     */
   def getLastHourHotWords: mutable.HashMap[String, ListBuffer[(String, Int)]] = {
 
@@ -568,7 +588,7 @@ object Scheduler {
     * @param eventWord 每个行业的事件词集合
     * @param serviceIp 服务IP
     */
-  def calculate(eventWord: RDD[(String, Set[String])], serviceIp: String): Unit = {
+  def calculate(sc: SparkContext, eventWord: RDD[(String, Set[String])], serviceIp: String): Unit = {
 
     val topWords = eventWord.map(getWordRank).persist(StorageLevel.MEMORY_AND_DISK)
 
@@ -577,13 +597,10 @@ object Scheduler {
     sendHotWords(result.toSeq)
 
     val oldMapBr = sc.broadcast(getLastHourHotWords)
-    jedis.quit
 
     HWLogger.warn("before loop")
 
     val pairs = topWords.map(x => {
-
-      HWLogger.warn("enter rdd loop")
 
       val newWords = x._2
       val result = mutable.HashMap[String, Int]()
@@ -591,7 +608,13 @@ object Scheduler {
 
       if (oldMapBr.value.get(x._1).nonEmpty) {
 
-        oldWords = oldMapBr.value.get(x._1).get.toMap[String, Int]
+        try {
+          oldWords = oldMapBr.value.get(x._1).get.toMap[String, Int]
+        } catch {
+          case e: Exception =>
+            HWLogger.error(s"Wrong data: ${x._1}")
+        }
+
         val oldSize = oldWords.size + 1
 
         newWords.foreach(newWord => {
@@ -616,8 +639,10 @@ object Scheduler {
       val list = result.toSeq.sortWith(_._2 > _._2).toList
       var size = result.size
 
+
       if (size > 5)
         size = 5
+
 
       if (size > 0) {
 
@@ -627,64 +652,21 @@ object Scheduler {
           hotWords += list(i)._1 + "*"
         }
 
-
-        (x._1, hotWords)
+        Some((x._1, hotWords))
+      } else {
+        None
       }
-
     }).collect()
 
+    sendFinalWords(pairs)
 
-    total = pairs.length
+    jedis.quit
 
-    pairs.foreach(x => {
+    val nowTime = "hotword:" + TimeUtil.getDay + "-" + TimeUtil.getCurrentHour
+    val notice = "hot_words_notice"
+    HotWordHttp.sendNew("http://" + serviceIp + "/cgi-bin/northsea/prsim/subscribe/1/hot_words_notice.fcgi?",
+      mutable.HashMap[String,String](notice -> nowTime))
 
-      val pair = x.asInstanceOf[(String, String)]
-      val arr = pair._1.split("_")
-      var keyValue = ""
-
-      if (arr.length > 1)
-        keyValue = arr(1)
-
-
-      val ttype = pair._1.split("_")(0)
-      var key = ""
-
-      if (ttype == "se") {
-        key = "section"
-      } else if (ttype == "in") {
-        key = "industry"
-      } else {
-        key = "stock_code"
-        keyValue += "x"
-      }
-
-      val paramMap = new mutable.HashMap[String, String]
-      paramMap.clear()
-      paramMap.+=("hot_words" -> pair._2, key -> keyValue)
-      paramMap.take(10).foreach(println)
-
-      HotWordHttp.sendNew("http://" + serviceIp + "/cgi-bin/northsea/prsim/subscribe/1/hot_words_notice.fcgi", paramMap)
-
-    })
-
-  }
-
-  /**
-    * 初始化 hbase
-    *
-    * @param configFile 配置文件对应的 xml 对象
-    */
-  def initHbase(configFile: Elem): Unit = {
-
-    val hbaseDir = (configFile \ "hbase" \ "rootDir").text
-    val hbaseIp = (configFile \ "hbase" \ "ip").text
-
-    hbaseConf.set("hbase.rootdir", hbaseDir)
-    hbaseConf.set("hbase.zookeeper.quorum", hbaseIp)
-    hbaseConf.set(TableInputFormat.SCAN_COLUMN_FAMILY, "info")
-    hbaseConf.set(TableInputFormat.SCAN_COLUMNS, "title")
-
-    System.setProperty("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
   }
 
   /**
@@ -695,8 +677,13 @@ object Scheduler {
     */
   def saveEventWords (words: RDD[(String, String)]): Unit = {
 
-    val processWord = words.map(x => x._1 + "\t" + x._2)
-    processWord.coalesce(1).saveAsTextFile("/user/eventLibrary/" + TimeUtil.getDay + "/" + TimeUtil.getCurrentHour)
+    try {
+      val processWord = words.map(x => x._1 + "\t" + x._2)
+      processWord.coalesce(1).saveAsTextFile("/user/eventLibrary/" + TimeUtil.getDay + "/" + TimeUtil.getCurrentHour)
+    } catch {
+      case e: Exception =>
+        e.printStackTrace()
+    }
 
   }
 
@@ -707,15 +694,19 @@ object Scheduler {
     */
   def main(args: Array[String]) {
 
+    val sparkConf = new SparkConf().setAppName("Scheduler")
+    val sc = new SparkContext(sparkConf)
+
+    LogManager.getRootLogger.setLevel(Level.WARN)
+
     val configFile = XML.loadFile(args(0))
 
     initRedis(configFile)
-    initHbase(configFile)
 
-    val eventWord = eventLibrary(args(1),args(2),args(3),args(4),args(5))
+    val eventWord = eventLibrary(sc, args(1))
 
     try {
-     calculate(eventWord,(configFile \ "service" \ "ip").text)
+     calculate(sc, eventWord,(configFile \ "service" \ "ip").text)
 
       HWLogger.warn("finish init")
     } catch {
@@ -723,6 +714,7 @@ object Scheduler {
         HWLogger.exception(e)
     } finally {
       sc.stop
+      println("------------------------------------------------------------------------------------")
     }
 
   }
