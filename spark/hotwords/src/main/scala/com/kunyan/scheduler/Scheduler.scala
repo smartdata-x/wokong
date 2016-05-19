@@ -503,7 +503,7 @@ object Scheduler {
   }
 
   /**
-    * 计算新增自选股所占比率并存到redis，保存有效期为2小时
+    * 将热词中间结果保存到redis，保存有效期为2小时
     *
     * @param  wordList（词项，排名）数据
     */
