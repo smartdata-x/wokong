@@ -27,9 +27,12 @@ import scala.util.Try
   * Created by wukun on 2016/5/19
   * Mysql操作句柄类
   */
-class MysqlHandle(conn: Connection) extends Serializable {
+class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
 
-  private[this] var dbConn = conn
+  type TryHashMap = Try[HashMap[String, (String, String)]]
+  type TryTuple3HashMap = Try[(HashMap[String, String], HashMap[String, String], HashMap[String, String])]
+
+  private var dbConn = conn
 
   def close {
     dbConn.close();
@@ -52,17 +55,17 @@ class MysqlHandle(conn: Connection) extends Serializable {
     } catch {
 
       case e: SQLException => {
-        println(e.getMessage)
+        errorLog(fileInfo, e.getMessage + "[SQLException]")
         System.exit(-1)
       }
 
       case e: ClassNotFoundException => {
-        println(e.getMessage)
+        errorLog(fileInfo, e.getMessage + "[ClassNotFoundException]")
         System.exit(-1)
       }
 
       case e: Exception => {
-        println(e.getMessage)
+        errorLog(fileInfo, e.getMessage)
         System.exit(-1)
       }
     }
@@ -91,7 +94,7 @@ class MysqlHandle(conn: Connection) extends Serializable {
     * @param  sql sql语句
     * @author wukun
     */
-  def execQuery(sql: String): Try[HashMap[String, (String, String)]] = {
+  def execQuerySyn(sql: String): TryHashMap = {
     
     val ret = Try({
 
@@ -110,6 +113,33 @@ class MysqlHandle(conn: Connection) extends Serializable {
 
     ret
   }
+
+  def execQueryStockAlias(sql: String): TryTuple3HashMap = {
+
+    val ret = Try({
+
+      val stmt = dbConn.createStatement
+      val allInfo = stmt.executeQuery(sql)
+      val col = allInfo.getMetaData().getColumnCount
+
+      val stockChina = new HashMap[String, String]
+      val stockJian = new HashMap[String, String]
+      val stockQuan = new HashMap[String, String]
+
+      while (allInfo.next && col == 4) {
+        val stockCode = allInfo.getString(1)
+        stockChina += (allInfo.getString(2) -> stockCode)
+        stockJian += (allInfo.getString(3).toUpperCase -> stockCode)
+        stockQuan += (allInfo.getString(4).toUpperCase -> stockCode)
+      }
+
+      stmt.close
+      (stockChina, stockJian, stockQuan)
+    })
+
+    ret
+  }
+
 }
 
 /** 
@@ -128,10 +158,6 @@ object MysqlHandle {
   ): MysqlHandle = {
     new MysqlHandle(url, xml)
   }
+
 }
-
-
-
-
-
 

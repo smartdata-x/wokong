@@ -2,4 +2,4 @@
 
 cd ../../../../../../../
 
-java -classpath ./target/spark_kafka-1.0-SNAPSHOT.jar com.kunyan.wokongsvc.realtimedata.TestImplicit
+java -classpath ./target/spark_kafka-1.0-SNAPSHOT.jar com.kunyan.wokongsvc.realtimedata.MysqlHandle

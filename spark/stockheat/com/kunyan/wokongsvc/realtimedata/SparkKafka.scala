@@ -11,6 +11,7 @@
 package com.kunyan.wokongsvc.realtimedata
 
 import kafka.serializer.StringDecoder
+import org.apache.log4j.PropertyConfigurator
 import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
 import org.apache.spark.streaming._
@@ -20,34 +21,48 @@ import org.apache.spark.storage.StorageLevel
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
+import MixTool.Tuple3Map
 
 /**
   * Created by wukun on 2016/5/23
   * kafka数据操作主程序入口
   */
-object SparkKafka {
+object SparkKafka extends CustomLogger {
+
 
   def main(args: Array[String]) {
-    val xmlHandle = XmlHandle("./config.xml")
+
+    if(args.length != 3) {
+      errorLog(fileInfo, "args too little")
+      System.exit(-1)
+    }
+
+    /** 加载日志配置文件 */
+    PropertyConfigurator.configure(args(1))
+
+    val xmlHandle = XmlHandle(args(2))
+    /** 初始化mysql连接池 */
     val mysqlPool = MysqlPool(xmlHandle)
 
-    // 这段程序或许以后会用到
-    /*val url = xmlHandle.getElem("mySql", "totalurl")
+    val url = xmlHandle.getElem("mySql", "totalurl")
     val sqlHandle = MysqlHandle(url, xmlHandle)
 
-    val stockInfo = sqlHandle.execQuery("select * from SH_SZ_BOARDMAP") recover {
+    /** 初始化股票名称的各种表示方式 */
+    val stockalias = sqlHandle.execQueryStockAlias(MixTool.SQL) recover {
       case e: Exception => {
-        println(e.getMessage)
-        System.exit(1)
+        errorLog(fileInfo, e.getMessage + "[Query stockAlias exception]")
+        System.exit(-1)
       }
-    } */
+    }
 
     /**初始化spark运行上下文环境 */
     val sparkConf = new SparkConf().setAppName("stockHeat")
     val spc = new SparkContext(sparkConf)
     val stc = new StreamingContext(spc, Seconds(300))
 
+    /** 广播连接池和股票的各种名称 */
     val pool = stc.sparkContext.broadcast(mysqlPool)
+    val alias = stc.sparkContext.broadcast(stockalias.asInstanceOf[Tuple3Map])
 
     /**初始化kafka参数并创建Dstream对象*/
     val kafkaParam = Map("metadata.broker.list" -> "222.73.34.92:9092")
@@ -58,7 +73,7 @@ object SparkKafka {
       x._2
     })
 
-    messages.map( x => MixTool.stockClassify(x)).filter( x => {
+    messages.map( x => MixTool.stockClassify(x, alias.value)).filter( x => {
       if(x._1._2.compareTo("0") == 0) {
         false
       } else {
@@ -77,19 +92,22 @@ object SparkKafka {
         Try(sum / count)
       }
 
+      warnLog(fileInfo, "get")
       averageTime match {
         case Success(z) => {
+
+          val timeTamp = z / 1000
 
           pool.value.getConnect match {
             case Some(connect) => {
               val sqlHandle = MysqlHandle(connect)
-              sqlHandle.execInsertInto(MixTool.insertSql(z)) recover {
-                case e:Exception => System.exit(1)
+              sqlHandle.execInsertInto(MixTool.insertSql(timeTamp)) recover {
+                case e:Exception => warnLog(fileInfo, e.getMessage + "[Update time failure]")
               }
 
               sqlHandle.close
             }
-            case None => println("not get connect")
+            case None => warnLog(fileInfo, "Get connect exception")
           }
 
           x.map( (y:((String,String),String)) => {
@@ -108,14 +126,14 @@ object SparkKafka {
                   }
 
                   mysqlHandle.execInsertInto(
-                    MixTool.insertSql(table, y._1._1, z, y._2)
+                    MixTool.insertSql(table, y._1._1, timeTamp, y._2)
                     ) recover {
-                      case e: Exception => println(e.getMessage)
+                      case e: Exception => warnLog(fileInfo, e.getMessage + "[Update data failure]")
                     }
                 })
                 mysqlHandle.close
               }
-              case None => println("not get connect")
+              case None => warnLog(fileInfo, "Get connect exception")
             }
           })
         }

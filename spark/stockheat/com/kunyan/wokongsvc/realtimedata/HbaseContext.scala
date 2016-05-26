@@ -35,25 +35,22 @@ class HbaseContext(xml:XmlHandle) { self =>
 
   type Writable = ImmutableBytesWritable
 
-  private[this] val tableName = initTable
-  private[this] val colInfo = (xml.getElem("hbase","colfamilly"), xml.getElem("hbase", "colname"))
-  private[this] val conf = initConf
-  private[this] val scan = initScan
+  private val tableName = initTable
+  private val colInfo = (xml.getElem("hbase","colfamilly"), xml.getElem("hbase", "colname"))
+  private val conf = initConf
+  private val scan = initScan
 
-  private[this] val sparkContext = new SparkContext(new SparkConf().setAppName("followHeat"))
-  private[this] val mysqlPool = MysqlPool(xml)
+  private val sparkContext = new SparkContext(new SparkConf().setAppName("followHeat"))
+  private val mysqlPool = MysqlPool(xml)
 
   /**
     * 获取所要操作的列族和列信息
     * @author wukun
     */
-  def getColInfo:(String, String) = {
-    self.colInfo
-  }
+  def getColInfo:(String, String) = self.colInfo
+ 
 
-  def initTable: String = {
-    xml.getElem("hbase", "tablename")
-  }
+  def initTable: String = xml.getElem("hbase", "tablename")
 
   /** 
     * 初始化操作hbase所涉及的Scan类
@@ -65,7 +62,10 @@ class HbaseContext(xml:XmlHandle) { self =>
       Bytes.toBytes(colInfo._1), Bytes.toBytes(colInfo._2))
   }
 
-  def changeScan(minStamp:Long, maxStamp:Long) {
+  def changeScan(
+    minStamp:Long, 
+    maxStamp:Long
+  ) {
     self.scan.setTimeRange(minStamp, maxStamp)
   }
 
@@ -85,9 +85,7 @@ class HbaseContext(xml:XmlHandle) { self =>
     self.conf.set(TableInputFormat.SCAN, scanToString)
   }
 
-  def getConf: Configuration = {
-    self.conf
-  }
+  def getConf: Configuration = self.conf
 
   /**
     * 产生hbase库数据RDD

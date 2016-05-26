@@ -7,14 +7,14 @@ cd ../../../../../../../
 #hdfs dfs -put ./target/spark_kafka-1.0-SNAPSHOT.jar /user/wukun/jars/
 #hdfs dfs -put ./mysql-connector-java-5.1.18.jar /user/wukun/jars/
 
-nohup spark-submit \
+spark-submit \
   --class com.kunyan.wokongsvc.realtimedata.SparkKafka  \
-  --master spark://222.73.57.12:7077 \
+  --master spark://$1:7077 \
   --total-executor-cores 6 \
   --executor-cores 3 \
   --conf "spark.driver.extraClassPath=/home/hadoop/spark-1.5.2-bin-hadoop2.6/jar/mysql-connector-java-5.1.18.jar" \
   --conf "spark.executor.extraClassPath=/home/hadoop/spark-1.5.2-bin-hadoop2.6/jar/mysql-connector-java-5.1.18.jar" \
-  ./target/spark_kafka-1.0-SNAPSHOT.jar &
+  ./target/spark_kafka-1.0-SNAPSHOT.jar /home/wukun/work/Wokong/log4j.properties ./config.xml
   #hdfs:///user/wukun/jars/spark_kafka-1.0-SNAPSHOT.jar
  # --master spark://222.73.57.12:7077 \
   #--driver-class-path ./mysql-connector-java-5.1.18.jar \

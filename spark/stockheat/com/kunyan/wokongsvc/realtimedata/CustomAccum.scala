@@ -30,8 +30,7 @@ object CustomAccum {
       */
     def addInPlace(
       t1: String, 
-      t2: String
-    ): String = (new StringBuilder(t1).toLong + new StringBuilder(t2).toLong).toString
+      t2: String ): String = (new StringBuilder(t1).toLong + new StringBuilder(t2).toLong).toString
 
     /**
       * 第一个字符串赋初值

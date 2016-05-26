@@ -23,7 +23,10 @@
    * Created by wukun on 2016/5/23
    * 定时任务实现类, 每隔5分钟提交一次作业
    */
- class TimerHandle(hbaseContext: HbaseContext, pool: MysqlPool) extends TimerTask with Serializable {
+ class TimerHandle(
+   hbaseContext: HbaseContext, 
+   pool: MysqlPool
+ ) extends TimerTask with Serializable with CustomLogger {
 
    @transient val hc = hbaseContext
    @transient val masterPool = pool
@@ -39,29 +42,33 @@
    override def run() {
 
      val nowTime = TimeHandle.maxStamp
-     val prevTime = nowTime - 60000
+     val prevTime = nowTime - 300000
      hc.changeScan(prevTime, nowTime)
      hc.changeConf
+
+     val timeTamp = nowTime / 1000
 
      masterPool.getConnect match {
        case Some(connect) => {
          val mysqlHandle = MysqlHandle(connect)
 
          mysqlHandle.execInsertInto(
-           MixTool.insertSql(nowTime)
+           MixTool.insertSql(timeTamp)
          ) recover {
-           case e: Exception => println(e.getMessage)
+           case e: Exception => warnLog(fileInfo, e.getMessage + "[Update time failure]")
          }
 
          mysqlHandle.close
        }
 
-       case None => println("not get connect")
+       case None => warnLog(fileInfo, "[Get connect failure]")
      }
 
+     println(timeTamp)
      hc.generateRDD.map(_._2).flatMap( x => {
        val value = Bytes.toString(x.getValue(Bytes.toBytes(colInfo._1), 
          Bytes.toBytes(colInfo._2)))
+       //println(value)
        getStock(value)
      }).reduceByKey(_ + _).foreachPartition( x => {
 
@@ -72,15 +79,15 @@
 
            x.foreach( y => {
              mysqlHandle.execInsertInto(
-               MixTool.insertSql(y._1, nowTime, y._2)
+               MixTool.insertSql(y._1, timeTamp, y._2)
              ) recover {
-                 case e: Exception => println(e.getMessage)
+                 case e: Exception => warnLog(fileInfo, e.getMessage + "[Update data failure]")
                }
            })
 
            mysqlHandle.close
          }
-         case None => println("not get connect")
+         case None => warnLog(fileInfo, "[Get connect failure]")
        }
      })
    }

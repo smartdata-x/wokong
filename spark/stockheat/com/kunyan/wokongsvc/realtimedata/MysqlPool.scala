@@ -18,13 +18,13 @@ import java.sql.SQLException
   * Created by wukun on 2016/5/18
   * mysql句柄池
   */
-class MysqlPool private(val xmlHandle:XmlHandle) extends Serializable {
+class MysqlPool private(val xmlHandle:XmlHandle) extends Serializable with CustomLogger {
 
   try {
     Class.forName(xmlHandle.getElem("mySql", "driver"))
   } catch {
     case e: Exception => {
-      println(e.getMessage)
+      errorLog(fileInfo, e.getMessage + "[The JDBC driver exception]")
       System.exit(-1)
     }
   }
@@ -63,9 +63,9 @@ class MysqlPool private(val xmlHandle:XmlHandle) extends Serializable {
     * 获取连接
     * @author wukun
     */
-  def getConnect:Option[Connection] = {
+  def getConnect: Option[Connection] = {
 
-    var connect:Option[Connection] = null
+    var connect: Option[Connection] = null
 
     try {
       connect = Some(connPool.getConnection)
