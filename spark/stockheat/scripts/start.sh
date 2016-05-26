@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 
 cd ../../../../../../../
-mvn compile
-mvn package
+sbt compile
+sbt package
