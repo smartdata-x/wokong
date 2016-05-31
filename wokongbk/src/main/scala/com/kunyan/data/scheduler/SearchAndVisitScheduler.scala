@@ -164,9 +164,7 @@ object SearchAndVisitScheduler {
 
       val file = sc.textFile(args(0))
 
-      val arrPath = args(0).split("/")
-      val nowDate = arrPath( arrPath.length - 1)
-      PrismLogger.warn("nowDate: "+ nowDate)
+      /*val nowDate = args(2)
       getTableData("stock_info")
 
       val lines = file.flatMap(flatMapFun)
@@ -180,10 +178,10 @@ object SearchAndVisitScheduler {
           (typeString,(stock,hour,line._2))
         }.cache()
 
-      val searchData = result.filter(x => x._1 == "search" && x._2._2.split(" ")(0) == nowDate).map( x => Row(x._2._1,x._2._2,x._2._3))
-      val visitData = result.filter(x => x._1 == "visit" && x._2._2.split(" ")(0) == nowDate).map(x => Row(x._2._1,x._2._2,x._2._3))
+      // val searchData = result.filter(x => x._1 == "search" && x._2._2.contains(nowDate)).map( x => Row(x._2._1,x._2._2,x._2._3))
+      // val visitData = result.filter(x => x._1 == "visit" && x._2._2.contains(nowDate)).map(x => Row(x._2._1,x._2._2,x._2._3))
 
-      PrismLogger.warn("searchData size:"+searchData.count+",visitData size:"+ visitData.count)
+      // PrismLogger.warn("searchData size:"+searchData.count+",visitData size:"+ visitData.count)
 
       val fileSearchData = result.filter(_._1 == "search").map( x => x._2._1 + "\t" + x._2._2 + "\t" + x._2._3)
       val fileVisitData = result.filter(_._1 == "visit").map( x => x._2._1 + "\t" + x._2._2 + "\t" + x._2._3)
@@ -196,9 +194,31 @@ object SearchAndVisitScheduler {
           StructField("v_stock",StringType,nullable = false)::
             StructField("v_hour",StringType,nullable = false)::StructField("i_frequency",IntegerType,nullable = true)::Nil)
 
-      sqlContext.createDataFrame(searchData, schema).write.mode(SaveMode.Append).jdbc(MysqlOperation.connection, MysqlOperation.searchTable, MysqlOperation.properties)
-      sqlContext.createDataFrame(visitData, schema).write.mode(SaveMode.Append).jdbc(MysqlOperation.connection, MysqlOperation.visitTable, MysqlOperation.properties)
+      // sqlContext.createDataFrame(searchData, schema).write.mode(SaveMode.Append).jdbc(MysqlOperation.connection, MysqlOperation.searchTable, MysqlOperation.properties)
+      // sqlContext.createDataFrame(visitData, schema).write.mode(SaveMode.Append).jdbc(MysqlOperation.connection, MysqlOperation.visitTable, MysqlOperation.properties)
+*/
 
+      val typeS = args(1)
+
+      val lines = file.map { x =>
+        val arr = x.split("\t")
+        val stock = arr(0)
+        val hour = arr(1)
+        val c = arr(2)
+        ((stock,hour),c.toInt)
+      }.reduceByKey(_ + _)
+
+      val data = lines.map( x => Row(x._1._1,x._1._2,x._2))
+
+      val schema =
+        StructType(
+          StructField("v_stock",StringType,nullable = false)::
+            StructField("v_hour",StringType,nullable = false)::StructField("i_frequency",IntegerType,nullable = true)::Nil)
+
+      if(typeS == "search")
+        sqlContext.createDataFrame(data, schema).write.mode(SaveMode.Append).jdbc(MysqlOperation.connection,MysqlOperation.searchTable , MysqlOperation.properties)
+      else if(typeS == "visit")
+        sqlContext.createDataFrame(data, schema).write.mode(SaveMode.Append).jdbc(MysqlOperation.connection,MysqlOperation.visitTable , MysqlOperation.properties)
 
     } catch {
       case e:Exception =>

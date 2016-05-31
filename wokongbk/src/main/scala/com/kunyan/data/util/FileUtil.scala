@@ -97,6 +97,18 @@ object FileUtil {
     writer.close()
   }
 
+  def writeUserFollowToFile(path: String, array:Array[((String,String),Set[String])]): Unit = {
+
+    createFile(path)
+    val out = new FileOutputStream(new File(path),true)
+    val writer = new PrintWriter(out, false)
+    for (line <- array){
+      writer.append(line._1._1 +"\t"+ line._1._2 +"\t" + line._2.mkString(",") + "\n")
+    }
+    writer.flush()
+    writer.close()
+  }
+
   def createFile(path: String, lines:String): Unit = {
     val writer = new PrintWriter(path, "UTF-8")
     writer.println(lines)

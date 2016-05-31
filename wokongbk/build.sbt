@@ -1,7 +1,7 @@
-mainClass in (Compile, packageBin) := Some("com.kunyan.data.scheduler.SearchAndVisitScheduler")
+mainClass in (Compile, packageBin) := Some("com.kunyan.data.scheduler.ActiveUserFollow")
 name := "wokongbk"
 
-version := "2.0"
+version := "4.0"
 
 scalaVersion := "2.10.4"
 
@@ -18,6 +18,8 @@ libraryDependencies += "org.apache.spark" % "spark-streaming_2.10" % "1.5.2"
 libraryDependencies += "org.apache.spark" % "spark-streaming-kafka_2.10" % "1.5.2"
 
 libraryDependencies += "org.apache.spark" % "spark-sql_2.10" % "1.5.2"
+
+libraryDependencies += "org.jsoup" % "jsoup" % "1.8.3"
 
 assemblyMergeStrategy in assembly := {
   case PathList("javax", "servlet", xs @ _*) => MergeStrategy.last

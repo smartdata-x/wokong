@@ -9,6 +9,7 @@ import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
 import org.apache.spark.SparkContext
+import org.jsoup.Jsoup
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -22,18 +23,18 @@ object TableHbase extends HBase {
   val ONE_TABLE = "1"
   val ONE_COLUMN_FAMILY = "basic"
   val ONE_COLUMN_MEMBER = "content"
-  var userMap = new mutable.HashMap[String, ListBuffer[String]]
-  var stockCodeMap = new mutable.HashMap[String, Set[String]]
+  var userMap = new mutable.HashMap[String,  mutable.HashSet[String]]
+  var stockCodeMap = new mutable.HashMap[String, mutable.HashSet[String]]
   val oneTable = new HBase
   oneTable.tableName = ONE_TABLE
   oneTable.columnFamliy = ONE_COLUMN_FAMILY
   oneTable.column = ONE_COLUMN_MEMBER
 
-  def getUserMap: mutable.HashMap[String, ListBuffer[String]] ={
+  def getUserMap: mutable.HashMap[String, mutable.HashSet[String]] ={
     this.userMap
   }
 
-  def getStockCodeMap:mutable.HashMap[String, Set[String]] = {
+  def getStockCodeMap:mutable.HashMap[String, mutable.HashSet[String]] = {
     this.stockCodeMap
   }
   /** 按照rowKey 将获取hbase的数据 */
@@ -46,8 +47,8 @@ object TableHbase extends HBase {
   }
 
   /**获取股票代码 */
-  def getStockCodes(response: String):  ListBuffer[String] ={
-    val followStockCodeList =  new ListBuffer[String]
+  def getStockCodes(response: String):  mutable.HashSet[String] ={
+    val followStockCodeList = new mutable.HashSet[String]
     val pattern = "(?<=\")\\d{6}(?=\")".r
     val iterator = pattern.findAllMatchIn(response)
 
@@ -80,39 +81,49 @@ object TableHbase extends HBase {
     userId
   }
   /** 使用spark运行获取Hbase股票信息 */
-  def getStockCodesFromHbase(sc:SparkContext,timeRange:String,timeRangeTwo:String): Array[String] = {
+  def getStockCodesFromHbase(sc:SparkContext,timeRange:String,timeRangeTwo:String): Unit = {
+
     /** get hbase data */
     val scan = new Scan()
-    // val currentTimeStamp = System.currentTimeMillis()
+
     val startTime = timeRange
     val endTime = timeRangeTwo
 
     println("getStockCodesFromHbase ------ timeRange:"+timeRange+":")
+
     scan.setTimeRange(startTime.toLong,endTime.toLong )
-    // scan.setTimeRange(timeRange.toLong, currentTimeStamp)
+
     val conf = oneTable.getConfigure(oneTable.tableName, oneTable.columnFamliy, oneTable.column)
 
     oneTable.setScan(scan)
 
     val users = sc.newAPIHadoopRDD(conf, classOf[TableInputFormat], classOf[ImmutableBytesWritable], classOf[Result])
 
-    val stockCodes = users.flatMap(x => {
+    users.flatMap(x => {
       try {
         val result = x._2
         val value = Bytes.toString(result.getValue(Bytes.toBytes(oneTable.columnFamliy), Bytes.toBytes(oneTable.column)))
         val timeStamps = result.getColumnLatestCell(Bytes.toBytes(oneTable.columnFamliy), Bytes.toBytes(oneTable.column)).getTimestamp.toString
         val userId = getUserId(value)
-        val userStockList = getStockCodes(value)
-        TableHbase.userMap.put(userId, userStockList)
-        TableHbase.stockCodeMap.put(timeStamps,userStockList.toSet)
-        userStockList
-
+        val valueParse = Jsoup.parse(value)
+        val item = valueParse.body().getElementsByTag("script")
+        if(item.size() >= 2) {
+          val element  = item.get(item.size() - 2).toString
+          if(element.contains("selfstock")){
+            val existInfo = element.replace("\r\n","").replace(" ","")
+            if(existInfo.contains("]")){
+              val info = existInfo.split("]")(0)
+              val userStockList = getStockCodes(info)
+              TableHbase.userMap.put(userId + ":" + timeStamps, userStockList)
+              TableHbase.stockCodeMap.put(timeStamps,userStockList)
+            }
+          }
+        }
       } catch {
         case e: Exception => println("[C.J.YOU] getStockCodesFromHbase error")
-          ListBuffer[String]()
+          new ListBuffer[String]
       }
-    }).collect()
-    PrismLogger.warn("hbase get data:<<<<<<<<<<<<<<<<<<<<<<<<"+stockCodes.length)
-    stockCodes
+      new ListBuffer[String]
+    }).collect()  // zhiyou action hou cai executor
   }
 }

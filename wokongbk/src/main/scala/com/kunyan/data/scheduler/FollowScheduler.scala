@@ -23,7 +23,7 @@ object FollowScheduler {
 
   var stockCodes:java.util.List[String] = new util.ArrayList[String]()
 
-  def flatMapFun(timeStam:String,stockCodesTemp:Set[String]): mutable.MutableList[String] = {
+  def flatMapFun(timeStam:String,stockCodesTemp: mutable.HashSet[String]): mutable.MutableList[String] = {
     val lineList: mutable.MutableList[String] = mutable.MutableList [String]()
     val timeStamp = timeStam
     val hour = TimeUtil.getTime(timeStamp)
@@ -43,10 +43,12 @@ object FollowScheduler {
     .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     .set("spark.kryoserializer.buffer.max", "2000")
     .setMaster("local")
+
   val sc = new SparkContext(sparkConf)
   val sqlContext = new SQLContext(sc)
 
   def main(args: Array[String]) {
+
     if (args.length < 1) {
       System.err.println("Usage: LoadData startDate endDate ")
       System.exit(-1)
@@ -58,7 +60,6 @@ object FollowScheduler {
 
       TableHbase.getStockCodesFromHbase(sc,args(0),args(1))
       System.out.println("---Follow stockCodeMap size:----"+TableHbase.stockCodeMap.size)
-      PrismLogger.info("---Follow stockCodeMap size:----"+TableHbase.stockCodeMap.size)
       System.out.println("---Follow userMap size:----"+TableHbase.userMap.size)
 
       val data  = sc.parallelize(TableHbase.stockCodeMap.toSeq).flatMap(x =>flatMapFun(x._1,x._2)).map((_,1))
@@ -82,7 +83,7 @@ object FollowScheduler {
 
       FileUtil.writeToFile(args(2),fileData.collect)
 
-      sqlContext.createDataFrame(dbData,schema).write.mode(SaveMode.Append).jdbc(MysqlOperation.connection,MysqlOperation.followTable,MysqlOperation.properties)
+      // sqlContext.createDataFrame(dbData,schema).write.mode(SaveMode.Append).jdbc(MysqlOperation.connection,MysqlOperation.followTable,MysqlOperation.properties)
 
     } catch {
     case e:Exception =>
