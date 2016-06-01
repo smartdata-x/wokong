@@ -41,7 +41,7 @@ object UserFollowScheduler {
   }
 
   val sparkConf = new SparkConf()
-    .setAppName("LoadData_Follow")
+    .setAppName("UserFollowScheduler")
     .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     .set("spark.kryoserializer.buffer.max", "2000")
     .setMaster("local")

@@ -146,7 +146,7 @@ object SearchAndVisitScheduler {
   }
 
   val sparkConf = new SparkConf()
-    .setAppName("LoadData_SV")
+    .setAppName("SearchAndVisitScheduler")
     .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     .set("spark.kryoserializer.buffer.max", "2000")
     .set("spark.driver.allowMultipleContexts", "true")
@@ -157,14 +157,17 @@ object SearchAndVisitScheduler {
 
   def main(args: Array[String]) {
     if (args.length < 1) {
-      System.err.println("Usage: LoadData <data Files>")
+      System.err.println("Usage: LoadData dataFile,typeS,month")
       System.exit(1)
     }
     try {
 
-      val file = sc.textFile(args(0))
+      val Array(dataFile, connection, typeS, month) = args
+      val file = sc.textFile(dataFile)
 
-      /*val nowDate = args(2)
+      /*
+      写入本地文件中
+      val nowDate = args(2)
       getTableData("stock_info")
 
       val lines = file.flatMap(flatMapFun)
@@ -178,27 +181,13 @@ object SearchAndVisitScheduler {
           (typeString,(stock,hour,line._2))
         }.cache()
 
-      // val searchData = result.filter(x => x._1 == "search" && x._2._2.contains(nowDate)).map( x => Row(x._2._1,x._2._2,x._2._3))
-      // val visitData = result.filter(x => x._1 == "visit" && x._2._2.contains(nowDate)).map(x => Row(x._2._1,x._2._2,x._2._3))
-
-      // PrismLogger.warn("searchData size:"+searchData.count+",visitData size:"+ visitData.count)
-
       val fileSearchData = result.filter(_._1 == "search").map( x => x._2._1 + "\t" + x._2._2 + "\t" + x._2._3)
       val fileVisitData = result.filter(_._1 == "visit").map( x => x._2._1 + "\t" + x._2._2 + "\t" + x._2._3)
 
       FileUtil.writeToFile(args(1)+"_search",fileSearchData.collect)
-      FileUtil.writeToFile(args(1)+"_visit",fileVisitData.collect)
+      FileUtil.writeToFile(args(1)+"_visit",fileVisitData.collect) */
 
-      val schema =
-        StructType(
-          StructField("v_stock",StringType,nullable = false)::
-            StructField("v_hour",StringType,nullable = false)::StructField("i_frequency",IntegerType,nullable = true)::Nil)
-
-      // sqlContext.createDataFrame(searchData, schema).write.mode(SaveMode.Append).jdbc(MysqlOperation.connection, MysqlOperation.searchTable, MysqlOperation.properties)
-      // sqlContext.createDataFrame(visitData, schema).write.mode(SaveMode.Append).jdbc(MysqlOperation.connection, MysqlOperation.visitTable, MysqlOperation.properties)
-*/
-
-      val typeS = args(1)
+      // 写入92 mysql数据库中
 
       val lines = file.map { x =>
         val arr = x.split("\t")
@@ -208,18 +197,22 @@ object SearchAndVisitScheduler {
         ((stock,hour),c.toInt)
       }.reduceByKey(_ + _)
 
-      val data = lines.map( x => Row(x._1._1,x._1._2,x._2))
+      val data = lines.filter(_._1._2.contains("-"+ month +"-")).map(x => Row(x._1._1,x._1._2,x._2))
 
       val schema =
         StructType(
           StructField("v_stock",StringType,nullable = false)::
             StructField("v_hour",StringType,nullable = false)::StructField("i_frequency",IntegerType,nullable = true)::Nil)
 
-      if(typeS == "search")
-        sqlContext.createDataFrame(data, schema).write.mode(SaveMode.Append).jdbc(MysqlOperation.connection,MysqlOperation.searchTable , MysqlOperation.properties)
-      else if(typeS == "visit")
-        sqlContext.createDataFrame(data, schema).write.mode(SaveMode.Append).jdbc(MysqlOperation.connection,MysqlOperation.visitTable , MysqlOperation.properties)
-
+      if(typeS == "search") {
+        sqlContext.createDataFrame(data, schema).write.mode(SaveMode.Append).jdbc(connection,MysqlOperation.searchTable , MysqlOperation.properties)
+      }
+      else if(typeS == "visit") {
+        sqlContext.createDataFrame(data, schema).write.mode(SaveMode.Append).jdbc(connection,MysqlOperation.visitTable , MysqlOperation.properties)
+      }
+      else if(typeS == "follow"){
+        sqlContext.createDataFrame(data, schema).write.mode(SaveMode.Append).jdbc(connection,MysqlOperation.followTable , MysqlOperation.properties)
+      }
     } catch {
       case e:Exception =>
         PrismLogger.info(" search and visit over !")
@@ -227,7 +220,6 @@ object SearchAndVisitScheduler {
 
     }
     sc.stop()
-    System.exit(0)
   }
 
 }

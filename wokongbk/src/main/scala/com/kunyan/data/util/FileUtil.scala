@@ -38,7 +38,6 @@ object FileUtil {
 
   /**
     * override the old one
- *
     * @author yangshuai
     */
   def createFile(path: String, lines: Seq[String]): Unit = {
@@ -97,13 +96,16 @@ object FileUtil {
     writer.close()
   }
 
-  def writeUserFollowToFile(path: String, array:Array[((String,String),Set[String])]): Unit = {
+  def writeUserFollowToFile(path: String, array:Array[(String,String)],typeC: Int): Unit = {
 
     createFile(path)
     val out = new FileOutputStream(new File(path),true)
     val writer = new PrintWriter(out, false)
     for (line <- array){
-      writer.append(line._1._1 +"\t"+ line._1._2 +"\t" + line._2.mkString(",") + "\n")
+      if(typeC == 0)
+        writer.append(line._2 +"\t"+ line._1 + "\n")
+      else
+        writer.append(line._2 + "\n")
     }
     writer.flush()
     writer.close()

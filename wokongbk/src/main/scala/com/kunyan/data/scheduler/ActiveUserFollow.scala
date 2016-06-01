@@ -22,6 +22,7 @@ object ActiveUserFollow {
   var stockCodes:java.util.List[String] = new util.ArrayList[String]()
 
   def mapFunction(key:String,stockCodesTemp: mutable.HashSet[String]): String = {
+
     val stockFinalList = new ListBuffer[String]
     val info = key.split(":")
     val timeStamp = info(1)
@@ -46,20 +47,34 @@ object ActiveUserFollow {
     (value._1._1,value._2)
   }
 
+  /**
+    * 如何判断某个用户是否为活跃用户
+    * 最小关注量 与 各个时间关注的不同自选股的总量之差大于零的
+    * 获取给定时间段内，每天用户自选股最大集合
+    * @param one 一天的自选股set
+    * @param two 第二天的自选股set
+    * @return 最大的Set集合
+    */
   def getMaxSize(one: Set[String], two: Set[String]): Set[String] = {
-    val size  = Math.max(one.size,two.size)
-    Array[String](size.toString).toSet
+
+    if(one.size > two.size) one else two
+
   }
 
   /**
-    * 如何判断某个用户是否为活跃用户
-    *
+    * 获取给定时间段内，每天用户自选股最小集合
+    * @param one 一天的自选股set
+    * @param two 第二天的自选股set
+    * @return 最小的Set集合
     */
+  def getMinSize(one: Set[String], two: Set[String]): Set[String] = {
 
+    if(one.size <= two.size) one else two
 
+  }
 
   val sparkConf = new SparkConf()
-    .setAppName("LoadData_Follow")
+    .setAppName("ActiveUserFollow")
     .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     .set("spark.kryoserializer.buffer.max", "2000")
     .setMaster("local")
@@ -93,16 +108,16 @@ object ActiveUserFollow {
 
       println("result:" + result.count())
 
-      val userInfo = result.reduceByKey(_.union(_)).map(x =>(x._1,x._2.size))
+      val userInfo = result.reduceByKey(_.union(_)).map(x =>(x._1,(x._2,x._2.size)))
 
       println("userInfo:" + userInfo.count())
 
-      val dateUserInfo = result.reduceByKey(getMaxSize).map(x => (x._1,x._2.head.toInt))
+      val dateUserInfo = result.reduceByKey(getMinSize).map(x => (x._1,(x._2,x._2.size)))
 
       println("dateUserInfo:" + dateUserInfo.count())
 
-      val isActiveUser = userInfo.join(dateUserInfo).map(x =>(x._1, x._2._1 - x._2._2)).filter(_._2 > 0)
-          .map(x => x._1 + "\t" + x._2).collect()
+      val isActiveUser = userInfo.join(dateUserInfo).map(x =>(x._1,x._2._1._2 - x._2._2._2,x._2._1._1,x._2._2._1)).filter(_._2 > 0)
+          .map(x => x._1 + "\t" + x._2 + "\t" + x._3.mkString(",") + "\t" + x._4.mkString(",")).collect()
 
       println("isActiveUser:" + isActiveUser.length)
 
