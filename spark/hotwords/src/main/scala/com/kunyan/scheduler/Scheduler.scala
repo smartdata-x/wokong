@@ -698,7 +698,7 @@ object Scheduler {
     */
   def main(args: Array[String]) {
 
-    val sparkConf = new SparkConf().setAppName("HotWord")//.setMaster("local")
+    val sparkConf = new SparkConf().setAppName("HotWord")
     val sc = new SparkContext(sparkConf)
 
     val configFile = XML.loadFile(args(0))
