@@ -1,5 +1,4 @@
-mainClass in (Compile, packageBin) := Some("com.kunyan.scheduler.Scheduler")
-//mainClass in (Compile, packageBin) := Some("com.kunyan.test.Test")
+
 name := "hotwords"
 
 version := "1.0"

@@ -277,7 +277,14 @@ object Scheduler {
           }
 
         if (backTitle.contains("“") && backTitle.contains("”")) {
-          word = backTitle.substring(backTitle.indexOf("“")+1,backTitle.indexOf("”"))
+          word =
+            try {
+              backTitle.substring(backTitle.indexOf("“")+1,backTitle.indexOf("”"))
+          } catch {
+            case e: Exception =>
+              null
+          }
+
         } else {
           word = null
         }
@@ -553,12 +560,12 @@ object Scheduler {
     val map = mutable.HashMap[String, ListBuffer[(String, Int)]]()
     val list = ListBuffer[(String, Int)]()
 
-    jedis.hgetAll("hotwordsrank:" + TimeUtil.getPreHourStr).asScala.map(x => {
+    jedis.hgetAll("hotwordsrank:" + TimeUtil.getPreHourStr).asScala.foreach(x => {
       x._2.split(",").foreach(y => {
         val arr = y.split("->")
         list += arr(0) -> arr(1).toInt
       })
-      map.put(x._1, list)
+     map.put(x._1, list)
     })
 
     map
@@ -588,7 +595,8 @@ object Scheduler {
     * @param eventWord 每个行业的事件词集合
     * @param serviceIp 服务IP
     */
-  def calculate(sc: SparkContext, eventWord: RDD[(String, Set[String])], serviceIp: String): Unit = {
+  def calculate(eventWord: RDD[(String, Set[String])],
+                lastHourData:mutable.HashMap[String, ListBuffer[(String, Int)]], serviceIp: String): Unit = {
 
     val topWords = eventWord.map(getWordRank).persist(StorageLevel.MEMORY_AND_DISK)
 
@@ -596,7 +604,7 @@ object Scheduler {
 
     sendHotWords(result.toSeq)
 
-    val oldMapBr = sc.broadcast(getLastHourHotWords)
+    val oldMapBr = lastHourData
 
     HWLogger.warn("before loop")
 
@@ -606,27 +614,23 @@ object Scheduler {
       val result = mutable.HashMap[String, Int]()
       var oldWords: scala.collection.immutable.Map[String, Int] = null
 
-      if (oldMapBr.value.get(x._1).nonEmpty) {
 
-        try {
-          oldWords = oldMapBr.value.get(x._1).get.toMap[String, Int]
-        } catch {
-          case e: Exception =>
-            HWLogger.error(s"Wrong data: ${x._1}")
-        }
+      if (oldMapBr.get(x._1).nonEmpty) {
+
+        oldWords = oldMapBr.get(x._1).get.toMap[String, Int]
 
         val oldSize = oldWords.size + 1
 
-        newWords.foreach(newWord => {
+          newWords.foreach(newWord => {
 
-          val hotWord = newWord._1
-          val newRank = newWord._2
+            val hotWord = newWord._1
+            val newRank = newWord._2
 
-          val oldRank = oldWords.getOrElse(hotWord, oldSize)
-          val rank = oldRank - newRank
+            val oldRank = oldWords.getOrElse(hotWord, oldSize)
+            val rank = oldRank - newRank
 
-          result.put(hotWord, rank)
-        })
+            result.put(hotWord, rank)
+          })
 
       } else {
 
@@ -636,26 +640,26 @@ object Scheduler {
 
       }
 
-      val list = result.toSeq.sortWith(_._2 > _._2).toList
-      var size = result.size
+        val list = result.toSeq.sortWith(_._2 > _._2).toList
+        var size = result.size
 
 
-      if (size > 5)
-        size = 5
+        if (size > 5)
+          size = 5
 
+        if (size > 0) {
 
-      if (size > 0) {
+          var hotWords = ""
 
-        var hotWords = ""
+          for (i <- 0 until size) {
+            hotWords += list(i)._1 + "*"
+          }
 
-        for (i <- 0 until size) {
-          hotWords += list(i)._1 + "*"
+          Some((x._1, hotWords))
+        } else {
+          None
         }
 
-        Some((x._1, hotWords))
-      } else {
-        None
-      }
     }).collect()
 
     sendFinalWords(pairs)
@@ -694,10 +698,8 @@ object Scheduler {
     */
   def main(args: Array[String]) {
 
-    val sparkConf = new SparkConf().setAppName("Scheduler")
+    val sparkConf = new SparkConf().setAppName("HotWord")//.setMaster("local")
     val sc = new SparkContext(sparkConf)
-
-    LogManager.getRootLogger.setLevel(Level.WARN)
 
     val configFile = XML.loadFile(args(0))
 
@@ -705,8 +707,10 @@ object Scheduler {
 
     val eventWord = eventLibrary(sc, args(1))
 
+    val lastHourData = sc.broadcast(getLastHourHotWords).value
+
     try {
-     calculate(sc, eventWord,(configFile \ "service" \ "ip").text)
+      calculate(eventWord,lastHourData, (configFile \ "service" \ "ip").text)
 
       HWLogger.warn("finish init")
     } catch {

@@ -1,7 +1,5 @@
 package com.kunyan.net
 
-import com.kunyan.log.HWLogger
-import com.kunyan.scheduler.Scheduler
 import dispatch.Defaults._
 import dispatch._
 
@@ -47,21 +45,6 @@ abstract class BaseHttp {
     val finalUrl = getUrl(strUrl, parameters)
     Source.fromURL(finalUrl)
 
-    /*val req = url(finalUrl)
-    val response = Http(req OK as.String)
-
-    response onComplete {
-      case Success(content) =>
-        Scheduler.timer += 1
-        HWLogger.warn((Scheduler.total - Scheduler.timer).toString)
-        if (Scheduler.timer == Scheduler.total)
-          System.exit(0)
-      case Failure(t) =>
-        Scheduler.timer += 1
-        HWLogger.warn((Scheduler.total - Scheduler.timer).toString)
-        if (Scheduler.timer == Scheduler.total)
-          System.exit(0)
-    }*/
   }
 
   def post(strUrl:String, parameters:mutable.HashMap[String,String], parse: String): Unit = {
