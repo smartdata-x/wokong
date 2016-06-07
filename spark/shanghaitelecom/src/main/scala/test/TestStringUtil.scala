@@ -1,6 +1,7 @@
 package test
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
+import java.net.URLDecoder
 import java.security.SecureRandom
 import java.util.zip.{DeflaterOutputStream, GZIPInputStream, InflaterOutputStream}
 import javax.crypto.spec.DESKeySpec
@@ -79,7 +80,7 @@ object TestStringUtil extends Serializable{
 
    def decodeBase64(base64String : String): String = {
     val decoded = new BASE64Decoder().decodeBuffer(base64String)
-    new String(decoded,"GBK")
+    new String(decoded)
   }
 
    def  zlibZip(primStr:String):String = {
@@ -110,11 +111,12 @@ object TestStringUtil extends Serializable{
     var result = ""
     try {
       val res = decodeBase64 (str)
-      // println(res)
+      println(res)
       val json = getJsonObject (res)
       // println(json)
       val id = json.get ("id").toString
       val value = json.get ("value").toString
+      val keyword = json.get("key").toString
       val desDe = zlibUnzip(value.replace("-<","\r\n"))
       val resultJson = desDe.split("\t")
       val ad = resultJson(0)
@@ -124,14 +126,58 @@ object TestStringUtil extends Serializable{
       val ref = resultJson(4).replace("\n","")
       val ua = resultJson(5).replace("\n","")
       val cookie = resultJson(6).replace("\n","")
-      val keyword = resultJson(7)
+      // val keyword = resultJson(7)
+      // val k = getEncoding(keyword)
+      // println(k)
+
       result = ts + "\t" + ad + "\t" + ua + "\t" + host +"\t"+ url + "\t" + ref + "\t" +cookie + "\t" + keyword
-      // println(result)
+      println(result)
     } catch {
       case e:Exception  =>
         SUELogger.error("praseJsonObject ERROR")
         println("error")
     }
     result
+  }
+
+  // 字符编码格式确定
+   def getEncoding(str:String):String ={
+    var encode = "GB2312"
+    try {
+      if (str.equals(new String(str.getBytes(encode), encode))) {
+        val s = encode
+        return s
+      }
+    } catch {
+      case e:Exception =>
+    }
+    encode = "ISO-8859-1"
+    try {
+      if (str.equals(new String(str.getBytes(encode), encode))) {
+        val s1 = encode
+        return s1
+      }
+    } catch {
+      case e:Exception =>
+    }
+    encode = "UTF-8"
+    try {
+      if (str.equals(new String(str.getBytes(encode), encode))) {
+        val s2 = encode
+        return s2
+      }
+    } catch {
+      case e:Exception =>
+    }
+    encode = "GBK"
+    try {
+      if (str.equals(new String(str.getBytes(encode), encode))) {
+        val s3 = encode
+        return s3
+      }
+    } catch {
+      case e:Exception =>
+    }
+    return ""
   }
 }
