@@ -1,7 +1,7 @@
 mainClass in (Compile, packageBin) := Some("com.kunyan.data.scheduler.SearchAndVisitScheduler")
 name := "wokongbk"
 
-version := "2.1"
+version := "2.2"
 
 scalaVersion := "2.10.4"
 

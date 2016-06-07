@@ -162,7 +162,7 @@ object SearchAndVisitScheduler {
     }
     try {
 
-      val Array(dataFile, connection, typeS, month) = args
+      val Array(dataFile, connection, typeS, monthAndDay) = args
       val file = sc.textFile(dataFile)
 
       /*
@@ -197,7 +197,7 @@ object SearchAndVisitScheduler {
         ((stock,hour),c.toInt)
       }.reduceByKey(_ + _)
 
-      val data = lines.filter(_._1._2.contains("-"+ month +"-")).map(x => Row(x._1._1,x._1._2,x._2))
+      val data = lines.filter(_._1._2.contains(monthAndDay)).map(x => Row(x._1._1,x._1._2,x._2))
 
       val schema =
         StructType(

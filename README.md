@@ -11,7 +11,8 @@ note：from hbase get follow stock infos
 
 2.0： search & visit 第一版
 note: get s&visit data
-2.1 : search & visit 按月一起写入92数据库中
+2.1 : search & visit & follow 按月一起写入92数据库中
+2.2 : search & visit & follow 按天一起写入92数据库中
 
 3.0 ： userFollow 第一版：
 注：from hbase get user follow infos
