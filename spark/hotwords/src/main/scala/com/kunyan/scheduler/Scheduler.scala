@@ -280,9 +280,6 @@ object Scheduler {
           word =
             try {
               backTitle.substring(backTitle.indexOf("“")+1,backTitle.indexOf("”"))
-          } catch {
-            case e: Exception =>
-              null
           }
 
         } else {
@@ -447,6 +444,33 @@ object Scheduler {
   }
 
   /**
+    * 对每个词在热定类别里计数
+    *
+    * @param eventWord
+    * @return （词项，词频）
+    */
+  def countHotWord(eventWord:(String, Set[String])): (String, mutable.HashMap[String, Int]) = {
+
+    val key = eventWord._1
+    val iterator = eventWord._2
+
+    val map = mutable.HashMap[String, Int]()
+
+    for (elem <- iterator) {
+
+      if (map.get(elem).isEmpty) {
+        map.put(elem, 1)
+      } else {
+        val count = map.get(elem).get
+        map.put(elem, count + 1)
+      }
+
+    }
+    (key, map)
+  }
+
+
+  /**
     * 根据词频将词项排序
     *
     * @param pair 输入每个类别，以及词项的集合
@@ -548,7 +572,6 @@ object Scheduler {
 
     pipeline.sync()
     }
-
 
   /**
     * 获取前一个小时的热词数据
@@ -660,9 +683,9 @@ object Scheduler {
           None
         }
 
-    }).collect()
+    })
 
-    sendFinalWords(pairs)
+    sendFinalWords(pairs.collect())
 
     jedis.quit
 
@@ -670,6 +693,19 @@ object Scheduler {
     val notice = "hot_words_notice"
     HotWordHttp.sendNew("http://" + serviceIp + "/cgi-bin/northsea/prsim/subscribe/1/hot_words_notice.fcgi?",
       mutable.HashMap[String,String](notice -> nowTime))
+
+    val countedHotWord = pairs.map(x => (x.get._1, x.get._2)).join(eventWord.map(countHotWord))
+        .map(x => {
+          val key = x._1
+          val targetWord = x._2._1
+          val count = x._2._2
+          val hotWordAndCount = targetWord.split("\\*").filter(x => x != null)
+              .map(x => x + "-" + count(x)).mkString(" ")
+
+          (key, hotWordAndCount)
+        })
+
+    saveCountedHotWords(countedHotWord)
 
   }
 
@@ -692,13 +728,29 @@ object Scheduler {
   }
 
   /**
+    * 将热词与其词频每个小时保存到hdfs上
+    * @param words
+    */
+  def saveCountedHotWords (words: RDD[(String, String)]): Unit = {
+
+    try {
+      val processWord = words.map(x => x._1 + "\t" + x._2)
+      processWord.coalesce(1).saveAsTextFile("/user/countedHotWords/" + TimeUtil.getDay + "/" + TimeUtil.getCurrentHour)
+    } catch {
+      case e: Exception =>
+        e.printStackTrace()
+    }
+
+  }
+
+  /**
     * 调用以上方法，实现热词计算
     *
     * @param args
     */
   def main(args: Array[String]) {
 
-    val sparkConf = new SparkConf().setAppName("HotWord")
+    val sparkConf = new SparkConf().setAppName("HotWord").setMaster("local")
     val sc = new SparkContext(sparkConf)
 
     val configFile = XML.loadFile(args(0))
@@ -718,7 +770,8 @@ object Scheduler {
         HWLogger.exception(e)
     } finally {
       sc.stop
-      println("------------------------------------------------------------------------------------")
+
+      HWLogger.warn("finish totally")
     }
 
   }
