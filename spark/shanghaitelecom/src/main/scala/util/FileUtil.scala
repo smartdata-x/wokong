@@ -1,7 +1,6 @@
 package util
 
 import java.io._
-
 /**
   * Created by C.J.YOU on 2016/1/14.
   * FS操作的工具类

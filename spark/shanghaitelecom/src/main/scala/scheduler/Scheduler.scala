@@ -1,6 +1,6 @@
 package scheduler
 
-import util.{TimeUtil, FileUtil, StringUtil}
+import util.{FileUtil, StringUtil}
 import config.FileConfig
 import kafka.serializer.StringDecoder
 import log.SUELogger
@@ -10,7 +10,6 @@ import org.apache.spark.streaming.{StreamingContext, Seconds}
 import org.apache.spark.{SparkConf, SparkContext}
 
 import scala.collection.mutable
-
 
 /**
   * Created by C.J.YOU on 2016/2/23.

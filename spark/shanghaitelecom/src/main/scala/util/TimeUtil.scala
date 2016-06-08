@@ -1,6 +1,5 @@
 package util
 
-import java.math.BigInteger
 import java.text.SimpleDateFormat
 import java.util.{Calendar, Date}
 

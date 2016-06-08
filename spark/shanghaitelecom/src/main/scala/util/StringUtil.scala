@@ -1,12 +1,7 @@
 package util
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
-import java.net.URLDecoder
-import java.security.SecureRandom
-import java.util.zip.{InflaterOutputStream, GZIPInputStream}
-import javax.crypto.{SecretKeyFactory, Cipher}
-import javax.crypto.spec.DESKeySpec
-
+import java.io.ByteArrayOutputStream
+import java.util.zip.InflaterOutputStream
 import config.FileConfig
 import log.SUELogger
 import org.json.JSONObject

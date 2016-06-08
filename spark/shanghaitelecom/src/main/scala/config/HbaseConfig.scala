@@ -1,5 +1,4 @@
 package config
-
 /**
   * Created by C.J.YOU on 2016/1/17.
   * Hbase的配置文件
