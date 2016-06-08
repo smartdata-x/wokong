@@ -444,7 +444,7 @@ object Scheduler {
   }
 
   /**
-    * 对每个词在热定类别里计数
+    * 对每个词在特定类别里计数
     *
     * @param eventWord
     * @return （词项，词频）
