@@ -7,6 +7,7 @@ import log.SUELogger
 import org.json.JSONObject
 import sun.misc.BASE64Decoder
 
+
 /**
   * Created by C.J.YOU on 2016/3/16.
   * 字符处理类

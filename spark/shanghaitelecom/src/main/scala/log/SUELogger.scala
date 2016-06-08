@@ -1,6 +1,7 @@
 package log
 
 import org.apache.log4j.{PropertyConfigurator, Logger}
+
 /**
   * Created by C.J.YOU on 2016/1/15.
   * 日志处理类

@@ -10,7 +10,6 @@ import org.apache.spark.streaming.{StreamingContext, Seconds}
 import org.apache.spark.{SparkConf, SparkContext}
 
 import scala.collection.mutable
-
 /**
   * Created by C.J.YOU on 2016/2/23.
   * 电信数据解析主程序
