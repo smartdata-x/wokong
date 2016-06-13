@@ -41,6 +41,8 @@ libraryDependencies += "redis.clients" % "jedis" % "2.8.0"
 resolvers += "Kunyan Repo" at "http://222.73.34.92:8081/nexus/content/groups/public/"
 libraryDependencies += "com.kunyan" % "scalautil" % "1.1"
 
+libraryDependencies += "org.jsoup" % "jsoup" % "1.8.3"
+
 
 assemblyMergeStrategy in assembly := {
   case PathList("javax", "servlet", xs @ _*) => MergeStrategy.last

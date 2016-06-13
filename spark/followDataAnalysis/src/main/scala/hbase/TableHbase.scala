@@ -7,6 +7,7 @@ import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
 import org.apache.spark.SparkContext
+import org.jsoup.Jsoup
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -98,7 +99,10 @@ object TableHbase extends HBase {
         val value = Bytes.toString(result.getValue(Bytes.toBytes(oneTable.columnFamliy), Bytes.toBytes(oneTable.column)))
         val timeStamps = result.getColumnLatestCell(Bytes.toBytes(oneTable.columnFamliy), Bytes.toBytes(oneTable.column)).getTimestamp.toString
         val userId = getUserId(value)
-        val userStockList = getStockCodes(value)
+        val valueParse = Jsoup.parse(value)
+        val item = valueParse.body().getElementsByTag("script")
+        val info  = item.get(item.size - 2).toString.replace("\r\n","").replace(" ","").split("]")(0)
+        val userStockList = getStockCodes(info)
         TableHbase.userMap.put(userId, userStockList)
         TableHbase.stockCodeMap.put(timeStamps,userStockList.toSet)
         userStockList

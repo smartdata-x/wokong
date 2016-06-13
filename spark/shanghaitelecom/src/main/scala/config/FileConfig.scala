@@ -11,14 +11,26 @@ object FileConfig {
   var TOO_BIG_VALUE="/home/telecom/ErrorData"
   val test_dir = "F:\\datatest\\telecom"
 
+  /**
+    * 主要数据data路径
+    * @param dir 目录
+    */
   def  rootDir(dir:String): Unit = {
     ROOT_DIR = dir
   }
 
+  /**
+    * 搜索数据目录
+    * @param dir 目录
+    */
   def searchEngineDir(dir:String):Unit ={
     SEARCH_ENGINE_DATA = dir
   }
 
+  /**
+    * 记录解析出错数据目录
+    * @param dir 目录
+    */
   def errorDataDir(dir:String):Unit = {
     TOO_BIG_VALUE = dir
   }
