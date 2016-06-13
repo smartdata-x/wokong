@@ -644,16 +644,16 @@ object Scheduler {
 
         val oldSize = oldWords.size + 1
 
-          newWords.foreach(newWord => {
+        newWords.foreach(newWord => {
 
-            val hotWord = newWord._1
-            val newRank = newWord._2
+          val hotWord = newWord._1
+          val newRank = newWord._2
 
-            val oldRank = oldWords.getOrElse(hotWord, oldSize)
-            val rank = oldRank - newRank
+          val oldRank = oldWords.getOrElse(hotWord, oldSize)
+          val rank = oldRank - newRank
 
-            result.put(hotWord, rank)
-          })
+          result.put(hotWord, rank)
+        })
 
       } else {
 
@@ -663,25 +663,24 @@ object Scheduler {
 
       }
 
-        val list = result.toSeq.sortWith(_._2 > _._2).toList
-        var size = result.size
+      val list = result.toSeq.sortWith(_._2 > _._2).toList
+      var size = result.size
 
+      if (size > 5)
+        size = 5
 
-        if (size > 5)
-          size = 5
+      if (size > 0) {
 
-        if (size > 0) {
+        var hotWords = ""
 
-          var hotWords = ""
-
-          for (i <- 0 until size) {
-            hotWords += list(i)._1 + "*"
-          }
-
-          Some((x._1, hotWords))
-        } else {
-          None
+        for (i <- 0 until size) {
+          hotWords += list(i)._1 + "*"
         }
+
+        Some((x._1, hotWords))
+      } else {
+        None
+      }
 
     })
 
@@ -695,15 +694,15 @@ object Scheduler {
       mutable.HashMap[String,String](notice -> nowTime))
 
     val countedHotWord = pairs.map(x => (x.get._1, x.get._2)).join(eventWord.map(countHotWord))
-        .map(x => {
-          val key = x._1
-          val targetWord = x._2._1
-          val count = x._2._2
-          val hotWordAndCount = targetWord.split("\\*").filter(x => x != null)
-              .map(x => x + "-" + count(x)).mkString(" ")
+      .map(x => {
+        val key = x._1
+        val targetWord = x._2._1
+        val count = x._2._2
+        val hotWordAndCount = targetWord.split("\\*").filter(x => x != null)
+          .map(x => x + "-" + count(x)).mkString(" ")
 
-          (key, hotWordAndCount)
-        })
+        (key, hotWordAndCount)
+      })
 
     saveCountedHotWords(countedHotWord)
 
@@ -750,7 +749,7 @@ object Scheduler {
     */
   def main(args: Array[String]) {
 
-    val sparkConf = new SparkConf().setAppName("HotWord").setMaster("local")
+    val sparkConf = new SparkConf().setAppName("HotWord")
     val sc = new SparkContext(sparkConf)
 
     val configFile = XML.loadFile(args(0))
