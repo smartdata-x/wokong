@@ -8,15 +8,11 @@ libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.10.4" excludeAll
 
 libraryDependencies += "org.apache.hadoop" % "hadoop-common" % "2.7.1"
 
-<<<<<<< HEAD:spark/shanghaiPlatform/build.sbt
 libraryDependencies += "org.apache.hadoop" % "hadoop-hdfs" % "2.7.1"
-=======
+
 resolvers += "Kunyan Repo" at "http://222.73.34.92:8081/nexus/content/groups/public/"
 
 libraryDependencies += "com.kunyan" % "nlpsuit-package" % "0.2.3"
-
-libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.10.4" % "provided"
->>>>>>> 1c673e274b979eb50f931b2c81c6698ef600de0a:spark/hotwords/build.sbt
 
 libraryDependencies += "org.apache.hadoop" % "hadoop-client" % "2.7.1"
 
