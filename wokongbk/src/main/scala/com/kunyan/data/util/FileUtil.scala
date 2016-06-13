@@ -37,7 +37,6 @@ object FileUtil {
   }
 
   /**
-    * override the old one
     * @author yangshuai
     */
   def createFile(path: String, lines: Seq[String]): Unit = {
@@ -50,8 +49,6 @@ object FileUtil {
   }
 
   /**
-    * override the old one
- *
     * @author yangshuai
     */
   def createFile(path: String, lines: Seq[String], num: Int): Unit = {
