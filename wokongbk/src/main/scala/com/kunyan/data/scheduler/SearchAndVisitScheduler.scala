@@ -165,8 +165,8 @@ object SearchAndVisitScheduler {
       val Array(dataFile, connection, typeS, monthAndDay) = args
       val file = sc.textFile(dataFile)
 
-      /*
-      写入本地文件中
+      /**
+      写入本地文件中(备份用)
       val nowDate = args(2)
       getTableData("stock_info")
 
