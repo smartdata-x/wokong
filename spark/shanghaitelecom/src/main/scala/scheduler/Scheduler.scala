@@ -82,7 +82,7 @@ object Scheduler {
       .set("spark.kryoserializer.buffer.max", "2000")
       .set("spark.driver.allowMultipleContexts","true")
       .set("spark.cleaner.ttl", "10000")
-      .setMaster("local")
+
     val sc = new SparkContext(sparkConf)
     val Array(brokers, topics, zkhosts,dataDir,searchEngineDataDir,errorDataDir) = args
 
