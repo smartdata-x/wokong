@@ -13,6 +13,7 @@
 
  import java.util.Calendar
  import java.util.Date
+ import java.text.SimpleDateFormat
 
  /**
    * Created by wukun on 2016/5/23
@@ -20,12 +21,58 @@
    */
  object TimeHandle {
 
-   def minStamp(interval:Long):Long = {
+   def minStamp(interval:Long): Long = {
      System.currentTimeMillis - interval
    }
 
-   def maxStamp:Long = {
+   def maxStamp: Long = {
      System.currentTimeMillis
+   }
+
+   def getYear(cal: Calendar): String = {
+     cal.get(Calendar.YEAR).toString
+   }
+
+   def getMonth(cal: Calendar): String = {
+
+     val month = cal.get(Calendar.MONTH) + 1
+     if(month <= 9) {
+       "0" + month
+     } else {
+       month.toString
+     }
+   }
+
+   def getDay(cal: Calendar): Int = {
+
+     val day = cal.get(Calendar.DAY_OF_MONTH)
+     day
+   }
+
+   def getDay: Int = {
+     val cal = Calendar.getInstance
+     val day = cal.get(Calendar.DAY_OF_MONTH)
+     day
+   }
+
+   def getZeHour(cal: Calendar): String = {
+
+     val hour = cal.get(Calendar.HOUR_OF_DAY)
+     if(hour <= 9) {
+       "0" + hour
+     } else {
+       hour.toString
+     }
+   }
+
+   def getHour(cal: Calendar): Int = {
+     cal.get(Calendar.HOUR_OF_DAY)
+   }
+
+   def getNowHour: Int = {
+     val cal = Calendar.getInstance
+     val hour = cal.get(Calendar.HOUR_OF_DAY)
+     hour
    }
 
    /**
@@ -51,5 +98,23 @@
      cal.set(Calendar.MINUTE, minute)
      cal.set(Calendar.SECOND, second)
      cal.set(Calendar.MILLISECOND, milliSecond)
+   }
+
+   def getTamp(str: String): Long = {
+     val simpleDateFormat = new SimpleDateFormat("yyyyMMddHH")
+     val date = simpleDateFormat.parse(str)
+
+     date.getTime / 1000
+   }
+
+   def main(args: Array[String]) {
+     val cal: Calendar = Calendar.getInstance
+
+     val year = getYear(cal)
+     val day = getDay
+     val month = getMonth(cal)
+     val hour = getNowHour
+
+     println(getTamp("2016061416"))
    }
  }

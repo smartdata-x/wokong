@@ -13,6 +13,7 @@ package com.kunyan.wokongsvc.realtimedata
 
 import scala.util.matching.Regex
 import scala.collection.mutable.Map
+import scala.collection.mutable.HashSet
 
 /**
   * Created by wukun on 2016/5/19
@@ -20,7 +21,7 @@ import scala.collection.mutable.Map
   */
 object DataPattern {
 
-   type Tuple3Map = (Map[String, String], Map[String, String], Map[String, String])
+  type Tuple2Map = (HashSet[String], (Map[String, String], Map[String, String], Map[String, String]))
 
   val DIGITPATTERN = "([0-9]{6})".r
   val ENCODEPATTERN = "((%.*){8})".r
@@ -31,14 +32,14 @@ object DataPattern {
     * @param stockStr 要解析的字符串
     * @author wukun
     */
-  def stockCodeMatch(stockStr: String, alias: Tuple3Map): String = {
+  def stockCodeMatch(stockStr: String, alias: Tuple2Map): String = {
 
     stockStr match {
-      case DIGITPATTERN(first) => first
-      case ENCODEPATTERN(_*) => alias._1.getOrElse(stockStr, "0")
+      case DIGITPATTERN(first) => if(alias._1(first)) first else "0"
+      case ENCODEPATTERN(_*) => alias._2._1.getOrElse(stockStr, "0")
       case ALPHAPATTERN(first) => {
         val stock = first.toUpperCase
-        alias._2.getOrElse(stock, alias._3.getOrElse(stock, "0"))
+        alias._2._2.getOrElse(stock, alias._2._3.getOrElse(stock, "0"))
       }
       case _ => "0"
     }

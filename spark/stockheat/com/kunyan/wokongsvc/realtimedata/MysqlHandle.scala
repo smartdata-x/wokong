@@ -19,9 +19,11 @@ import java.sql.SQLException
 import java.sql.Statement
 import java.sql.DriverManager
 import scala.collection.mutable.HashMap
+import scala.collection.mutable.HashSet
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
+import scala.collection.mutable.ListBuffer
 
 /**
   * Created by wukun on 2016/5/19
@@ -30,7 +32,8 @@ import scala.util.Try
 class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
 
   type TryHashMap = Try[HashMap[String, (String, String)]]
-  type TryTuple3HashMap = Try[(HashMap[String, String], HashMap[String, String], HashMap[String, String])]
+  type TryTuple3HashMap = Try[(HashSet[String], (HashMap[String, String], HashMap[String, String], HashMap[String, String]))]
+  type TupleHashMap = (HashMap[String, ListBuffer[String]], HashMap[String, ListBuffer[String]])
 
   private var dbConn = conn
 
@@ -90,6 +93,24 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
   }
 
   /**
+    * 执行更新操作
+    * @param  sql sql语句
+    * @author wukun
+    */
+  def execUpdate(sql: String): Try[Int] = {
+
+    val ret = Try({
+
+      val stmt = dbConn.createStatement
+      val count = stmt.executeUpdate(sql)
+      stmt.close
+      count
+    })
+
+    ret
+  }
+
+  /**
     * 执行查询操作
     * @param  sql sql语句
     * @author wukun
@@ -114,6 +135,11 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
     ret
   }
 
+  /**
+    * 执行股票别名查询操作
+    * @param  sql sql语句
+    * @author wukun
+    */
   def execQueryStockAlias(sql: String): TryTuple3HashMap = {
 
     val ret = Try({
@@ -122,24 +148,153 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
       val allInfo = stmt.executeQuery(sql)
       val col = allInfo.getMetaData().getColumnCount
 
+      val stockCode = new HashSet[String]
       val stockChina = new HashMap[String, String]
       val stockJian = new HashMap[String, String]
       val stockQuan = new HashMap[String, String]
 
       while (allInfo.next && col == 4) {
-        val stockCode = allInfo.getString(1)
-        stockChina += (allInfo.getString(2) -> stockCode)
-        stockJian += (allInfo.getString(3).toUpperCase -> stockCode)
-        stockQuan += (allInfo.getString(4).toUpperCase -> stockCode)
+        val code = allInfo.getString(1)
+        stockCode.add(code)
+        stockChina += (allInfo.getString(2) -> code)
+        stockJian += (allInfo.getString(3).toUpperCase -> code)
+        stockQuan += (allInfo.getString(4).toUpperCase -> code)
       }
 
       stmt.close
-      (stockChina, stockJian, stockQuan)
+      stockCode -= "000001"
+      stockChina -= "000001"
+      stockJian -= "000001"
+      stockQuan -= "000001"
+      (stockCode, (stockChina, stockJian, stockQuan))
     })
 
     ret
   }
 
+  /**
+    * 执行股票代码查询操作
+    * @param  sql sql语句
+    * @author wukun
+    */
+  def execQueryStock(sql: String): Try[HashSet[String]] = {
+
+    val ret = Try({
+
+      val stmt = dbConn.createStatement
+      val allInfo = stmt.executeQuery(sql)
+      val col = allInfo.getMetaData().getColumnCount
+
+      val stockCode = new HashSet[String]
+
+      while (allInfo.next && col == 1) {
+        stockCode.add(allInfo.getString(1))
+      }
+
+      stmt.close
+      stockCode -= "000001"
+      stockCode
+    })
+
+    ret
+  }
+
+  /**
+    * 执行股票代码到中文名映射的查询操作
+    * @param  sql sql语句
+    * @author wukun
+    */
+  def execQueryStockInfo(sql: String): Try[HashMap[String, String]] = {
+
+    val ret = Try({
+
+      val stmt = dbConn.createStatement
+      val allInfo = stmt.executeQuery(sql)
+      val col = allInfo.getMetaData().getColumnCount
+
+      val stockInfo = new HashMap[String, String]
+
+      while (allInfo.next && col == 2) {
+        stockInfo += ((allInfo.getString(1), allInfo.getString(2)))
+      }
+
+      stmt.close
+      stockInfo
+    })
+
+    ret
+  }
+
+  /**
+    * 存储过程调用接口，以后会用到
+    * @param  sql sql语句
+    * @author wukun
+    */
+  def execProc(sql: String): Try[HashMap[String, String]] = {
+
+    val ret = Try({
+
+      val proc = dbConn.prepareCall(sql)
+      proc.setInt(1, 5)
+      proc.execute
+      val allInfo = proc.getResultSet
+      val col = allInfo.getMetaData().getColumnCount
+
+      val stockInfo = new HashMap[String, String]
+
+      while (allInfo.next && col == 2) {
+        stockInfo += ((allInfo.getString(1), allInfo.getString(2)))
+      }
+
+      proc.close
+      stockInfo
+    })
+
+    ret
+  }
+
+  /**
+    * 执行行业和概念查询操作
+    * @param  sql sql语句
+    * @author wukun
+    */
+  def execQueryHyGn(sql: String): Try[TupleHashMap] = {
+
+    val ret = Try({
+
+      val stmt = dbConn.createStatement
+      val allInfo = stmt.executeQuery(sql)
+      val col = allInfo.getMetaData().getColumnCount
+
+      val stockHy = new HashMap[String, ListBuffer[String]]
+      val stockGn = new HashMap[String, ListBuffer[String]]
+
+      while (allInfo.next && col == 3) {
+
+        val code = allInfo.getString(1)
+        val hyInfos = allInfo.getString(2).split(",")
+        if(hyInfos.size > 0) {
+          stockHy += ((code, new ListBuffer[String]))
+          for(hyInfo <- hyInfos) {
+            stockHy(code) += (hyInfo)
+          }
+        }
+
+        val gnInfos = allInfo.getString(3).split(",")
+        if(gnInfos.size > 0) {
+          stockGn += ((code, new ListBuffer[String]))
+          for(gnInfo <- gnInfos) {
+            stockGn(code) += (gnInfo)
+          }
+        }
+      }
+
+      stmt.close
+      (stockHy, stockGn)
+    })
+
+    ret
+  }
 }
 
 /** 
@@ -158,6 +313,18 @@ object MysqlHandle {
   ): MysqlHandle = {
     new MysqlHandle(url, xml)
   }
+
+  /*def main(args: Array[String]) {
+    val xml = XmlHandle("./config.xml")
+    val url = xml.getElem("mySql", "totalurl")
+    val sqlHandle = MysqlHandle(url, xml)
+
+    val ret = sqlHandle.execProc("{call query_stock_info(?)}")
+    ret match {
+      case Success(e) => println(e)
+      case Failure(e) => println(e)
+    }
+  } */
 
 }
 

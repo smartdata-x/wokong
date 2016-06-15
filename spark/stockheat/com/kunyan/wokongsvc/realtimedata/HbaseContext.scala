@@ -19,6 +19,7 @@ import org.apache.hadoop.hbase.protobuf.generated.ClientProtos
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil
 import org.apache.hadoop.hbase.util.Base64
 import org.apache.hadoop.hbase.util.Bytes
+import org.apache.spark.AccumulatorParam
 import org.apache.spark.api.java.function.Function
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
@@ -26,6 +27,7 @@ import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext 
 
 import scala.collection.mutable.ListBuffer
+import scala.reflect.ClassTag
 
 /**
   * Created by wukun on 2016/5/20
@@ -91,14 +93,20 @@ class HbaseContext(xml:XmlHandle) { self =>
     * 产生hbase库数据RDD
     * @author wukun
     */
-  def generateRDD:RDD[(Writable, Result)] = {
+  def generateRDD: RDD[(Writable, Result)] = {
     sparkContext.newAPIHadoopRDD(self.conf, classOf[TableInputFormat], classOf[Writable], classOf[Result])
   }
 
   def broadcastPool: Broadcast[MysqlPool] = {
-    val pool = sparkContext.broadcast(mysqlPool)
+    sparkContext.broadcast(mysqlPool)
+  }
 
-    pool
+  def broadcastSource[T: ClassTag](source: T) = {
+    sparkContext.broadcast[T](source)
+  }
+
+  def accum[T: ClassTag](initVal: T)(implicit param: AccumulatorParam[T]) = {
+    sparkContext.accumulator[T](initVal)
   }
 }
 
