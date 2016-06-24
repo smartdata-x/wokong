@@ -1,3 +1,4 @@
+
 name := "hotwords"
 
 version := "1.0"
@@ -8,9 +9,7 @@ resolvers += "Kunyan Repo" at "http://222.73.34.92:8081/nexus/content/groups/pub
 
 resolvers += "OSChina" at "http://maven.oschina.net/content/groups/public/"
 
-resolvers += "Kunyan Repo" at "http://222.73.34.92:8081/nexus/content/groups/public/"
-
-libraryDependencies += "com.kunyan" % "nlpsuit-package" % "0.2.3"
+libraryDependencies += "com.kunyan" % "nlpsuit-package" % "0.2.4"
 
 libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.10.4" % "provided"
 
@@ -30,13 +29,14 @@ libraryDependencies += "org.apache.spark" % "spark-core_2.10" % "1.5.2" % "provi
 
 libraryDependencies += "org.apache.spark" % "spark-streaming_2.10" % "1.5.2"
 
-libraryDependencies += "org.wltea.ik-analyzer" % "ik-analyzer" % "3.2.8"
-
 libraryDependencies += "redis.clients" % "jedis" % "2.8.0"
 
 libraryDependencies += "mysql" % "mysql-connector-java" % "5.1.38" % "provided"
 
 libraryDependencies += "com.ibm.icu" % "icu4j" % "56.1"
+
+libraryDependencies += "org.json" % "json" % "20160212"
+
 
 assemblyMergeStrategy in assembly := {
   case PathList("javax", "servlet", xs @ _*) => MergeStrategy.last
