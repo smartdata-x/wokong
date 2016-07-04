@@ -31,7 +31,9 @@ object HDFSUtil {
     }
 
     fs.close()
+
     file
+
   }
 
   /**
@@ -41,9 +43,11 @@ object HDFSUtil {
   def mkDir(dir: Path): Unit = {
 
     val fs = FileSystem.get(new URI(HDFSConfig.HDFS_NAMENODE),conf)
+
     if(!fs.exists(dir)) {
       fs.mkdirs(dir)
     }
+
     fs.close()
 
   }
