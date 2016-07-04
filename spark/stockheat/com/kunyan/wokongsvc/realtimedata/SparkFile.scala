@@ -12,7 +12,7 @@
 package com.kunyan.wokongsvc.realtimedata
 
 import org.apache.log4j.PropertyConfigurator
-import MixTool.Tuple2Map
+import MixTool.{Tuple2Map, TupleHashMapSet}
 import scala.util.Try
 import scala.util.Success
 import scala.util.Failure
@@ -39,8 +39,10 @@ object SparkFile extends CustomLogger {
    val mysqlPool = MysqlPool(xmlHandle)
    mysqlPool.setConfig(1, 2)
 
-   val stockalias = mysqlPool.getConnect match {
+   val stockInfo = mysqlPool.getConnect match {
+
      case Some(connect) => {
+
        val sqlHandle = MysqlHandle(connect)
 
        val alias = sqlHandle.execQueryStockAlias(MixTool.SYN_SQL) match {
@@ -50,10 +52,16 @@ object SparkFile extends CustomLogger {
            System.exit(-1)
          }
        }
+
+       val stockHyGn = sqlHandle.execQueryHyGn(MixTool.STOCK_HY_GN) recover {
+         case e: Exception => {
+           errorLog(fileInfo, e.getMessage + "[initial stock_hy_gn exception]")
+           System.exit(-1)
+         }
+       }
+
        sqlHandle.close
-
-
-       alias
+       (alias, stockHyGn)
      }
 
      case None => {
@@ -62,9 +70,10 @@ object SparkFile extends CustomLogger {
      }
    }
 
+   val molt = stockInfo.asInstanceOf[(Tuple2Map, Try[TupleHashMapSet])]
    val fileContext = FileContext(xmlHandle)
 
-   SearchHandle.work(fileContext, mysqlPool, stockalias.asInstanceOf[Tuple2Map])
+   SearchHandle.work(fileContext, mysqlPool, molt._1, molt._2.get)
   }
 }
 

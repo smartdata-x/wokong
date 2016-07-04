@@ -28,6 +28,7 @@
  import scala.util.Success
  import scala.util.Failure
  import org.apache.spark.rdd.RDD
+ import java.util.Calendar
 
  /** 
    * Created by wukun on 2016/5/23
@@ -36,12 +37,12 @@
  class TimerHandle(
    hbaseContext: HbaseContext, 
    pool: MysqlPool,
-   stock: HashSet[String]
+   stock: HashSet[String],
+   path: String
  ) extends TimerTask with Serializable with CustomLogger {
 
    @transient val hc = hbaseContext
    @transient val masterPool = pool
-   val path = "/home/wukun/work/Wokong/src/main/scala/com/kunyan/wokongsvc/realtimedata/"
 
    val colInfo = hc.getColInfo
    val getStock = HbaseContext.dataHandle
@@ -59,15 +60,22 @@
      */
    override def run() {
 
+     val cal: Calendar = Calendar.getInstance
      val nowUpdateTime = TimeHandle.getDay
-     if(nowUpdateTime != lastUpdateTime && TimeHandle.getNowHour == 0) {
+
+     if(nowUpdateTime != lastUpdateTime && TimeHandle.getNowHour(cal) == 0) {
 
        RddOpt.updateAccum(masterPool.getConnect, "stock_follow", 0)
        lastUpdateTime = nowUpdateTime
      }
 
-     val nowTime = TimeHandle.maxStamp
+     val month = TimeHandle.getMonth(cal, 1)
+     val day = TimeHandle.getDay(cal)
+
+     //val nowTime = TimeHandle.maxStamp
+     val nowTime = 1466805600000L
      val prevTime = nowTime - 3600000
+
      hc.changeScan(prevTime, nowTime)
      hc.changeConf
 
@@ -85,11 +93,13 @@
      })
 
      val stockCount = sourceData.filter( x => {
+
        if((stockCode.value)(x._1)) {
          true
        } else {
          false
        }
+
      }).reduceByKey(_ + _).persist(StorageLevel.MEMORY_AND_DISK)
 
      stockCount.foreachPartition( x => {
@@ -134,11 +144,70 @@
 
      if(prevRdd == null) {
        stockCount.foreachPartition( x => {
-         RddOpt.updateAddFirst(executorPool.value.getConnect, x, "stock_follow_add", timeTamp)
+
+         executorPool.value.getConnect match {
+           case Some(connect) => {
+
+             val mysqlHandle = MysqlHandle(connect)
+
+             x.foreach( y => {
+
+               mysqlHandle.execInsertInto(
+                 MixTool.insertCount("stock_follow_add", y._1, timeTamp, y._2)
+               ) recover {
+                 case e: Exception => warnLog(fileInfo, e.getMessage + "[Update data failure]")
+               }
+
+               mysqlHandle.execInsertInto(
+                 MixTool.updateMonthAccum("stock_follow_month_", y._1, month, day, y._2)
+               ) recover {
+                 case e: Exception => warnLog(fileInfo, e.getMessage + "[Update accum failure]")
+               }
+             })
+
+             mysqlHandle.close
+           }
+
+           case None => warnLog(fileInfo, "[Get connect failure]")
+         }
        })
      } else {
        stockCount.fullOuterJoin[Int](prevRdd).foreachPartition( x => {
-         RddOpt.updateAdd(executorPool.value.getConnect, x, "stock_follow_add", timeTamp)
+
+         executorPool.value.getConnect match {
+           case Some(connect) => {
+
+             val mysqlHandle = MysqlHandle(connect)
+
+             x.foreach( y => {
+               val now = y._2._1 match {
+                 case Some(z) => z
+                 case None    => 0
+               }
+
+               val prev = y._2._2 match {
+                 case Some(z) => z
+                 case None    => 0
+               }
+
+               mysqlHandle.execInsertInto(
+                 MixTool.insertCount("stock_follow_add", y._1, timeTamp, now - prev)
+               ) recover {
+                 case e: Exception => warnLog(fileInfo, e.getMessage + "[Update data failure]")
+               }
+
+               mysqlHandle.execInsertInto(
+                 MixTool.updateMonthAccum("stock_follow_month_", y._1, month, day, now - prev)
+               ) recover {
+                 case e: Exception => warnLog(fileInfo, e.getMessage + "[Update accum failure]")
+               }
+             })
+
+             mysqlHandle.close
+           }
+
+           case None => warnLog(fileInfo, "[Get connect failure]")
+         }
        })
      }
 
@@ -173,17 +242,15 @@
        }
      }
 
-    /* 初始化写文件句柄 */
-    val userWriter = Try(new FileWriter("/home/wukun/work/Wokong/src/main/scala/com/kunyan/wokongsvc/realtimedata/userStatic.txt", true)) match {
-      case Success(write) => write
-      case Failure(e) => System.exit(-1)
-    }
-
-    val writer = userWriter.asInstanceOf[FileWriter]
-    writer.write(timeTamp + ":" + userCount + "\n")
-    writer.close
+     val userWriter = Try(new FileWriter(path, true)) match {
+       case Success(write) => write
+       case Failure(e) => System.exit(-1)
+     }
+   
+     val writer = userWriter.asInstanceOf[FileWriter]
+     writer.write(timeTamp + ":" + userCount + "\n")
+     writer.close
    }
-
  }
 
  /**
@@ -195,19 +262,22 @@
    def apply(
      hc: HbaseContext, 
      pool: MysqlPool,
-     stock: HashSet[String]): TimerHandle = {
-     new TimerHandle(hc, pool, stock)
+     stock: HashSet[String],
+     path: String): TimerHandle = {
+     new TimerHandle(hc, pool, stock, path)
    }
 
    def work(
      hc: HbaseContext, 
      pool: MysqlPool, 
-     stock: HashSet[String]) {
+     stock: HashSet[String],
+     path: String) {
 
      val timerHandle:Timer = new Timer
      val computeTime:Calendar = Calendar.getInstance
      val hour = TimeHandle.getHour(computeTime)
+
      TimeHandle.setTime(computeTime, hour, 0, 0, 0)
-     timerHandle.scheduleAtFixedRate(TimerHandle(hc, pool, stock), computeTime.getTime(), 60 * 60 * 1000)
+     timerHandle.scheduleAtFixedRate(TimerHandle(hc, pool, stock, path), computeTime.getTime(), 60 * 60 * 1000)
    }
  }

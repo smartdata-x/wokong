@@ -74,6 +74,7 @@ class HbaseContext(xml:XmlHandle) { self =>
   def initConf: Configuration = {
 
     val configuration = HBaseConfiguration.create
+
     val zookeeper = (xml.getElem("hbase", "clientport"),xml.getElem("hbase", "quorum"))
     configuration.set("hbase.zookeeper.property.clientPort", zookeeper._1)
     configuration.set("hbase.zookeeper.quorum", zookeeper._2)
@@ -134,8 +135,10 @@ object HbaseContext {
       val iterator = pattern.findAllMatchIn(value)
 
       while(iterator.hasNext) {
+
         val item = iterator.next
         followStockCodeList += ((item.toString, 1))
+
       }
 
       followStockCodeList

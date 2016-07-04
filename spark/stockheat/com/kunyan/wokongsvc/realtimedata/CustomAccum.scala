@@ -56,11 +56,15 @@ object CustomAccum {
     ): HashMap[String, Int] = {
 
       val keys = t2.keys
+
       for(key <- keys) {
+
         if(!t1.contains(key)) {
           t1 += ((key, t2(key)))
         }
+
       }
+
       t1
     }
 

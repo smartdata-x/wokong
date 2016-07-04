@@ -40,6 +40,7 @@ class MysqlPool private(val xmlHandle:XmlHandle) extends Serializable with Custo
   def createConfig: BoneCPConfig = {
 
     val initConfig = new BoneCPConfig
+
     initConfig.setJdbcUrl(xmlHandle.getElem("mySql", "url"))
     initConfig.setUsername(xmlHandle.getElem("mySql", "user"))
     initConfig.setPassword(xmlHandle.getElem("mySql", "password"))

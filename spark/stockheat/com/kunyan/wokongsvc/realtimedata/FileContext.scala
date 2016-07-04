@@ -44,8 +44,10 @@ class FileContext(xml: XmlHandle) {
     var hour = 0
 
     if(TimeHandle.getZeHour(cal).toInt >= 0 && TimeHandle.getZeHour(cal).toInt <= 4) {
+
       hour = TimeHandle.getZeHour(cal).toInt + 23 + 1 - 5
       day = day - 1
+
     } else {
       hour = TimeHandle.getZeHour(cal).toInt - 5
     }

@@ -45,7 +45,9 @@ object SparkHbase extends CustomLogger {
 
     /* 初始化A股下公司用到的股票代码 */
     val stockCode = mysqlPool.getConnect match {
+
       case Some(connect) => {
+
         val sqlHandle = MysqlHandle(connect)
 
         val stock = sqlHandle.execQueryStock(MixTool.STOCK_SQL) match {
@@ -66,14 +68,9 @@ object SparkHbase extends CustomLogger {
       }
     }
 
-    /*val stockWriter = Try(new FileWriter(args(3), true)) match {
-      case Success(write) => write
-      case Failure(e) => System.exit(-1)
-    } */
-
     val hbaseContext = HbaseContext(xml)
 
     TimerHandle.work(hbaseContext, mysqlPool, 
-      stockCode.asInstanceOf[HashSet[String]])
+      stockCode.asInstanceOf[HashSet[String]], args(2))
   }
 }
