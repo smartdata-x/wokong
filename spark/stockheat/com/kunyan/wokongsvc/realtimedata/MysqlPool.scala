@@ -37,9 +37,10 @@ class MysqlPool private(val xmlHandle:XmlHandle) extends Serializable with Custo
     * 初始化连接池配置
     * @author wukun
     */
-  def createConfig:BoneCPConfig = {
+  def createConfig: BoneCPConfig = {
 
     val initConfig = new BoneCPConfig
+
     initConfig.setJdbcUrl(xmlHandle.getElem("mySql", "url"))
     initConfig.setUsername(xmlHandle.getElem("mySql", "user"))
     initConfig.setPassword(xmlHandle.getElem("mySql", "password"))
@@ -71,7 +72,7 @@ class MysqlPool private(val xmlHandle:XmlHandle) extends Serializable with Custo
       connect = Some(connPool.getConnection)
     } catch {
 
-      case _: Exception => {
+      case e: Exception => {
 
         if(connect != null) {
           connect.get.close
@@ -88,6 +89,10 @@ class MysqlPool private(val xmlHandle:XmlHandle) extends Serializable with Custo
   }
 }
 
+/**
+  * Created by wukun on 2016/5/18
+  * MysqlPool伴生对象
+  */
 object MysqlPool extends Serializable {
   def apply(xmlHandle:XmlHandle):MysqlPool = {
     new MysqlPool(xmlHandle)
