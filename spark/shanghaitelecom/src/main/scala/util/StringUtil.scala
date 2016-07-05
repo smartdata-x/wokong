@@ -27,15 +27,18 @@ object StringUtil extends Serializable{
 
     val bos = new ByteArrayOutputStream()
     val  zos = new InflaterOutputStream(bos)
+
     try {
       zos.write(new sun.misc.BASE64Decoder().decodeBuffer(compressedStr))
     } catch {
       case e:Exception => e.printStackTrace()
     } finally {
-      if(zos !=null ){
+
+      if(zos != null ){
         zos.close()
       }
-      if(bos !=null){
+
+      if(bos != null){
         bos.close()
       }
     }
@@ -50,8 +53,11 @@ object StringUtil extends Serializable{
     * @return 对应的json对象
     */
   private def getJsonObject(line: String): JSONObject = {
+
     val data = new JSONObject(line)
+
     data
+
   }
 
   /**
@@ -60,8 +66,11 @@ object StringUtil extends Serializable{
     * @return 解码后的字符串
     */
   private def decodeBase64(base64String : String): String = {
+
     val decoded = new BASE64Decoder().decodeBuffer(base64String)
+
     new String(decoded)
+
   }
 
   /**
@@ -79,7 +88,6 @@ object StringUtil extends Serializable{
       val resultSplit = result.split("_kunyan_")
       val json = getJsonObject(resultSplit(0))
       val keyword = resultSplit(1)
-      val id = json.get ("id").toString
       val value = json.get ("value").toString
       val desDe = zlibUnzip(value.replace("-<","\n"))
       val resultJson = desDe.split("\t")
@@ -96,7 +104,7 @@ object StringUtil extends Serializable{
     } catch {
       case e:Exception  =>
         SUELogger.error("praseJsonObject ERROR")
-        FileUtil.saveErrorData(FileConfig.TOO_BIG_VALUE,str)
+        FileUtil.saveErrorData(FileConfig.TOO_BIG_VALUE, str)
     }
 
   finalValue
@@ -129,8 +137,11 @@ object StringUtil extends Serializable{
     } catch {
       case e:Exception  =>
         SUELogger.error("praseJsonObject ERROR")
-        HDFSUtil.saveToHadoop(FileConfig.TOO_BIG_VALUE,Array(str))
+        HDFSUtil.saveToHadoopFileSystem(FileConfig.TOO_BIG_VALUE,Array(str))
     }
+
     finalValue
+
   }
+
 }

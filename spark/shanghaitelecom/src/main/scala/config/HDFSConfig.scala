@@ -28,7 +28,7 @@ object HDFSConfig {
     * 搜索数据目录
     * @param dir 目录
     */
-  def searchEngineDir(dir:String):Unit ={
+  def searchEngineDir(dir:String):Unit = {
     HDFS_SEARCH_ENGINE_DATA = HDFS_NAMENODE + dir
   }
 

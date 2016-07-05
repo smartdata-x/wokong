@@ -97,11 +97,10 @@ object Scheduler {
     val sparkConf = new SparkConf()
       .setAppName("Data_Analysis")
       .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-      .set("spark.kryoserializer.buffer.max", "2000")
       .set("spark.driver.allowMultipleContexts","true")
       .set("spark.cleaner.ttl", "10000")
 
-    val Array(brokers, topics, zkhosts, dataDir,searchEngineDataDir,errorDataDir, nameNode) = args
+    val Array(brokers, topics, zks, dataDir, searchEngineDataDir, errorDataDir, nameNode) = args
 
     HDFSConfig.nameNode(nameNode)
     HDFSConfig.rootDir(dataDir)
@@ -112,7 +111,7 @@ object Scheduler {
 
     val text = KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder] (
       ssc,
-      kafkaParams = Map[String,String]("metadata.broker.list" -> brokers,"group.id" -> "Telecom","zookeeper.connect" -> zkhosts,"serializer.class" -> "kafka.serializer.StringEncoder"),
+      kafkaParams = Map[String,String]("metadata.broker.list" -> brokers,"group.id" -> "Telecom","zookeeper.connect" -> zks,"serializer.class" -> "kafka.serializer.StringEncoder"),
       topics = topics.split(",").toSet
     )
 
@@ -126,10 +125,10 @@ object Scheduler {
         // search data
         val searchEngineData = rdd.filter(isSearchEngineURL)
           .collect()
-        HDFSUtil.saveToHadoop(HDFSConfig.HDFS_SEARCH_ENGINE_DATA,searchEngineData)
+        HDFSUtil.saveToHadoopFileSystem(HDFSConfig.HDFS_SEARCH_ENGINE_DATA,searchEngineData)
         // data
         val resArray = rdd.collect()
-        HDFSUtil.saveToHadoop(HDFSConfig.HDFS_ROOT_DIR, resArray)
+        HDFSUtil.saveToHadoopFileSystem(HDFSConfig.HDFS_ROOT_DIR, resArray)
 
       })
     } catch {

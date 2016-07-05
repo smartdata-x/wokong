@@ -22,9 +22,9 @@ object HDFSUtil {
     */
   def createFile(day: String): Path = {
 
-    val fs = FileSystem.get(new URI(HDFSConfig.HDFS_NAMENODE),conf)
+    val fs = FileSystem.get(new URI(HDFSConfig.HDFS_NAMENODE), conf)
 
-    val file = new Path(day +"/"+ TimeUtil.getCurrentHour)
+    val file = new Path(day + "/" + TimeUtil.getCurrentHour)
 
     if(!fs.exists(file)) {
       fs.create(file, false)
@@ -42,7 +42,7 @@ object HDFSUtil {
     */
   def mkDir(dir: Path): Unit = {
 
-    val fs = FileSystem.get(new URI(HDFSConfig.HDFS_NAMENODE),conf)
+    val fs = FileSystem.get(new URI(HDFSConfig.HDFS_NAMENODE), conf)
 
     if(!fs.exists(dir)) {
       fs.mkdirs(dir)
@@ -59,12 +59,13 @@ object HDFSUtil {
     */
   def writeToFile(path: Path , data: Array[String]): Unit = {
 
-    val fs = FileSystem.get(new URI(HDFSConfig.HDFS_NAMENODE),conf)
+    val fs = FileSystem.get(new URI(HDFSConfig.HDFS_NAMENODE), conf)
     val sb = new StringBuilder()
 
     for (line <- data) {
       sb.append(line + "\n")
     }
+
     val in = new BufferedInputStream(new ByteArrayInputStream(sb.toString().getBytes))
     val out  = fs.append(path)
     IOUtils.copyBytes(in, out, 4096)
@@ -80,7 +81,7 @@ object HDFSUtil {
     * @param filePath 指定目录
     * @param data 数据
     */
-  def saveData(filePath: Path , data: Array[String]): Unit = {
+  def saveData(filePath: Path, data: Array[String]): Unit = {
 
     writeToFile(filePath, data)
 
@@ -91,13 +92,14 @@ object HDFSUtil {
     * @param dir  指定目录
     * @param data 数据
     */
-  def saveToHadoop(dir: String, data:Array[String]): Unit = {
+  def saveToHadoopFileSystem(dir: String, data:Array[String]): Unit = {
 
     mkDir(new Path(dir))
     val day = new Path(dir + "/" + TimeUtil.getDay)
     mkDir(day)
     val file = HDFSUtil.createFile(dir + "/" + TimeUtil.getDay)
-    saveData(file,data)
+    saveData(file, data)
 
   }
+
 }
