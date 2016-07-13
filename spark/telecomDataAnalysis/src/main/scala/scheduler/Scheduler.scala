@@ -23,7 +23,7 @@ import scala.collection.mutable.ListBuffer
 object Scheduler {
 
   val RedisInfoList: mutable.MutableList[String] = mutable.MutableList[String]()
-  var confInfoMap = new mutable.HashMap[String,String]()
+  var confInfoMap = new mutable.HashMap[String, String]()
   var stockCodes:java.util.List[String] = new util.ArrayList[String]()
   var nameUrls = mutable.MutableList[String]()
   var jianPins = mutable.MutableList[String]()
@@ -31,11 +31,6 @@ object Scheduler {
 
   var userMap = new mutable.HashMap[String, ListBuffer[String]]
   var stockCodeMap = new mutable.HashMap[String, ListBuffer[String]]
-
-  val  setSearchCount ="set:search:count:"
-  val  setVisitCount ="set:visit:count:"
-  val setSearch ="set:search:"
-  val setVisit ="set:visit:"
 
   val sparkConf = new SparkConf()
     .setAppName("LoadData_Analysis")
@@ -63,6 +58,9 @@ object Scheduler {
 
   }
 
+  /**
+    * 从redis读取股票初始化数据
+    */
   def initRedisData(): Unit = {
 
     val jedis2 = RedisUtil.getRedis(confInfoMap("ip"),confInfoMap("port"),confInfoMap("auth"),confInfoMap("database"))
@@ -81,6 +79,7 @@ object Scheduler {
         quanPins.+=(jedis2.get("stock:" + stockCode + ":quanpin"))
 
       }
+
     } finally {
       jedis2.close()
     }
@@ -106,6 +105,12 @@ object Scheduler {
     (attr,confValue)
 
   }
+
+  /**
+    * 判断原始数据是搜索还是查看
+    * @param line 原始数据
+    * @return 区分后的数据集合
+    */
   def flatMapFun(line: String): mutable.MutableList[String] = {
 
     val lineList: mutable.MutableList[String] = mutable.MutableList[String]()
@@ -135,6 +140,12 @@ object Scheduler {
     lineList
 
   }
+
+  /**
+    * 匹配原始数据
+    * @param s 原始数据
+    * @return 返回匹配后的数据集合
+    */
   def mapFunction(s:String):mutable.MutableList[String] = {
 
     var words: mutable.MutableList[String] = new mutable.MutableList[String]()
@@ -176,6 +187,7 @@ object Scheduler {
               }
             }
           }
+
         } else if(firstChar == '%') {
 
           val pattern:Pattern = Pattern.compile("%.*%.*%.*%.*%.*%.*%.*%")
@@ -200,6 +212,7 @@ object Scheduler {
               }
             }
           }
+
         } else if((firstChar >= 'A' && firstChar <= 'Z') || (firstChar >= 'a' && firstChar <= 'z')) {
 
           keyWord = keyWord.toLowerCase()
@@ -235,6 +248,7 @@ object Scheduler {
           }
         }
       }
+
     } else if(s.startsWith("hash:visit:")) {
 
       val keys:Array[String]  = s.split(",")

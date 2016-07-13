@@ -11,6 +11,12 @@ import util.RedisUtil
   */
 object SearchAndVisit {
 
+  /**
+    * 将数据写入redis
+    * @param jedis redis连接
+    * @param array 数据
+    * @param types 数据类别，用来区分数据来源
+    */
   def writeDataToRedis(jedis:Jedis, array: Array[(String, Int)], types:String): Unit = {
 
     val jedisSv = RedisUtil.getRedis(Scheduler.confInfoMap("ip"), Scheduler.confInfoMap("port"), Scheduler.confInfoMap("auth"), Scheduler.confInfoMap("database"))
@@ -31,10 +37,8 @@ object SearchAndVisit {
 
           pipeSearchAndVisit.hincrBy(types+":"+outKey, firstKeys(1), line._2)
           pipeSearchAndVisit.expire(types+":"+outKey, 50 * 60 * 60)
-          /* 添加当天的set list */
           pipeSearchAndVisit.zincrby(types+":"+"set:" + keys(1) + ":" + dayKey(0), line._2, firstKeys(1))
           pipeSearchAndVisit.expire(types+":"+"set:" + keys(1) + ":" + dayKey(0), 50 * 60 * 60)
-          /* 添加当天的set count */
           pipeSearchAndVisit.incrBy(types+":"+"set:"+ keys(1)+":count:" + dayKey(0), line._2)
           pipeSearchAndVisit.expire(types+":"+"set:"+ keys(1)+":count:" + dayKey(0), 50 * 60 * 60)
 
@@ -42,10 +46,8 @@ object SearchAndVisit {
 
           pipeSearchAndVisit.hincrBy(outKey, firstKeys(1),line._2)
           pipeSearchAndVisit.expire(outKey, 50 * 60 * 60)
-          /* 添加当天的set list */
           pipeSearchAndVisit.zincrby("set:" + keys(1) + ":" + dayKey(0), line._2, firstKeys(1))
           pipeSearchAndVisit.expire("set:" + keys(1) + ":" + dayKey(0), 50 * 60 * 60)
-          /* 添加当天的set count */
           pipeSearchAndVisit.incrBy("set:"+ keys(1)+":count:" + dayKey(0), line._2)
           pipeSearchAndVisit.expire("set:"+ keys(1)+":count:" + dayKey(0), 50 * 60 * 60)
 
@@ -78,7 +80,7 @@ object SearchAndVisit {
       while(iterator.hasNext) {
 
         count +=1
-        val value = iterator.next()
+        iterator.next()
 
       }
 
