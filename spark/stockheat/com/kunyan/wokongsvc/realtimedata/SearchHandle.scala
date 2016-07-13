@@ -41,20 +41,20 @@ class SearchHandle(
   @transient val fc = fileContext 
 
   @transient val masterPool = pool
-  val executorPool = fc.broadcastPool
 
+  val executorPool = fc.broadcastPool
   val alias = fc.broadcastSource(stockAlias)
   val stockHy = fc.broadcastSource(hyGnInfo._1._1)
   val stockGn = fc.broadcastSource(hyGnInfo._1._2)
-  val hyGn = hyGnInfo._2
 
   /* 初始化计算某时刻A股访问总量；累加器 */
   val accumATotal = fc.accum[Int](0)
 
   var prevRdd: RDD[(String, Int)] = null
   var prevHyGn: HashMap[String, Int] = null
-  var temp: HashMap[String, Int] = new HashMap[String, Int]
   var lastUpdateTime = 0
+  val hyGn = hyGnInfo._2
+  var temp: HashMap[String, Int] = new HashMap[String, Int]
 
   /**
    * 每次提交时执行的逻辑
@@ -75,7 +75,7 @@ class SearchHandle(
       RddOpt.resetDiffData(masterPool.getConnect, "proc_resetDiffData")
     }
 
-    val monthTable = month%2 match {
+    val monthTable = month % 2 match {
       case 0 => ("s_v_month_prev", "hy_v_month_prev", "gn_v_month_prev")
       case 1 => ("s_v_month_now", "hy_v_month_now", "gn_v_month_now")
     }
@@ -103,13 +103,17 @@ class SearchHandle(
         }).reduceByKey(_ + _).persist(StorageLevel.MEMORY_AND_DISK_SER)
 
         if(prevRdd == null) {
+
           eachCodeCount.map( x => (x._1, x._2)).foreachPartition( y => {
             RddOpt.updateADataFirst(executorPool.value.getConnect, y, "proc_visit_A_data", timeTamp, monthTable._1, day, accumATotal)
           })
+
         } else {
+
           eachCodeCount.fullOuterJoin[Int](prevRdd).map( x=> (x._1, x._2)).foreachPartition( y => {
             RddOpt.updateAData(executorPool.value.getConnect, y, "proc_visit_A_data", timeTamp, monthTable._1, "s_v_diff", day, accumATotal)
           })
+
         }
 
         prevRdd = eachCodeCount
@@ -145,6 +149,7 @@ class SearchHandle(
             if(prevHyGn != null) {
 
               prevHyGn.get(x._1) match {
+
                 case Some(v) => {
                   prevHyGn -= x._1
                   x._2 - v
@@ -165,6 +170,7 @@ class SearchHandle(
         if(prevHyGn != null) {
 
           prevHyGn.foreach( x => {
+
             if(hyGn._1(x._1)) {
               RddOpt.updateHyGnDiff(masterPool.getConnect, x._1, timeTamp, "hy_v_diff", 0 - x._2)
             } else {
@@ -204,11 +210,11 @@ object SearchHandle {
     alias: Tuple2Map,
     hyGn: TupleHashMapSet) {
 
-      val timerHandle:Timer = new Timer
-      val computeTime:Calendar = Calendar.getInstance
-      val hour = TimeHandle.getHour(computeTime)
+      val TIMERHANDLE: Timer = new Timer
+      val COMPUTRTIME: Calendar = Calendar.getInstance
+      val HOUR = TimeHandle.getHour(COMPUTRTIME)
 
-      TimeHandle.setTime(computeTime, hour, 0, 0, 0)
-      timerHandle.scheduleAtFixedRate(SearchHandle(fc, pool, alias, hyGn), computeTime.getTime(), 60 * 60 * 1000)
+      TimeHandle.setTime(COMPUTRTIME, HOUR, 0, 0, 0)
+      TIMERHANDLE.scheduleAtFixedRate(SearchHandle(fc, pool, alias, hyGn), COMPUTRTIME.getTime(), 60 * 60 * 1000)
   }
 }

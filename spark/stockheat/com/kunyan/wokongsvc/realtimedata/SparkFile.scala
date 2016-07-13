@@ -46,21 +46,26 @@ object SparkFile extends CustomLogger {
        val sqlHandle = MysqlHandle(connect)
 
        val alias = sqlHandle.execQueryStockAlias(MixTool.SYN_SQL) match {
+
          case Success(z) => z
          case Failure(e) => {
            errorLog(fileInfo, e.getMessage + "[Query stockAlias exception]")
            System.exit(-1)
          }
+
        }
 
        val stockHyGn = sqlHandle.execQueryHyGn(MixTool.STOCK_HY_GN) recover {
+
          case e: Exception => {
            errorLog(fileInfo, e.getMessage + "[initial stock_hy_gn exception]")
            System.exit(-1)
          }
+
        }
 
        sqlHandle.close
+
        (alias, stockHyGn)
      }
 

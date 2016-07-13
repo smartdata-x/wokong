@@ -53,6 +53,7 @@ class FileContext(xml: XmlHandle) {
     }
 
     var strHour = ""
+
     if(hour >= 0 && hour <= 9) {
       strHour = "0" + hour
     } else {
@@ -60,6 +61,7 @@ class FileContext(xml: XmlHandle) {
     }
 
     var strDay = ""
+
     if(day <= 9) {
       strDay = "0" + day
     } else {

@@ -41,6 +41,7 @@
    def getMonth(cal: Calendar): String = {
 
      val month = cal.get(Calendar.MONTH) + 1
+
      if(month <= 9) {
        "0" + month
      } else {
@@ -63,6 +64,7 @@
    }
 
    def getDay: Int = {
+
      val cal = Calendar.getInstance
      val day = cal.get(Calendar.DAY_OF_MONTH)
 

@@ -12,9 +12,11 @@
  package com.kunyan.wokongsvc.realtimedata
 
  import com.kunyan.wokongsvc.realtimedata.CustomAccum._
+ import MixTool.TupleHashMapSet
 
  import org.apache.hadoop.conf.Configuration
  import org.apache.hadoop.hbase.util.Bytes
+ import org.apache.spark.rdd.RDD
  import org.apache.spark.storage.StorageLevel
 
  import java.io.FileWriter
@@ -27,8 +29,6 @@
  import scala.util.Try
  import scala.util.Success
  import scala.util.Failure
- import org.apache.spark.rdd.RDD
- import java.util.Calendar
 
  /** 
    * Created by wukun on 2016/5/23
@@ -38,21 +38,29 @@
    hbaseContext: HbaseContext, 
    pool: MysqlPool,
    stock: HashSet[String],
+   stockHyGn: TupleHashMapSet,
    path: String
  ) extends TimerTask with Serializable with CustomLogger {
 
    @transient val hc = hbaseContext
+
    @transient val masterPool = pool
 
    val colInfo = hc.getColInfo
+
    val getStock = HbaseContext.dataHandle
    val executorPool = hc.broadcastPool
    val stockCode = hc.broadcastSource[HashSet[String]](stock)
+   val stockHy = hc.broadcastSource(stockHyGn._1._1)
+   val stockGn = hc.broadcastSource(stockHyGn._1._2)
+
+   val accumATotal = hc.accum[Int](0)
+
    var lastUpdateTime = 0
-
    var prevRdd: RDD[(String, Int)] = null
-
-   val accum = hc.accum[(String, Int)]("0", 0)
+   var prevHyGn: HashMap[String, Int] = null
+   val hyGn = stockHyGn._2
+   var temp: HashMap[String, Int] = new HashMap[String, Int]
 
    /**
      * 每次提交时执行的逻辑
@@ -61,19 +69,24 @@
    override def run() {
 
      val cal: Calendar = Calendar.getInstance
-     val nowUpdateTime = TimeHandle.getDay
-
-     if(nowUpdateTime != lastUpdateTime && TimeHandle.getNowHour(cal) == 0) {
-
-       RddOpt.updateAccum(masterPool.getConnect, "stock_follow", 0)
-       lastUpdateTime = nowUpdateTime
-     }
-
      val month = TimeHandle.getMonth(cal, 1)
      val day = TimeHandle.getDay(cal)
 
-     //val nowTime = TimeHandle.maxStamp
-     val nowTime = 1466805600000L
+     if(day != lastUpdateTime && TimeHandle.getNowHour(cal) == 0) {
+
+       RddOpt.resetData(masterPool.getConnect, "proc_resetData")
+       lastUpdateTime = day
+
+     } else {
+       RddOpt.resetDiffData(masterPool.getConnect, "proc_resetDiffData")
+     }
+
+     val monthTable = month%2 match {
+       case 0 => ("s_v_month_prev", "hy_v_month_prev", "gn_v_month_prev")
+       case 1 => ("s_v_month_now", "hy_v_month_now", "gn_v_month_now")
+      }
+
+     val nowTime = TimeHandle.maxStamp
      val prevTime = nowTime - 3600000
 
      hc.changeScan(prevTime, nowTime)
@@ -92,7 +105,7 @@
        getStock(value)
      })
 
-     val stockCount = sourceData.filter( x => {
+     val eachCodeCount = sourceData.filter( x => {
 
        if((stockCode.value)(x._1)) {
          true
@@ -102,145 +115,90 @@
 
      }).reduceByKey(_ + _).persist(StorageLevel.MEMORY_AND_DISK)
 
-     stockCount.foreachPartition( x => {
+     if(prevRdd == null) {
 
-       executorPool.value.getConnect match {
-         case Some(connect) => {
+       eachCodeCount.map( x => (x._1, x._2)).foreachPartition( y => {
+         RddOpt.updateADataFirst(executorPool.value.getConnect, y, "proc_visit_A_data", timeTamp, monthTable._1, day, accumATotal)
+       })
 
-           val mysqlHandle = MysqlHandle(connect)
+     } else {
 
-           x.foreach( y => {
+       eachCodeCount.fullOuterJoin[Int](prevRdd).map( x=> (x._1, x._2)).foreachPartition( y => {
+         RddOpt.updateAData(executorPool.value.getConnect, y, "proc_visit_A_data", timeTamp, monthTable._1, "s_v_diff", day, accumATotal)
+       })
 
-             mysqlHandle.execInsertInto(
-               MixTool.insertCount("stock_follow", y._1, timeTamp, y._2)
-             ) recover {
-               case e: Exception => warnLog(fileInfo, e.getMessage + "[Update data failure]")
-             }
+     }
 
-             mysqlHandle.execInsertInto(
-               MixTool.insertOldCount("stock_follow_old", y._1, timeTamp, y._2)
-             ) recover {
-               case e: Exception => warnLog(fileInfo, e.getMessage + "[Update old data failure]")
-             }
+     prevRdd = eachCodeCount
 
-             mysqlHandle.execInsertInto(
-               MixTool.updateAccum("stock_follow_accum", y._1, y._2)
-             ) recover {
-               case e: Exception => warnLog(fileInfo, e.getMessage + "[Update accum failure]")
-             }
+     val nowHyGnData = eachCodeCount.flatMap( x => {
 
-             accum += y
-           })
+       /* gnInfo保存的是单只股票对应的所有概念 */
+      val gnInfo = stockGn.value.getOrElse(x._1, new ListBuffer[String])
 
-           mysqlHandle.close
-         }
+      /* hyInfo保存的是单只股票对应的所有行业 */
+      val hyInfo = stockHy.value.getOrElse(x._1, new ListBuffer[String])
 
-         case None => warnLog(fileInfo, "[Get connect failure]")
-       }
+      hyInfo.map( y => (y, x._2)) ++ gnInfo.map( z => (z, x._2))
+     }).reduceByKey(_ + _).collectAsMap
+
+     nowHyGnData.foreach( x => {
+
+       /* kind为0代表行业 ,1代表概念 */
+      var kind = 0
+      var table: String = monthTable._2
+
+      if(hyGn._2(x._1)) {
+
+        kind = 1
+        table = monthTable._3
+
+      }
+
+      temp += (x)
+
+      val diff = {
+
+        if(prevHyGn != null) {
+
+          prevHyGn.get(x._1) match {
+
+            case Some(v) => {
+              prevHyGn -= x._1
+              x._2 - v
+            }
+            case None => {
+              x._2
+            }
+
+          }
+
+          } else {
+            x._2
+          }
+      }
+
+      RddOpt.updateHyGnData(masterPool.getConnect, x, diff, "proc_visit_hygn_data", timeTamp, day, kind, table)
      })
 
-     RddOpt.updateMax(masterPool.getConnect, "stock_max", "max_f", accum.value._2)
-     accum.setValue("0", 0)
+     if(prevHyGn != null) {
 
-     if(prevRdd == null) {
-       stockCount.foreachPartition( x => {
+       prevHyGn.foreach( x => {
 
-         executorPool.value.getConnect match {
-           case Some(connect) => {
-
-             val mysqlHandle = MysqlHandle(connect)
-
-             x.foreach( y => {
-
-               mysqlHandle.execInsertInto(
-                 MixTool.insertCount("stock_follow_add", y._1, timeTamp, y._2)
-               ) recover {
-                 case e: Exception => warnLog(fileInfo, e.getMessage + "[Update data failure]")
-               }
-
-               mysqlHandle.execInsertInto(
-                 MixTool.updateMonthAccum("stock_follow_month_", y._1, month, day, y._2)
-               ) recover {
-                 case e: Exception => warnLog(fileInfo, e.getMessage + "[Update accum failure]")
-               }
-             })
-
-             mysqlHandle.close
-           }
-
-           case None => warnLog(fileInfo, "[Get connect failure]")
+         if(hyGn._1(x._1)) {
+           RddOpt.updateHyGnDiff(masterPool.getConnect, x._1, timeTamp, "hy_v_diff", 0 - x._2)
+         } else {
+           RddOpt.updateHyGnDiff(masterPool.getConnect, x._1, timeTamp, "gn_v_diff", 0 - x._2)
          }
        })
-     } else {
-       stockCount.fullOuterJoin[Int](prevRdd).foreachPartition( x => {
 
-         executorPool.value.getConnect match {
-           case Some(connect) => {
-
-             val mysqlHandle = MysqlHandle(connect)
-
-             x.foreach( y => {
-               val now = y._2._1 match {
-                 case Some(z) => z
-                 case None    => 0
-               }
-
-               val prev = y._2._2 match {
-                 case Some(z) => z
-                 case None    => 0
-               }
-
-               mysqlHandle.execInsertInto(
-                 MixTool.insertCount("stock_follow_add", y._1, timeTamp, now - prev)
-               ) recover {
-                 case e: Exception => warnLog(fileInfo, e.getMessage + "[Update data failure]")
-               }
-
-               mysqlHandle.execInsertInto(
-                 MixTool.updateMonthAccum("stock_follow_month_", y._1, month, day, now - prev)
-               ) recover {
-                 case e: Exception => warnLog(fileInfo, e.getMessage + "[Update accum failure]")
-               }
-             })
-
-             mysqlHandle.close
-           }
-
-           case None => warnLog(fileInfo, "[Get connect failure]")
-         }
-       })
      }
 
-     prevRdd = stockCount
+     /* 更新单个时间总和与更新时间 */
+     RddOpt.updateTotalTime(masterPool.getConnect, timeTamp, accumATotal.value)
 
-     /* 计算所有股票关注的总次数 */
-     val allCount = stockCount.map( x => x._2 ).fold(0)( (y, z) => y + z)
-
-     if(allCount > 0) {
-
-       masterPool.getConnect match {
-
-         case Some(connect) => {
-           val mysqlHandle = MysqlHandle(connect)
-
-           mysqlHandle.execInsertInto(
-             MixTool.insertTotal("stock_follow_count", timeTamp, allCount)
-           ) recover {
-             case e: Exception => warnLog(fileInfo, e.getMessage + "[Update all_data failure]")
-           }
-
-           mysqlHandle.execInsertInto(
-             MixTool.insertTime("update_follow", timeTamp)
-           ) recover {
-             case e: Exception => warnLog(fileInfo, e.getMessage + "[Update time failure]")
-           }
-
-           mysqlHandle.close
-         }
-
-         case None => warnLog(fileInfo, "[Get connect failure]")
-       }
-     }
+     prevHyGn = temp
+     temp.clear
 
      val userWriter = Try(new FileWriter(path, true)) match {
        case Success(write) => write
@@ -250,6 +208,8 @@
      val writer = userWriter.asInstanceOf[FileWriter]
      writer.write(timeTamp + ":" + userCount + "\n")
      writer.close
+
+     accumATotal.setValue(0)
    }
  }
 
@@ -263,21 +223,23 @@
      hc: HbaseContext, 
      pool: MysqlPool,
      stock: HashSet[String],
+     stockHyGn: TupleHashMapSet,
      path: String): TimerHandle = {
-     new TimerHandle(hc, pool, stock, path)
+     new TimerHandle(hc, pool, stock, stockHyGn, path)
    }
 
    def work(
      hc: HbaseContext, 
      pool: MysqlPool, 
      stock: HashSet[String],
+     stockHyGn: TupleHashMapSet,
      path: String) {
 
-     val timerHandle:Timer = new Timer
-     val computeTime:Calendar = Calendar.getInstance
-     val hour = TimeHandle.getHour(computeTime)
+     val TIMERHANDLE: Timer = new Timer
+     val COMPUTETIME: Calendar = Calendar.getInstance
+     val HOUR = TimeHandle.getHour(COMPUTETIME)
 
-     TimeHandle.setTime(computeTime, hour, 0, 0, 0)
-     timerHandle.scheduleAtFixedRate(TimerHandle(hc, pool, stock, path), computeTime.getTime(), 60 * 60 * 1000)
+     TimeHandle.setTime(COMPUTETIME, HOUR, 0, 0, 0)
+     TIMERHANDLE.scheduleAtFixedRate(TimerHandle(hc, pool, stock, stockHyGn, path), COMPUTETIME.getTime(), 60 * 60 * 1000)
    }
  }
