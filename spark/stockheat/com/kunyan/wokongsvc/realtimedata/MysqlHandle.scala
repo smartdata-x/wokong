@@ -53,9 +53,11 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
     this(null)
 
     try {
+
       val sqlInfo = (xml.getElem("mySql", "user"), xml.getElem("mySql", "password"))
       Class.forName(xml.getElem("mySql", "driver"))
       dbConn = DriverManager.getConnection(url, sqlInfo._1, sqlInfo._2)
+
     } catch {
 
       case e: SQLException => {
@@ -344,6 +346,7 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
     * @author wukun
     */
   def execInitProc(sql: String): Try[Unit] = {
+
     Try({
 
       val proc = dbConn.prepareCall(sql)
@@ -360,6 +363,7 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
     * @author wukun
     */
   def execDiffInit(sql: String): Try[Unit] = {
+
     Try({
 
       val proc = dbConn.prepareCall(sql)
@@ -396,10 +400,14 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
         if(hyInfos.size > 0) {
 
           stockHy += ((code, new ListBuffer[String]))
+
           for(hyInfo <- hyInfos) {
+
             if(hyInfo.compareTo("null") != 0) {
+
               stockHy(code) += hyInfo
               hy += hyInfo
+
             }
           }
 
@@ -410,10 +418,14 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
         if(gnInfos.size > 0) {
 
           stockGn += ((code, new ListBuffer[String]))
+
           for(gnInfo <- gnInfos) {
+
             if(gnInfo.compareTo("null") != 0) {
+
               stockGn(code) += gnInfo
               gn += gnInfo
+
             }
           }
 

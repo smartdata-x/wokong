@@ -11,25 +11,25 @@
 package com.kunyan.wokongsvc.realtimedata
 
 import com.kunyan.wokongsvc.realtimedata.MixTool.{Tuple2Map, TupleHashMapSet}
+import CustomAccum._
 
 import kafka.serializer.StringDecoder
 import org.apache.log4j.PropertyConfigurator
+import org.apache.spark.rdd.RDD 
 import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
 import org.apache.spark.streaming._
 import org.apache.spark.streaming.kafka._
 import org.apache.spark.storage.StorageLevel
 
+import java.util.Calendar
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
-import org.apache.spark.rdd.RDD 
-import CustomAccum._
+import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.ListBuffer
-import scala.collection.mutable.ArrayBuffer
-import java.util.Calendar
 
 /**
   * Created by wukun on 2016/5/23
@@ -40,8 +40,10 @@ object SparkKafka extends CustomLogger {
   def main(args: Array[String]) {
 
     if(args.length != 2) {
+
       errorLog(fileInfo, "args too little")
       System.exit(-1)
+
     }
 
     /* 加载日志配置文件 */
@@ -57,6 +59,7 @@ object SparkKafka extends CustomLogger {
     val stockInfo = masterPool.getConnect match {
 
       case Some(connect) => {
+
         val sqlHandle = MysqlHandle(connect)
 
         val alias = sqlHandle.execQueryStockAlias(MixTool.SYN_SQL) match {
@@ -131,6 +134,7 @@ object SparkKafka extends CustomLogger {
       } else {
         true
       }
+
     }).foreach( x => {
 
       /* 每天0时清空不保存历史数据的表 */
@@ -168,6 +172,7 @@ object SparkKafka extends CustomLogger {
       }
 
       averageTime match {
+
         case Success(z) => {
 
           val timeTamp = z / 1000
@@ -178,13 +183,17 @@ object SparkKafka extends CustomLogger {
           }).reduceByKey(_ + _).persist(StorageLevel.MEMORY_AND_DISK_SER)
 
           if(prevRdd == null) {
+
             eachCodeCount.map( x => (x._1, x._2)).foreachPartition( y => {
               RddOpt.updateADataFirst(pool.value.getConnect, y, "proc_visit_A_data", timeTamp, monthTable._1, day, accumATotal)
             })
+
           } else {
+
             eachCodeCount.fullOuterJoin[Int](prevRdd).map( x=> (x._1, x._2)).foreachPartition( y => {
               RddOpt.updateAData(pool.value.getConnect, y, "proc_visit_A_data", timeTamp, monthTable._1, "s_v_diff", day, accumATotal)
             })
+
           }
 
           prevRdd = eachCodeCount
@@ -220,6 +229,7 @@ object SparkKafka extends CustomLogger {
               if(prevHyGn != null) {
 
                 prevHyGn.get(x._1) match {
+
                   case Some(v) => {
                     prevHyGn -= x._1
                     x._2 - v
@@ -227,6 +237,7 @@ object SparkKafka extends CustomLogger {
                   case None => {
                     x._2
                   }
+
                 }
 
               } else {

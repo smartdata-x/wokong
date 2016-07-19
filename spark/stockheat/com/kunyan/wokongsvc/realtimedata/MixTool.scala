@@ -137,6 +137,7 @@ object MixTool {
        val tp = elem(2).toInt
 
        val mappedType = {
+
          if(tp >=0 && tp <= 40) {
 
            val stockCode = DataPattern.stockCodeMatch(elem(0), alias)

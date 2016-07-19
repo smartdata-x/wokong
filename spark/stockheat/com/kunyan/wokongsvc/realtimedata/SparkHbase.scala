@@ -11,6 +11,8 @@
 
 package com.kunyan.wokongsvc.realtimedata
 
+import MixTool.TupleHashMapSet
+
 import org.apache.log4j.PropertyConfigurator
 
 import java.io.FileWriter
@@ -44,22 +46,34 @@ object SparkHbase extends CustomLogger {
     mysqlPool.setConfig(1, 2)
 
     /* 初始化A股下公司用到的股票代码 */
-    val stockCode = mysqlPool.getConnect match {
+    val stockInfo = mysqlPool.getConnect match {
 
       case Some(connect) => {
 
         val sqlHandle = MysqlHandle(connect)
 
         val stock = sqlHandle.execQueryStock(MixTool.STOCK_SQL) match {
+
           case Success(z) => z
           case Failure(e) => {
             errorLog(fileInfo, e.getMessage + "[Query stock exception]")
             System.exit(-1)
           }
+
         }
+
+        val stockHyGn = sqlHandle.execQueryHyGn(MixTool.STOCK_HY_GN) recover {
+
+          case e: Exception => {
+            errorLog(fileInfo, e.getMessage + "[initial stock_hy_gn exception]")
+            System.exit(-1)
+          }
+
+        }
+
         sqlHandle.close
 
-        stock
+        (stock, stockHyGn)
       }
 
       case None => {
@@ -68,9 +82,9 @@ object SparkHbase extends CustomLogger {
       }
     }
 
+    val molt = stockInfo.asInstanceOf[(HashSet[String], Try[TupleHashMapSet])]
     val hbaseContext = HbaseContext(xml)
 
-    TimerHandle.work(hbaseContext, mysqlPool, 
-      stockCode.asInstanceOf[HashSet[String]], args(2))
+    TimerHandle.work(hbaseContext, mysqlPool, molt._1, molt._2.get, args(2))
   }
 }

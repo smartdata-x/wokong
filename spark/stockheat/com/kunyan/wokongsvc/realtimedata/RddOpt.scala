@@ -42,6 +42,7 @@ object RddOpt extends CustomLogger {
     count: Int) {
 
       tryConnect match {
+
         case Some(connect) => {
 
           val mysqlHandle = MysqlHandle(connect)
@@ -78,8 +79,11 @@ object RddOpt extends CustomLogger {
     tamp: Long,
     month: Int,
     day: Int) {
+
       tryConnect match {
+
         case Some(connect) => {
+
           val mysqlHandle = MysqlHandle(connect)
 
           rdd.foreach( y => {
@@ -133,6 +137,7 @@ object RddOpt extends CustomLogger {
       tryConnect match {
 
         case Some(connect) => {
+
           val mysqlHandle = MysqlHandle(connect)
 
           mysqlHandle.execTotalTimeProc(
@@ -161,8 +166,11 @@ object RddOpt extends CustomLogger {
     table: String,
     recode: String,
     max: Int) {
+
       tryConnect match {
+
         case Some(connect) => {
+
           val mysqlHandle = MysqlHandle(connect)
 
           mysqlHandle.execUpdate(MixTool.updateMax(table, recode, max)) recover {
@@ -194,6 +202,7 @@ object RddOpt extends CustomLogger {
     accumulator: Accumulator[Int]) {
 
       tryConnect match {
+
         case Some(connect) => {
 
           val mysqlHandle = MysqlHandle(connect)
@@ -235,6 +244,7 @@ object RddOpt extends CustomLogger {
     accumulator: Accumulator[Int]) {
 
       tryConnect match {
+
         case Some(connect) => {
 
           val mysqlHandle = MysqlHandle(connect)
@@ -242,6 +252,7 @@ object RddOpt extends CustomLogger {
           rdd.foreach( x => {
 
             val now = x._2._1 match {
+
               case Some(z) => {
                 accumulator += z
                 z
@@ -304,6 +315,7 @@ object RddOpt extends CustomLogger {
     table: String) {
 
       tryConnect match {
+
         case Some(connect) => {
 
           val mysqlHandle = MysqlHandle(connect)

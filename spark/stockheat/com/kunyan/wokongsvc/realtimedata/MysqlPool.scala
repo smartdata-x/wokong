@@ -23,10 +23,12 @@ class MysqlPool private(val xmlHandle:XmlHandle) extends Serializable with Custo
   try {
     Class.forName(xmlHandle.getElem("mySql", "driver"))
   } catch {
+
     case e: Exception => {
       errorLog(fileInfo, e.getMessage + "[The JDBC driver exception]")
       System.exit(-1)
     }
+
   }
 
   lazy val config = createConfig
