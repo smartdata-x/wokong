@@ -19,10 +19,9 @@ object SearchAndVisit {
     */
   def writeDataToRedis(jedis:Jedis, array: Array[(String, Int)], types:String): Unit = {
 
-    val jedisSv = RedisUtil.getRedis(Scheduler.confInfoMap("ip"), Scheduler.confInfoMap("port"), Scheduler.confInfoMap("auth"), Scheduler.confInfoMap("database"))
-    PrismLogger.warn("redisinfo:"+Scheduler.confInfoMap("ip")+":"+Scheduler.confInfoMap("port")+":"+Scheduler.confInfoMap("auth")+":"+Scheduler.confInfoMap("database"))
+    val jedis = RedisUtil.getRedis(Scheduler.confInfoMap("ip"), Scheduler.confInfoMap("port"), Scheduler.confInfoMap("auth"), Scheduler.confInfoMap("database"))
 
-    val pipeSearchAndVisit = jedisSv.pipelined()
+    val pipeSearchAndVisit = jedis.pipelined()
 
     array.foreach(line => {
 
@@ -88,7 +87,7 @@ object SearchAndVisit {
 
     }
 
-    jedisSv.close()
+    jedis.close()
     PrismLogger.warn("---pipeSearchAndVisit---syncAndReturnAll()----")
 
   }

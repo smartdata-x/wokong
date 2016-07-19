@@ -8,7 +8,6 @@ import java.util.regex.Pattern
 
 import _root_.util.RedisUtil
 import log.PrismLogger
-import message.SendMessage
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.{SparkConf, SparkContext}
 import searchandvisit.SearchAndVisit
@@ -63,25 +62,25 @@ object Scheduler {
     */
   def initRedisData(): Unit = {
 
-    val jedis2 = RedisUtil.getRedis(confInfoMap("ip"),confInfoMap("port"),confInfoMap("auth"),confInfoMap("database"))
+    val jedis = RedisUtil.getRedis(confInfoMap("ip"),confInfoMap("port"),confInfoMap("auth"),confInfoMap("database"))
 
     try {
 
-      System.out.println("redis connected")
-      stockCodes = jedis2.lrange("stock:list", 0, -1)
+      PrismLogger.warn("redis connected")
+      stockCodes = jedis.lrange("stock:list", 0, -1)
       val iterator: util.Iterator[String] = stockCodes.iterator()
 
       while (iterator.hasNext) {
 
         val stockCode = iterator.next()
-        nameUrls.+=(jedis2.get("stock:" + stockCode + ":nameurl"))
-        jianPins.+=(jedis2.get("stock:" + stockCode + ":jianpin"))
-        quanPins.+=(jedis2.get("stock:" + stockCode + ":quanpin"))
+        nameUrls.+=(jedis.get("stock:" + stockCode + ":nameurl"))
+        jianPins.+=(jedis.get("stock:" + stockCode + ":jianpin"))
+        quanPins.+=(jedis.get("stock:" + stockCode + ":quanpin"))
 
       }
 
     } finally {
-      jedis2.close()
+      jedis.close()
     }
 
   }
@@ -180,9 +179,9 @@ object Scheduler {
 
               if(stockCode.contains(keyWord)) {
 
-                words +=("hash:search:"+hours+","+stockCode)
-                words +=("search:count:"+hours)
-                words +=("search:"+stockCode+":"+hours)
+                words +=("hash:search:" + hours + "," + stockCode)
+                words +=("search:count:" + hours)
+                words +=("search:" + stockCode + ":" + hours)
 
               }
             }
@@ -205,9 +204,9 @@ object Scheduler {
 
               if(nameUrl.contains(keyWord)) {
 
-                words +=(keys(0)+","+stockCodes.get(index-1))
-                words +=("search:count:"+hours)
-                words +=("search:"+stockCodes.get(index-1)+":"+hours)
+                words +=(keys(0) + "," + stockCodes.get(index-1))
+                words +=("search:count:" + hours)
+                words +=("search:" + stockCodes.get(index-1) + ":" + hours)
 
               }
             }
@@ -225,8 +224,8 @@ object Scheduler {
             if(jianPin.contains(keyWord)) {
 
               words += (keys(0)+","+stockCodes.get(index-1))
-              words += ("search:count:"+hours)
-              words += ("search:"+stockCodes.get(index-1)+":"+hours)
+              words += ("search:count:" + hours)
+              words += ("search:" + stockCodes.get(index-1) + ":" + hours)
 
             }
           }
@@ -239,9 +238,9 @@ object Scheduler {
 
               if(quanPin.contains(keyWord)) {
 
-                words += (keys(0)+","+stockCodes.get(index-1))
-                words += ("search:count:"+hours)
-                words += ("search:"+stockCodes.get(index-1)+":"+hours)
+                words += (keys(0) + "," + stockCodes.get(index - 1))
+                words += ("search:count:" + hours)
+                words += ("search:" + stockCodes.get(index - 1) + ":" + hours)
 
               }
             }
@@ -254,7 +253,7 @@ object Scheduler {
       val keys:Array[String]  = s.split(",")
 
       if(keys.length < 2) {
-        words +="no"
+        words += "no"
       } else {
 
         val keyWord = keys(1)
@@ -263,8 +262,8 @@ object Scheduler {
         if(stockCodes.contains(keyWord)) {
 
           words += s
-          words += ("visit:count:"+hours)
-          words += ("visit:"+keyWord+":"+hours)
+          words += ("visit:count:" + hours)
+          words += ("visit:" + keyWord + ":" + hours)
 
         }
       }
@@ -326,8 +325,7 @@ object Scheduler {
     } catch {
 
       case e:Exception =>
-        PrismLogger.info(" VS Operation Exception"+e.printStackTrace())
-        SendMessage.sendMessage(1,"电信平台计算", "数据解析操作异常")
+        PrismLogger.info(" VS Operation Exception" + e.printStackTrace())
         PrismLogger.exception(e)
         System.exit(-1)
 
