@@ -38,6 +38,8 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.5" % "test"
 
 libraryDependencies += "redis.clients" % "jedis" % "2.8.0"
 
+libraryDependencies += "mysql" % "mysql-connector-java" % "5.1.8"
+
 resolvers += "Kunyan Repo" at "http://222.73.34.92:8081/nexus/content/groups/public/"
 libraryDependencies += "com.kunyan" % "scalautil" % "1.1"
 
