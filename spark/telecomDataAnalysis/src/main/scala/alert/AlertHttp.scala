@@ -2,7 +2,8 @@ package alert
 
 import java.util
 import java.util.{List, Calendar}
-import _root_.util.{ FileUtil, TimeUtil}
+import _root_.util.TimeUtil
+import _root_.util.FileUtil
 import config.FileConfig
 
 import redis.clients.jedis.Jedis
