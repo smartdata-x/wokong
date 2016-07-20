@@ -31,16 +31,13 @@ public class SHKVDown {
      */
     public static void main(String[] args) {
 
-        String yth = getYearToHour(Integer.valueOf(args[1]));
+        String yearToHour = getYearToHour(Integer.valueOf(args[1]));
 
 
         try {
 
-            /**
-             * 合并文件，判断保存下载文件的文件夹下是否有上个小时的文件
-             如果有就合并
-             */
-
+            //合并文件，判断保存下载文件的文件夹下是否有上个小时的文件
+            //如果有就合并
             MergedFiles.doMer();
 
             String token = getToken();
@@ -57,7 +54,7 @@ public class SHKVDown {
             //创建4个进程，一个进程跑一分钟的数据
             for (int i = (min_start - 1) * 4; i < min_start * 4; i++) {
 
-                cachedThreadPool.execute(new Thread(new DoGetValue(yth, getMS(i), i, token)));
+                cachedThreadPool.execute(new Thread(new DoGetValue(yearToHour, getMS(i), i, token)));
 
             }
 
@@ -70,8 +67,7 @@ public class SHKVDown {
                     //休息随机时间
                     Thread.sleep((int) (Math.random() * 20 * 1000));
 
-                    //System.out.println("结束了！");
-                    String isOver = readFileByLines(fileOver);
+                    String isOver = readFirstLines(fileOver);
 
                     if (isOver.equals("false")) {
 
@@ -106,12 +102,12 @@ public class SHKVDown {
     }
 
     /**
-     * 一行行读文件
+     * 读文件一行数据
      *
      * @param path path 文件路径
      * @return 一行数据
      */
-    private static String readFileByLines(String path) {
+    private static String readFirstLines(String path) {
 
         File file = new File(path);
 
@@ -135,9 +131,9 @@ public class SHKVDown {
 
                 return tempString;
 
-            } catch (IOException e) {
+            } catch (IOException ioException) {
 
-                e.printStackTrace();
+                ioException.printStackTrace();
                 return "false";
 
             } finally {
@@ -148,9 +144,9 @@ public class SHKVDown {
 
                         reader.close();
 
-                    } catch (IOException e1) {
+                    } catch (IOException ioException) {
 
-                        e1.printStackTrace();
+                        ioException.printStackTrace();
 
                     }
                 }
@@ -208,7 +204,6 @@ public class SHKVDown {
     private static String getValue(String key, String token) throws Exception {
 
         String getValueByKey = "kv/getValueByKey?token=" + token + "&table=kunyan_to_upload_inter_tab_mr&key=" + key;
-        //System.out.println(getValueByKey);
         try {
 
             String value = doGet(getValueByKey);
@@ -226,9 +221,9 @@ public class SHKVDown {
 
             }
 
-        } catch (JSONException e) {
+        } catch (JSONException jsonException) {
 
-            e.printStackTrace();
+            jsonException.printStackTrace();
 
         }
 
@@ -255,23 +250,23 @@ public class SHKVDown {
     /**
      * 解码Base64字符串
      *
-     * @param str base64字符串
+     * @param string base64字符串
      * @return 解码后的字符串
      */
-    private static String getFromBASE64(String str) {
+    private static String getFromBASE64(String string) {
 
-        if (str == null) return null;
+        if (string == null) return null;
 
         BASE64Decoder decoder = new BASE64Decoder();
 
         try {
 
-            byte[] bytes = decoder.decodeBuffer(str);
+            byte[] bytes = decoder.decodeBuffer(string);
             return new String(bytes);
 
-        } catch (Exception e) {
+        } catch (Exception ioException) {
 
-            e.printStackTrace();
+            ioException.printStackTrace();
             return null;
 
         }
@@ -288,7 +283,6 @@ public class SHKVDown {
     private static String doGet(String toDo) throws Exception {
 
         URL localURL = new URL(KunYanUser.SHDX_KV_URL + toDo);
-        System.out.println(localURL);
         URLConnection connection = localURL.openConnection();
         HttpURLConnection httpURLConnection = (HttpURLConnection) connection;
 
@@ -321,9 +315,9 @@ public class SHKVDown {
                 resultBuilder.append(tempLine);
 
             }
-        } catch (IOException e) {
+        } catch (IOException ioException) {
 
-            e.printStackTrace();
+            ioException.printStackTrace();
 
         } finally {
 
@@ -382,9 +376,9 @@ public class SHKVDown {
 
             md5 = MessageDigest.getInstance("MD5");
 
-        } catch (Exception e) {
+        } catch (Exception ioException) {
 
-            e.printStackTrace();
+            ioException.printStackTrace();
             return "";
         }
 
@@ -411,50 +405,51 @@ public class SHKVDown {
     //类部类，线程类
     private static class DoGetValue implements Runnable {
 
-        private String s_min = "";
-        private String s_sec = "";
-        private String year_to_hour = "";
+        private String min = "";
+        private String sec = "";
+        private String yearToHour = "";
         private String key = "";
         private BufferedWriter writer = null;
         private int num;
         private String token;
 
         //构造方法，初始化类的变量
-        DoGetValue(String year_to_hour, String s_min, int num, String token) {
+        DoGetValue(String yearToHour, String min, int num, String token) {
 
             this.num = num;
-            this.s_min = s_min;
-            this.year_to_hour = year_to_hour;
+            this.min = min;
+            this.yearToHour = yearToHour;
             this.token = token;
 
         }
 
         @Override
         public void run() {
+
             String filesPath = "/home/liaochengming/shdx/kv_down_files/";
-            File writer_file;
-            String fileName = year_to_hour + num + ".txt";
-            writer_file = new File(filesPath + fileName);
+            File writerFile;
+            String fileName = yearToHour + num + ".txt";
+            writerFile = new File(filesPath + fileName);
 
             try {
 
-                writer = new BufferedWriter(new FileWriter(writer_file));
+                writer = new BufferedWriter(new FileWriter(writerFile));
 
                 for (int i = 0; i < 60; i++) {
 
                     if (i < 10) {
 
-                        s_sec = "0" + i;
+                        sec = "0" + i;
 
                     } else {
 
-                        s_sec = "" + i;
+                        sec = "" + i;
 
                     }
 
                     for (int k = 1; k < 2500; k++) {
 
-                        key = this.year_to_hour + this.s_min + this.s_sec + k;
+                        key = this.yearToHour + this.min + this.sec + k;
                         String value = SHKVDown.getValue(key, token);
 
                         if (null == value) {
@@ -477,9 +472,9 @@ public class SHKVDown {
 
                 writer.close();
 
-            } catch (Exception e) {
+            } catch (Exception ioException) {
 
-                e.printStackTrace();
+                ioException.printStackTrace();
 
             }
 
