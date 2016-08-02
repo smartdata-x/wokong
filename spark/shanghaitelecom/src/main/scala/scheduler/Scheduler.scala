@@ -141,7 +141,7 @@ object Scheduler {
       case e:Exception =>
         SUELogger.exception(e)
         val res = TextSender.send(MessageConfig.KEY, MessageConfig.MESSAGE_CONTEXT , MessageConfig.RECEIVER)
-        if(res) SUELogger.warn("[SUE] MESSAGE SEND SUCCESSFULLY")
+        if(res) SUELogger.error("[SUE] MESSAGE SEND SUCCESSFULLY")
     }
     ssc.start()
     ssc.awaitTermination()
