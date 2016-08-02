@@ -1,13 +1,14 @@
 package scheduler
 
-import config.HDFSConfig
+import config.{FileConfig, MessageConfig, XMLConfig}
 import kafka.serializer.StringDecoder
 import log.SUELogger
+import message.TextSender
 import org.apache.hadoop.fs.Path
 import org.apache.spark.SparkConf
 import org.apache.spark.streaming.kafka.KafkaUtils
 import org.apache.spark.streaming.{Seconds, StreamingContext}
-import util.{HDFSUtil, StringUtil, TimeUtil}
+import util.{FileUtil, HDFSUtil, StringUtil, TimeUtil}
 
 import scala.collection.mutable
 
@@ -58,11 +59,11 @@ object Scheduler {
     */
   def showWarning(args: Array[String]): Unit = {
 
-    if (args.length < 6) {
+    if (args.length < 7) {
 
       System.err.println(
         """
-          |Usage: LoadData <brokers> <topics> <zkhosts> <dataDir> <searchEngineDataDir>
+          |Usage: LoadData <brokers> <topics> <zkhosts> <dataDir> <searchEngineDataDir> <errorDataDir> <nameNode> <xmlFile>
           |<brokers> is a list of one or more Kafka brokers
           |<topics> is a list of one or more kafka topics to consume from
           |<zkhosts> is a list of zookeeper to consume from
@@ -100,12 +101,17 @@ object Scheduler {
       .set("spark.driver.allowMultipleContexts","true")
       .set("spark.cleaner.ttl", "10000")
 
-    val Array(brokers, topics, zks, dataDir, searchEngineDataDir, errorDataDir, nameNode) = args
+    val Array(brokers, topics, zks, dataDir, searchEngineDataDir, errorDataDir, nameNode, xmlFile) = args
 
-    HDFSConfig.nameNode(nameNode)
+    /* HDFSConfig.nameNode(nameNode)
     HDFSConfig.rootDir(dataDir)
     HDFSConfig.searchEngineDir(searchEngineDataDir)
-    HDFSConfig.errorDataDir(errorDataDir)
+    HDFSConfig.errorDataDir(errorDataDir) */
+
+    FileConfig.rootDir(dataDir)
+    FileConfig.searchEngineDir(searchEngineDataDir)
+    FileConfig.errorDataDir(errorDataDir)
+    XMLConfig.setPath(xmlFile)
 
     val ssc = new StreamingContext(sparkConf,Seconds(2))
 
@@ -123,17 +129,19 @@ object Scheduler {
       result.foreachRDD(rdd => {
 
         // search data
-        val searchEngineData = rdd.filter(isSearchEngineURL)
-          .collect()
-        HDFSUtil.saveToHadoopFileSystem(HDFSConfig.HDFS_SEARCH_ENGINE_DATA,searchEngineData)
+        val searchEngineData = rdd.filter(isSearchEngineURL).collect()
+        FileUtil.saveData(FileConfig.SEARCH_ENGINE_DATA, searchEngineData)
         // data
         val resArray = rdd.collect()
-        HDFSUtil.saveToHadoopFileSystem(HDFSConfig.HDFS_ROOT_DIR, resArray)
+        FileUtil.saveData(FileConfig.ROOT_DIR, resArray)
+
 
       })
     } catch {
       case e:Exception =>
         SUELogger.exception(e)
+        val res = TextSender.send(MessageConfig.KEY, MessageConfig.MESSAGE_CONTEXT , MessageConfig.RECEIVER)
+        if(res) SUELogger.warn("[SUE] MESSAGE SEND SUCCESSFULLY")
     }
     ssc.start()
     ssc.awaitTermination()
