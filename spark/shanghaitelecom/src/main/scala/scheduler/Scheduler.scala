@@ -1,6 +1,6 @@
 package scheduler
 
-import config.{FileConfig, MessageConfig, XMLConfig}
+import config.{FileConfig, XMLConfig}
 import kafka.serializer.StringDecoder
 import log.SUELogger
 import message.TextSender
@@ -111,7 +111,7 @@ object Scheduler {
     FileConfig.rootDir(dataDir)
     FileConfig.searchEngineDir(searchEngineDataDir)
     FileConfig.errorDataDir(errorDataDir)
-    XMLConfig.setPath(xmlFile)
+    val messageConfig = XMLConfig.apply(xmlFile)
 
     val ssc = new StreamingContext(sparkConf,Seconds(2))
 
@@ -140,7 +140,7 @@ object Scheduler {
     } catch {
       case e:Exception =>
         SUELogger.exception(e)
-        val res = TextSender.send(MessageConfig.KEY, MessageConfig.MESSAGE_CONTEXT , MessageConfig.RECEIVER)
+        val res = TextSender.send(messageConfig.KEY, messageConfig.MESSAGE_CONTEXT , messageConfig.RECEIVER)
         if(res) SUELogger.error("[SUE] MESSAGE SEND SUCCESSFULLY")
     }
     ssc.start()
