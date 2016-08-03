@@ -122,14 +122,14 @@ object StringUtil extends Serializable{
 
     try {
 
-      val resultJson = str.split("\t")
+      val resultJson = str.replaceAll("\n","").split("\t")
       val ad = resultJson(0)
       val ts = resultJson(1)
-      val host = resultJson(2).replace("\n","")
-      val url = resultJson(3).replace("\n","")
-      val ref = resultJson(4).replace("\n","")
-      val ua = resultJson(5).replace("\n","")
-      val cookie = resultJson(6).replace("\n","")
+      val host = resultJson(2)
+      val url = resultJson(3)
+      val ref = resultJson(4)
+      val ua = resultJson(5)
+      val cookie = resultJson(6)
       val keyword = resultJson(7)
 
       finalValue = ts + "\t" + ad + "\t" + ua + "\t" + host +"\t"+ url + "\t" + ref + "\t" +cookie + "\t" + keyword
@@ -137,7 +137,6 @@ object StringUtil extends Serializable{
     } catch {
       case e:Exception  =>
         SUELogger.error("praseJsonObject ERROR")
-        HDFSUtil.saveToHadoopFileSystem(FileConfig.TOO_BIG_VALUE,Array(str))
     }
 
     finalValue
