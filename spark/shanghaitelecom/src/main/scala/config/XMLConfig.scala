@@ -16,6 +16,6 @@ class XMLConfig (path: String) {
 
 object  XMLConfig {
 
-  def apply(path: String): XMLConfig = new XMLConfig(path)
+  def apply(path: String):  XMLConfig = new XMLConfig(path)
 
 }
