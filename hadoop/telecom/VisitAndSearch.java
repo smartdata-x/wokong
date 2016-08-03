@@ -1,7 +1,3 @@
-//
-// Source code recreated from a .class file by IntelliJ IDEA
-// (powered by Fernflower decompiler)
-//
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -21,7 +17,8 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
 
 /**
- * 此类是上海电信和江苏电信
+ * Created by liaochengming on 2016-07-20
+ * 此类是浙江电信和江苏电信
  * 用来获取股票的查看和搜索量
  */
 public class VisitAndSearch {
@@ -82,7 +79,7 @@ public class VisitAndSearch {
             String timeStr = st.nextToken();
             String url = st.nextToken();
             String[] visitSearchPatterns = new String[]{
-               //搜索
+                    //搜索
                     "quotes.money.163.com.*word=(.*)&t=",
                     "quotes.money.163.com.*word=(.*)&count",
                     "suggest3.sinajs.cn.*key=(((?!&name).)*)",
@@ -124,42 +121,61 @@ public class VisitAndSearch {
                     "news.21cn.com.*keywords=(.*)&view",
                     "news.10jqka.com.cn.*text=(.*)&jsoncallback",
                     "smartbox.gtimg.cn.*q=(.*?)&",
-  
-    		  //查看
-    		  "quotes.money.163.com/app/stock/\\d(\\d{6})",
-    		  "m.news.so.com.*q=(\\d{6})",
-    		  "finance.sina.com.cn.*(\\d{6})/nc.shtml",
-    		  "guba.sina.com.cn.*name=.*(\\d{6})",
-    		  "platform.*symbol=\\w\\w(\\d{6})",
-    		  "xueqiu.com/S/.*(\\d{6})",
-    		  "cy.stcn.com/S/.*(\\d{6})",
-    		  "mobile.stcn.com.*secucode=(\\d{6})",
-    		  "stock.quote.stockstar.com/(\\d{6}).shtml",
-    		  "quote.cfi.cn.*searchcode=(.*)",
-    		  "hqapi.gxfin.com.*code=(\\d{6}).sh",
-    		  "irm.cnstock.com.*index/(\\d{6})",
-    		  "app.cnstock.com.*k=(\\d{6})",
-    		  "stockpage.10jqka.com.cn/(\\d{6})/",
-    		  "0033.*list.*(\\d{6}).*json",
-    		  "q.stock.sohu.com/cn/(\\d{6})/",
-    		  "s.m.sohu.com.*/(\\d{6})",
-    		  "data.p5w.net.*code.*(\\d{6})",
-    		  "hq.p5w.net.*a=.*(\\d{6})",
-    		  "jrj.com.cn.*(\\d{6}).s?html",
-    		  "mapi.jrj.com.cn.*stockcode=(\\d{6})",
-    		  "api.buzz.wallstreetcn.com.*(\\d{6})&cid",
-    		  "stockdata.stock.hexun.com/(\\d{6}).shtml",
-    		  "finance.ifeng.com/app/hq/stock.*(\\d{6})",
-    		  "api.3g.ifeng.com.*k=(\\d{6})",
-    		  "quote.*(\\d{6}).html",
-    		  "gw.*stock.*?(\\d{6})",
-    		  "tfile.*(\\d{6})/fs_remind",
-    		  "api.cailianpress.com.*(\\d{6})&Sing",
-    		  "stock.caijing.com.cn.*(\\d{6}).html",
-    		  "qt.gtimg.cn.*q=.*(\\d{6})",
-    		  "finance.qq.com.*(\\d{6}).shtml",
-    		  "gubaapi.*code=(\\d{6})",
+                    "swww.niuguwang.com/stock/.*q=(.*?)&",
+                    "info.zq88.cn:9085.*query=(\\d{6})&",
+
+                    //查看
+                    "quotes.money.163.com/app/stock/\\d(\\d{6})",
+                    "m.news.so.com.*q=(\\d{6})",
+                    "finance.sina.com.cn.*(\\d{6})/nc.shtml",
+                    "guba.sina.com.cn.*name=.*(\\d{6})",
+                    "platform.*symbol=\\w\\w(\\d{6})",
+                    "xueqiu.com/S/.*(\\d{6})",
+                    "cy.stcn.com/S/.*(\\d{6})",
+                    "mobile.stcn.com.*secucode=(\\d{6})",
+                    "stock.quote.stockstar.com/(\\d{6}).shtml",
+                    "quote.cfi.cn.*searchcode=(.*)",
+                    "hqapi.gxfin.com.*code=(\\d{6}).sh",
+                    "irm.cnstock.com.*index/(\\d{6})",
+                    "app.cnstock.com.*k=(\\d{6})",
+                    "stockpage.10jqka.com.cn/(\\d{6})/",
+                    "0033.*list.*(\\d{6}).*json",
+                    "q.stock.sohu.com/cn/(\\d{6})/",
+                    "s.m.sohu.com.*/(\\d{6})",
+                    "data.p5w.net.*code.*(\\d{6})",
+                    "hq.p5w.net.*a=.*(\\d{6})",
+                    "jrj.com.cn.*(\\d{6}).s?html",
+                    "mapi.jrj.com.cn.*stockcode=(\\d{6})",
+                    "api.buzz.wallstreetcn.com.*(\\d{6})&cid",
+                    "stockdata.stock.hexun.com/(\\d{6}).shtml",
+                    "finance.ifeng.com/app/hq/stock.*(\\d{6})",
+                    "api.3g.ifeng.com.*k=(\\d{6})",
+                    "quote.*(\\d{6}).html",
+                    "gw.*stock.*?(\\d{6})",
+                    "tfile.*(\\d{6})/fs_remind",
+                    "api.cailianpress.com.*(\\d{6})&Sing",
+                    "stock.caijing.com.cn.*(\\d{6}).html",
+                    "qt.gtimg.cn.*q=.*(\\d{6})",
+                    "finance.qq.com.*(\\d{6}).shtml",
+                    "gubaapi.*code=(\\d{6})",
+                    "mnews.gw.com.cn.*(\\d{6})/(list|gsgg|gsxw|yjbg)",
+                    "101.226.68.82.*code=.*(\\d{6})",
+                    "183.238.123.235.*code=(\\d{6})&",
+                    "zszx.newone.com.cn.*code=(\\d{6})",
+                    "compinfo.hsmdb.com.*stock_code=(\\d{6})",
+                    "mt.emoney.cn.*barid=(\\d{6})",
+                    "news.10jqka.com.cn/stock_mlist/(\\d{6})",
+                    "www.newone.com.cn.*code=(\\d{6})",
+                    "219.141.183.57.*gpdm=(\\d{6})&",
+                    "www.hczq.com.*stockCode=(\\d{6})",
+                    "open.hs.net.*en_prod_code=(\\d{6})",
+                    "stock.pingan.com.cn.*secucodes=(\\d{6})",
+                    "58.63.254.170:7710.*code=(\\d{6})&",
+                    "sjf10.westsecu.com/stock/(\\d{6})/",
+                    "mds.gf.com.cn.*/(\\d{6})",
+                    "211.152.53.105.*key=(\\d{6}),"
             }
+
             for (int i = 0; i < visitSearchPatterns.length; ++i) {
                 Matcher matcher = Pattern.compile(visitSearchPatterns[i]).matcher(url);
                 if (matcher.find()) {

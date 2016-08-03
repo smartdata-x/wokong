@@ -5,6 +5,10 @@ import java.util.Collections;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ *Created by liaochengming on 2016-07-20
+ * 此类是用来检验对数据匹配的url是否存在
+ */
 public class UrlMate {
 
     public static void main(String[] args) {
