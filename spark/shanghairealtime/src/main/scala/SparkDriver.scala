@@ -9,30 +9,34 @@ import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 
 /**
+  * Created by Smart on 2014/7/18.
   * 实时流数据过滤主入口
   */
 object SparkDriver {
 
   val expireDay = "1"
-  val table = "kunyan_to_upload_inter_tab_sk"
-  val table2="kunyan_to_upload_inter_tab_up"
+  val tableSk = "kunyan_to_upload_inter_tab_sk"
+  val tableUp = "kunyan_to_upload_inter_tab_up"
 
 
-  def send2Kafka(key: String, value: String): Unit = {
+  /**
+    * 往kafka发送消息
+    * @param table kv表名
+    * @param key kv的key
+    * @param value kv的返回value值
+    */
+  def sendToKafka(table: String, key: String, value: String): Unit = {
 
-    KafkaProducer2.send(table + "\001" + expireDay + "\001" + key + "\001" + value)
+    KafkaProducer.send(table + "\001" + expireDay + "\001" + key + "\001" + value)
 
   }
-  def send2Kafka2(key:String, value: String): Unit = {
-
-    KafkaProducer2.send(table2 + "\001" + expireDay + "\001" + key + "\001" + value)
-
-  }
-
-
 
   val sdf: SimpleDateFormat = new SimpleDateFormat("yyyyMMddHHmm")
 
+  /**
+    * 生成kv的键值方法
+    * @return kv的key
+    */
   def getTime: String = {
 
     val cal = Calendar.getInstance()
@@ -57,7 +61,11 @@ object SparkDriver {
   var last_modified_time = System.currentTimeMillis
   var skey_prefix = get_curr_time
 
-  // work function for extracting useful fields.
+  /**
+    * 搜索数据的匹配
+    * @param input 源数据
+    * @return 匹配后的数据
+    */
   def kunyan_visit_and_search(input: String): String = {
 
     val visitSearchPatterns = Array[String](
@@ -163,28 +171,26 @@ object SparkDriver {
 
     }).collectAsMap()
 
-    val topicpMap = KafkaConf2.topics.split(",").map((_, KafkaConf2.numThreads.toInt)).toMap
+    val topicMap = KafkaConf.topics.split(",").map((_, KafkaConf.numThreads.toInt)).toMap
 
     val numStrems = 5
-    val kafkaStreams =(1 to numStrems).map{ i=> KafkaConf2.createStream(ssc, KafkaConf2.zkQuorum, "kunyan_spark_group", topicpMap).map(_._2)}
+    val kafkaStreams =(1 to numStrems).map{ i=> KafkaConf.createStream(ssc, KafkaConf.zkQuorum, "kunyan_spark_group", topicMap).map(_._2)}
 
-    val linesdata = ssc.union(kafkaStreams)
+    val linesData = ssc.union(kafkaStreams)
 
-    // shdx code start from here........
     val broadCastValue = sc.broadcast(fileData)
-    val linesRePartition = linesdata.persist(StorageLevel.MEMORY_AND_DISK).repartition(30)
+    val linesRePartition = linesData.persist(StorageLevel.MEMORY_AND_DISK).repartition(30)
 
-    // search and visit
 
     try {
-
+      // 搜索数据处理
       linesRePartition.map(kunyan_visit_and_search).filter(_ != null).foreachRDD { rdd =>
         val ts = get_curr_time
-        rdd.zipWithIndex().foreach(record =>send2Kafka(ts + "_kunyan_" + record._2, record._1))
+        rdd.zipWithIndex().foreach(record => sendToKafka(tableSk, ts + "_kunyan_" + record._2, record._1))
 
       }
 
-      // 原始数据
+      // 原始数据处理
       linesRePartition.filter(dataline => {
         dataline != null && dataline.trim != "" && dataline.split("\t").length == 12
       }).foreachRDD(rdd => {
@@ -207,7 +213,7 @@ object SparkDriver {
 
         resRdd.filter(dataline => {
           dataline != null && dataline.trim != ""}).zipWithIndex().foreach(record => {
-          send2Kafka2(ts + "_ky_" + record._2 , record._1)
+          sendToKafka(tableUp, ts + "_ky_" + record._2 , record._1)
         })
       })
 

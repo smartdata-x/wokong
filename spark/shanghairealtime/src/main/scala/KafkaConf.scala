@@ -9,7 +9,8 @@ import org.apache.spark.streaming.kafka.KafkaUtils
   * kafka conf
  */
 
-object KafkaConf2 {
+object KafkaConf {
+
   val zkQuorum = "10.5.30.5:2181,10.5.30.6:2181,10.5.30.7:2181,10.5.30.8:2181,10.5.30.9:2181,10.5.30.10:2181,10.5.30.11:2181,10.5.30.12:2181,10.5.30.13:2181,10.5.30.14:2181,10.5.30.15:2181"
 
    //val group = "Spark_"  //需要确保每个提交的job的kafka group名称不同

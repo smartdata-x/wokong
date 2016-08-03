@@ -5,7 +5,7 @@ import kafka.producer.{KeyedMessage, ProducerConfig, Producer}
 /**
   * kafka producer
   */
-object KafkaProducer2 {
+object KafkaProducer {
 
     val sendTopic = "kafka2kv_topic"
 
