@@ -110,12 +110,12 @@ object DataAnalysis extends Serializable {
     if (result.nonEmpty) {
 
       val arr = Array[String](new Random().nextInt(500).toString,value,keyword)
-      val ret_str = toJson2(arr)
+      val returnString = toJson2(arr)
 
-      if (ret_str.length() > 6959)
+      if (returnString.length() > 6959)
         "TOOBIGVALUE_KUNYAN" + "\t" + "TBV"
       else
-        regexUrl + "\t" + ret_str
+        regexUrl + "\t" + returnString
 
     } else null
 
