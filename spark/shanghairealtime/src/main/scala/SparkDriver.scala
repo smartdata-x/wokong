@@ -190,8 +190,8 @@ object SparkDriver {
       }
 
       // 原始数据处理
-      linesRePartition.filter(dataline => {
-        dataline != null && dataline.trim != "" && dataline.split("\t").length == 12
+      linesRePartition.filter(data => {
+        data != null && data.trim != "" && data.split("\t").length == 12
       }).foreachRDD(rdd => {
         val ts  = getTime
         val map = broadCastValue.value
