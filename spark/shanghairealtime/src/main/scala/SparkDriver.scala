@@ -210,8 +210,8 @@ object SparkDriver {
           } else null
         })
 
-        resRdd.filter(dataline => {
-          dataline != null && dataline.trim != ""}).zipWithIndex().foreach(record => {
+        resRdd.filter(dataLine => {
+          dataLine != null && dataLine.trim != ""}).zipWithIndex().foreach(record => {
           sendToKafka(tableUp, ts + "_ky_" + record._2 , record._1)
         })
       })
