@@ -21,6 +21,7 @@ object SparkDriver {
 
   /**
     * 往kafka发送消息
+ *
     * @param table kv表名
     * @param key kv的key
     * @param value kv的返回value值
@@ -35,6 +36,7 @@ object SparkDriver {
 
   /**
     * 生成kv的键值方法
+ *
     * @return kv的key
     */
   def getTime: String = {
@@ -50,23 +52,20 @@ object SparkDriver {
 
 
   //get time : 201504071722, 年月日时分
-  def get_curr_time: String = {
+  def getCurrentTime: String = {
 
     val format = new SimpleDateFormat("yyyyMMddHHmm")
     format.format(new Date())
 
   }
 
-  var sequence_number = -1
-  var last_modified_time = System.currentTimeMillis
-  var skey_prefix = get_curr_time
-
   /**
     * 搜索数据的匹配
+ *
     * @param input 源数据
     * @return 匹配后的数据
     */
-  def kunyan_visit_and_search(input: String): String = {
+  def VisitAndSearch(input: String): String = {
 
     val visitSearchPatterns = Array[String](
       // 搜索
@@ -184,8 +183,8 @@ object SparkDriver {
 
     try {
       // 搜索数据处理
-      linesRePartition.map(kunyan_visit_and_search).filter(_ != null).foreachRDD { rdd =>
-        val ts = get_curr_time
+      linesRePartition.map(VisitAndSearch).filter(_ != null).foreachRDD { rdd =>
+        val ts = getCurrentTime
         rdd.zipWithIndex().foreach(record => sendToKafka(tableSk, ts + "_kunyan_" + record._2, record._1))
 
       }
