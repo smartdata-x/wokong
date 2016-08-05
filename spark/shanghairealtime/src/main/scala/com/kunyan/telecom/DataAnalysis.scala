@@ -12,17 +12,6 @@ import java.util.zip.DeflaterOutputStream
 object DataAnalysis extends Serializable {
 
   /**
-    * 数据压缩
-    * @param str 原始数据
-    * @return 压缩后的数据
-    */
-  private def sign(str:String): String = {
-
-    zlibZip(str)
-
-  }
-
-  /**
     * 数据格式化
     * @param arr 字符数组
     * @return 格式化后的字符串
@@ -89,11 +78,11 @@ object DataAnalysis extends Serializable {
             || newSeg(2).contains("weibo.cn") || newSeg(2).contains("qzone.qq.com") || newSeg(2).contains("ele.me") || newSeg(2).contains("maimai.com")
             || newSeg(2).contains("pailequ.cn") || newSeg(2).contains("beequick.cn") || newSeg(2).contains("waimai"))
 
-            result = sign(formatString(newSeg))
+            result = zlibZip(formatString(newSeg))
 
           else {
 
-            result = sign(formatString(newSeg))
+            result = zlibZip(formatString(newSeg))
             val targetUrl = newSeg(2).replace("www.", "").replace("https://", "").replace("http://", "")
             regexUrl = targetUrl
 
@@ -109,7 +98,7 @@ object DataAnalysis extends Serializable {
 
     if (result.nonEmpty) {
 
-      val arr = Array[String](new Random().nextInt(500).toString,value,keyword)
+      val arr = Array[String](new Random().nextInt(500).toString, value, keyword)
       val returnString = toJson2(arr)
 
       if (returnString.length() > 6959)
