@@ -1,14 +1,11 @@
 package com.kunyan.telecom
 
-import org.apache.log4j.{PropertyConfigurator, Logger}
+import org.apache.log4j.Logger
 
 /**
-  * Created by C.J.YOU on 2016/1/15.
+  * Created by C.J.YOU on 2016/08/05.
   */
 object SUELogger extends Serializable{
-
-
-  // PropertyConfigurator.configure("/home/telecom/conf/log4j.properties")
 
   private  val logger = Logger.getLogger("SUELogger")
 

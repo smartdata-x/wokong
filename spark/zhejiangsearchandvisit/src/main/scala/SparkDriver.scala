@@ -8,14 +8,13 @@ import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 
 /**
-  * Created by Smart on 2014/7/18.
+  * Created by C.J.YOU on 2016/08/05.
   * 实时流数据过滤主入口
   */
 object SparkDriver {
 
   val expireDay = "1"
-  val tableSk = "kunyan_to_upload_inter_tab_sk"
-  val tableUp = "kunyan_to_upload_inter_tab_up"
+  val tableUp = "kunyan_to_upload_inter_tab_jn"
 
 
   /**
@@ -164,7 +163,7 @@ object SparkDriver {
       // 搜索数据处理
       linesRePartition.map(VisitAndSearch).filter(_ != null).foreachRDD { rdd =>
         val ts = getCurrentTime
-        rdd.zipWithIndex().foreach(record => sendToKafka(tableSk, ts + "_ky_" + record._2, record._1))
+        rdd.zipWithIndex().foreach(record => sendToKafka(tableUp, ts + "_ky_" + record._2, record._1))
       }
 
     } catch {

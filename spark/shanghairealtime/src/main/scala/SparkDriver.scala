@@ -21,7 +21,6 @@ object SparkDriver {
 
   /**
     * 往kafka发送消息
- *
     * @param table kv表名
     * @param key kv的key
     * @param value kv的返回value值
@@ -36,7 +35,6 @@ object SparkDriver {
 
   /**
     * 生成kv的键值方法
- *
     * @return kv的key
     */
   def getTime: String = {
@@ -61,7 +59,6 @@ object SparkDriver {
 
   /**
     * 搜索数据的匹配
- *
     * @param input 源数据
     * @return 匹配后的数据
     */
@@ -126,7 +123,7 @@ object SparkDriver {
 
       for (i <- 1 to visitSearchPatterns.length) {
 
-        val matcher: Matcher = Pattern.compile(visitSearchPatterns(i-1)).matcher(url)
+        val matcher: Matcher = Pattern.compile(visitSearchPatterns(i - 1)).matcher(url)
 
         if (matcher.find) {
 
@@ -135,11 +132,14 @@ object SparkDriver {
 
         }
       }
-      if (!"".equals(stockCode)) {
+      if (!"".equals(stockCode))
         stockCode + "\t" + time
-      } else null
+      else
+        null
 
-    } else null
+    } else {
+      null
+    }
 
   }
 
@@ -191,34 +191,47 @@ object SparkDriver {
 
       // 原始数据处理
       linesRePartition.filter(data => {
+
         data != null && data.trim != "" && data.split("\t").length == 12
+
       }).foreachRDD(rdd => {
+
         val ts  = getTime
         val map = broadCastValue.value
-        var save:String = ""
+        var save: String = ""
         val resRdd:RDD[String]= rdd.map(x => {
+
           val data = DataAnalysis.extractorUrl(x)
+
           if (data.nonEmpty) {
+
             val split = data.split("\t")
-            if(split.length > 1){
+
+            if(split.length > 1) {
+
               val url = split(0)
               save = split(1)
-              if (map.contains(url)) {
+
+              if (map.contains(url))
                  save
-              } else null
-            } else null
-          } else null
+              else
+                null
+            } else {
+              null
+            }
+          } else {
+            null
+          }
         })
 
         resRdd.filter(dataLine => {
-          dataLine != null && dataLine.trim != ""}).zipWithIndex().foreach(record => {
+          dataLine != null && dataLine.trim != "" }).zipWithIndex().foreach(record => {
           sendToKafka(tableUp, ts + "_ky_" + record._2 , record._1)
         })
       })
 
     } catch {
-      case e: Exception =>
-        SUELogger.error("mapPartition error!!!!")
+      case e: Exception => SUELogger.error("mapPartition error!!!!")
     }
 
     ssc.start()

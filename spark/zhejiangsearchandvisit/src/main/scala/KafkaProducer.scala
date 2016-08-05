@@ -3,15 +3,16 @@ import java.util.Properties
 import kafka.producer.{KeyedMessage, ProducerConfig, Producer}
 
 /**
+  * Created by C.J.YOU on 2016/08/05.
   * kafka producer
   */
 object KafkaProducer {
 
-    val sendTopic = "kafka2kv_topic"
+    val sendTopic = "dpi_kunyan"
 
     val props = new Properties()
     props.put("serializer.class", "kafka.serializer.StringEncoder")
-    props.put("metadata.broker.list", "10.5.30.5:9092,10.5.30.6:9092,10.5.30.7:9092,10.5.30.8:9092,10.5.30.9:9092,10.5.30.10:9092,10.5.30.11:9092,10.5.30.12:9092,10.5.30.13:9092,10.5.30.14:9092,10.5.30.15:9092")
+    props.put("metadata.broker.list", "192.168.110.101:9092,192.168.110.102:9092,192.168.110.103:9092,192.168.110.104:9092,192.168.110.105:9092,192.168.110.106:9092,192.168.110.107:9092,192.168.110.108:9092,192.168.110.109:9092,192.168.110.110:9092")
     props.put("request.required.acks","1")
 
     val producer = new Producer[String, String](new ProducerConfig(props))
