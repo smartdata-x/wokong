@@ -150,11 +150,11 @@ object SparkDriver {
 
     val ssc = new StreamingContext(conf, Seconds(5))
 
-    val topicMap = KafkaConf.topics.split(",").map((_, KafkaConf.numThreads.toInt)).toMap
+    val topicMap = KafkaConf.TOPIC.split(",").map((_, KafkaConf.NUMBER_THREAD.toInt)).toMap
 
     val numStrems = 5
 
-    val kafkaStreams =(1 to numStrems).map{ i=> KafkaConf.createStream(ssc, KafkaConf.zkQuorum, GROUP_ID, topicMap).map(_._2)}
+    val kafkaStreams =(1 to numStrems).map{ i=> KafkaConf.createStream(ssc, KafkaConf.ZOOKEEPER_QUORUM, GROUP_ID, topicMap).map(_._2)}
 
     val linesData = ssc.union(kafkaStreams)
 

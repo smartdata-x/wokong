@@ -12,7 +12,7 @@ import kafka.producer.{KeyedMessage, Producer, ProducerConfig}
   */
 object KafkaProducer {
 
-    val sendTopic = "dpi_kunyan"
+    val SEND_TOPIC = "dpi_kunyan"
 
     val props = new Properties()
     props.put("serializer.class", "kafka.serializer.StringEncoder")
@@ -23,7 +23,7 @@ object KafkaProducer {
 
     def kafkaMessage(message: String): KeyedMessage[String, String] = {
 
-        new KeyedMessage(sendTopic, null, message)
+        new KeyedMessage(SEND_TOPIC, null, message)
 
     }
 
