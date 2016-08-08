@@ -1,10 +1,9 @@
-package com.kunyan.search
-
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.regex.Pattern
 
 import com.kunyan.MailMain
+import com.kunyan.search.KafkaProducer
 import org.apache.spark.SparkConf
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 
@@ -106,6 +105,7 @@ object SparkDriver {
     try {
 
       sc.textFile(dataDir).filter(_.split("\t").length > 7 ).map { data =>
+
         var key = ""
         var value = ""
         var stockCode = ""
@@ -129,7 +129,7 @@ object SparkDriver {
 
         (key, value)
 
-      }.filter(_._1.trim != "").combineByKey(
+      }.filter(x => x._1.trim != "" && x._2.length <= 6000).combineByKey(
         (v: String) => List(v),
         (c: List[String], v: String) => v :: c,
         (c1: List[String], c2: List[String]) => c1 ::: c2)
@@ -139,7 +139,7 @@ object SparkDriver {
         }
       }
     }  catch {
-       case e: Exception =>
+       case e: Exception => e.printStackTrace()
           MailMain.sendMail(Array(mailTopic, mailContent + e.getMessage, mailList))
     }
   }
