@@ -13,8 +13,9 @@ import org.apache.spark.streaming.{Seconds, StreamingContext}
   */
 object SparkDriver {
 
-  val expireDay = "1"
-  val tableSk = "kunyan_to_upload_inter_tab_nj"
+  val EXPIRE_DAY = "1"
+  val TABLE = "kunyan_to_upload_inter_tab_nj"
+  val GROUP_ID = "kunyan_spark_group"
 
   /**
     * 往kafka发送消息
@@ -24,7 +25,7 @@ object SparkDriver {
     */
   def sendToKafka(table: String, key: String, value: String): Unit = {
 
-    KafkaProducer.send(table + "\001" + expireDay + "\001" + key + "\001" + value)
+    KafkaProducer.send(table + "\001" + EXPIRE_DAY + "\001" + key + "\001" + value)
 
   }
 
@@ -153,7 +154,7 @@ object SparkDriver {
 
     val numStrems = 5
 
-    val kafkaStreams =(1 to numStrems).map{ i=> KafkaConf.createStream(ssc, KafkaConf.zkQuorum, "kunyan_spark_group", topicMap).map(_._2)}
+    val kafkaStreams =(1 to numStrems).map{ i=> KafkaConf.createStream(ssc, KafkaConf.zkQuorum, GROUP_ID, topicMap).map(_._2)}
 
     val linesData = ssc.union(kafkaStreams)
 
@@ -164,7 +165,7 @@ object SparkDriver {
       // 搜索数据处理
       linesRePartition.map(VisitAndSearch).filter(_ != null).foreachRDD { rdd =>
         val ts = getCurrentTime
-        rdd.zipWithIndex().foreach(record => sendToKafka(tableSk, ts + "_ky_" + record._2, record._1))
+        rdd.zipWithIndex().foreach(record => sendToKafka(TABLE, ts + "_ky_" + record._2, record._1))
       }
 
     } catch {

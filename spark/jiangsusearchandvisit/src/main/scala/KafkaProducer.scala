@@ -32,7 +32,8 @@ object KafkaProducer {
         try {
             producer.send(kafkaMessage(message))
         } catch {
-            case e: Exception => SUELogger.exception(e)
+            case e: Exception =>
+                SUELogger.exception(e)
         }
     }
 }

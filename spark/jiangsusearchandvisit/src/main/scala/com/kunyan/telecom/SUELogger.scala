@@ -18,7 +18,7 @@ object SUELogger extends Serializable{
   }
 
   def warn(msg: String): Unit = {
-    logger.warn(msg + "<<<<==============")
+    logger.warn(msg)
   }
 
   def error(msg: String): Unit = {

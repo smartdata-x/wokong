@@ -1,4 +1,4 @@
-name := "telecomOptimizer"
+name := "jiangsusearchandvisit"
 
 version := "1.1"
 
