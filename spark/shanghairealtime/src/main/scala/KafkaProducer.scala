@@ -1,6 +1,7 @@
 import java.util.Properties
 
-import kafka.producer.{KeyedMessage, ProducerConfig, Producer}
+import com.kunyan.telecom.SUELogger
+import kafka.producer.{KeyedMessage, Producer, ProducerConfig}
 
 /**
   * kafka producer
@@ -27,7 +28,7 @@ object KafkaProducer {
         try {
             producer.send(kafkaMessage(message))
         } catch {
-            case e: Exception => println(e)
+            case e: Exception => SUELogger.exception(e)
         }
     }
 }
