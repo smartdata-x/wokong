@@ -5,16 +5,16 @@ import org.apache.spark.streaming.dstream.ReceiverInputDStream
 import org.apache.spark.streaming.kafka.KafkaUtils
 
 /**
- * Created by Smart on 2014/7/18.
+ * Created by C.J.YOU on 2016/8/5.
   * kafka conf
  */
 
 object KafkaConf {
 
-  val zkQuorum = "10.5.30.5:2181,10.5.30.6:2181,10.5.30.7:2181,10.5.30.8:2181,10.5.30.9:2181,10.5.30.10:2181,10.5.30.11:2181,10.5.30.12:2181,10.5.30.13:2181,10.5.30.14:2181,10.5.30.15:2181"
+  val zkQuorum = "192.168.110.101:2182,192.168.110.102:2182,192.168.110.103:2182,192.168.110.104:2182,192.168.110.105:2182,192.168.110.106:2182,192.168.110.107:2182,192.168.110.108:2182,192.168.110.109:2182,192.168.110.110:2182"
 
    //val group = "Spark_"  //需要确保每个提交的job的kafka group名称不同
-  val topics = "SparkTopic"
+  val topics = "dpi_stream"
   val numThreads = 2
 
   def createStream(

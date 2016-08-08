@@ -8,15 +8,13 @@ import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 
 /**
-  * Created by Smart on 2014/7/18.
+  * Created by C.J.YOU on 2016/8/5.
   * 实时流数据过滤主入口
   */
 object SparkDriver {
 
   val expireDay = "1"
-  val tableSk = "kunyan_to_upload_inter_tab_sk"
-  val tableUp = "kunyan_to_upload_inter_tab_up"
-
+  val tableSk = "kunyan_to_upload_inter_tab_nj"
 
   /**
     * 往kafka发送消息
@@ -30,7 +28,7 @@ object SparkDriver {
 
   }
 
-  //get time : 20150407172230, 年月日时分,秒取整
+  // get time : 20150407172230, 年月日时分,秒取整
   def getCurrentTime: String = {
 
     val format = new SimpleDateFormat("yyyyMMddHHmm")
@@ -47,7 +45,6 @@ object SparkDriver {
 
   /**
     * 搜索数据的匹配
- *
     * @param input 源数据
     * @return 匹配后的数据
     */
@@ -112,7 +109,7 @@ object SparkDriver {
 
       for (i <- 1 to visitSearchPatterns.length) {
 
-        val matcher: Matcher = Pattern.compile(visitSearchPatterns(i-1)).matcher(url)
+        val matcher: Matcher = Pattern.compile(visitSearchPatterns(i - 1)).matcher(url)
 
         if (matcher.find) {
 
@@ -121,11 +118,15 @@ object SparkDriver {
 
         }
       }
-      if (!"".equals(stockCode)) {
+      if (!"".equals(stockCode) && stockCode.length <= 6000) {
         stockCode + "\t" + time
-      } else null
+      } else {
+        null
+      }
 
-    } else null
+    } else {
+      null
+    }
 
   }
 
@@ -147,7 +148,6 @@ object SparkDriver {
     val conf  = new SparkConf()
 
     val ssc = new StreamingContext(conf, Seconds(5))
-    val sc = ssc.sparkContext
 
     val topicMap = KafkaConf.topics.split(",").map((_, KafkaConf.numThreads.toInt)).toMap
 
