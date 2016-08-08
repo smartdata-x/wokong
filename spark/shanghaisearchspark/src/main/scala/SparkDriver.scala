@@ -139,9 +139,9 @@ object SparkDriver {
         }
       }
     }  catch {
-       case e: Exception => 
-	   SUELogger.exception(e)
-       MailMain.sendMail(Array(mailTopic, mailContent + e.getMessage, mailList))
+       case e: Exception =>
+	       SUELogger.exception(e)
+         MailMain.sendMail(Array(mailTopic, mailContent + e.getMessage, mailList))
     }
   }
 
