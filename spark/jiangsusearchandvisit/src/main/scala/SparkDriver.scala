@@ -2,7 +2,7 @@ import java.text.SimpleDateFormat
 import java.util.regex.{Matcher, Pattern}
 import java.util.{Calendar, Date}
 
-import com.kunyan.telecom.SUELogger
+import com.kunyan.telecom.{KafkaConf, KafkaProducer, SUELogger}
 import org.apache.spark.SparkConf
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{Seconds, StreamingContext}
@@ -14,18 +14,18 @@ import org.apache.spark.streaming.{Seconds, StreamingContext}
 object SparkDriver {
 
   val EXPIRE_DAY = "1"
-  val TABLE = "kunyan_to_upload_inter_tab_nj"
-  val GROUP_ID = "kunyan_spark_group"
 
   /**
     * 往kafka发送消息
+    *
     * @param table kv表名
     * @param key kv的key
     * @param value kv的返回value值
     */
-  def sendToKafka(table: String, key: String, value: String): Unit = {
+  def sendToKafka(sendTopic: String, table: String, key: String, value: String): Unit = {
 
-    KafkaProducer.send(table + "\001" + EXPIRE_DAY + "\001" + key + "\001" + value)
+    val kafkaProducer = KafkaProducer.apply(sendTopic)
+    kafkaProducer.send(table + "\001" + EXPIRE_DAY + "\001" + key + "\001" + value)
 
   }
 
@@ -46,6 +46,9 @@ object SparkDriver {
 
   /**
     * 搜索数据的匹配
+    * 字段格式如下：
+    * ad:string ts:long host:string uri:string referer:string srcip:string dstip:string ua:string cookie:string accept:string src_port:int
+    *
     * @param input 源数据
     * @return 匹配后的数据
     */
@@ -145,6 +148,14 @@ object SparkDriver {
     System.setProperty("spark.network.timeout", "1000")
     System.setProperty("spark.driver.allowMultipleContexts","true")
 
+    if(args.length < 2) {
+      sys.error("Usage: <kv_table> <group_id> <sendTopic>")
+    }
+
+
+    // val sendTopic = "kafka2kv"  // 使用参数传入形式
+
+    val Array(table, groupID, sendTopic) = args
 
     val conf  = new SparkConf()
 
@@ -154,18 +165,19 @@ object SparkDriver {
 
     val numStrems = 5
 
-    val kafkaStreams =(1 to numStrems).map{ i=> KafkaConf.createStream(ssc, KafkaConf.ZOOKEEPER_QUORUM, GROUP_ID, topicMap).map(_._2)}
+    val kafkaStreams =(1 to numStrems).map{ i=> KafkaConf.createStream(ssc, KafkaConf.ZOOKEEPER_QUORUM, groupID, topicMap).map(_._2)}
 
     val linesData = ssc.union(kafkaStreams)
 
     val linesRePartition = linesData.persist(StorageLevel.MEMORY_AND_DISK).repartition(30)
 
+    // "hdfs://ns1/user/sparkuser/private/kunyan/DATA_" + TIME)
 
     try {
       // 搜索数据处理
       linesRePartition.map(VisitAndSearch).filter(_ != null).foreachRDD { rdd =>
         val ts = getCurrentTime
-        rdd.zipWithIndex().foreach(record => sendToKafka(TABLE, ts + "_ky_" + record._2, record._1))
+        rdd.zipWithIndex().foreach(record => sendToKafka(sendTopic ,table, ts + "_ky_" + record._2, record._1))
       }
 
     } catch {
