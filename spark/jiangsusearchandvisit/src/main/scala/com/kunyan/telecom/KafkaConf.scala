@@ -1,3 +1,5 @@
+package com.kunyan.telecom
+
 import kafka.serializer.StringDecoder
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.StreamingContext
@@ -12,7 +14,9 @@ import org.apache.spark.streaming.kafka.KafkaUtils
 object KafkaConf {
 
   val ZOOKEEPER_QUORUM = "192.168.110.101:2182,192.168.110.102:2182,192.168.110.103:2182,192.168.110.104:2182,192.168.110.105:2182,192.168.110.106:2182,192.168.110.107:2182,192.168.110.108:2182,192.168.110.109:2182,192.168.110.110:2182"
-  val TOPIC = "dpi_stream"
+
+  val TOPIC = "dpi_kunyan"
+
   val NUMBER_THREAD = 2
 
   def createStream(
@@ -31,7 +35,7 @@ object KafkaConf {
       "rebalance.max.retries"->"6",
       "rebalance.backoff.ms"->"9800",
       "auto.offset.reset" -> "largest")
-    KafkaUtils.createStream[String, String, StringDecoder, StringDecoder](
+    KafkaUtils.createStream[String, String, StringDecoder, AvroDecoder](
       ssc, kafkaParams, topics, storageLevel)
   }
 
