@@ -21,7 +21,7 @@ import org.apache.hadoop.util.GenericOptionsParser;
 /**
  * Created by liaochengming on 2016-07-20
  * 此类是上海电信
- * 用来获取股票的查看和搜索量
+ * 用来获取股票离线的查看和搜索量
  */
 public class VisitAndSearch {
 

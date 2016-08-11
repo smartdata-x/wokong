@@ -1,3 +1,6 @@
+/**
+ * 旧的上海电信实时热度数据匹配规则
+ */
 object VisitAndSearch {
   def main(args: Array[String]) {
     val s = kunyan_visit_and_search("ca12bbd13514f2fb46446471a5e92a57d3082d9c\t1446107446990\tgubaapi.win007.com\t")

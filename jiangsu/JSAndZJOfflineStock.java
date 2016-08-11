@@ -19,7 +19,7 @@ import org.apache.hadoop.util.GenericOptionsParser;
 /**
  * Created by liaochengming on 2016-07-20
  * 此类是浙江电信和江苏电信
- * 用来获取股票的查看和搜索量
+ * 用来获取离线的股票的查看和搜索量
  */
 public class VisitAndSearch {
 
