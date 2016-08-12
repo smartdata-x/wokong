@@ -1,5 +1,6 @@
 # 江苏电信搜索数据接收
 该程序是运行在江苏电信平台，负责将search和visit数据发送到kafka。（kafka数据输出方案暂未定）
+写回的kafka topic：kafka2kv
 
 **search和visit**: 具体方案暂定
 
