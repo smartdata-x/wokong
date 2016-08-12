@@ -5,7 +5,6 @@ import sun.misc.BASE64Decoder;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
@@ -20,7 +19,7 @@ import java.util.logging.Logger;
  * Created by liaochengming on 2015-12-14.
  * 此类是用来下载上海电信kv表中的数据
  */
-public class SHKVDown {
+public class ShangHaiMRKVDataDown {
 
 
     private static final String HMAC_SHA1_ALGORITHM = "HmacSHA1";

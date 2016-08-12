@@ -1,9 +1,7 @@
 import java.io.IOException;
-import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Iterator;
-import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,7 +21,7 @@ import org.apache.hadoop.util.GenericOptionsParser;
  * 此类是上海电信
  * 用来获取股票离线的查看和搜索量
  */
-public class VisitAndSearch {
+public class SHOffLineStock {
 
     public static void main(String[] args) throws Exception {
 
@@ -37,10 +35,10 @@ public class VisitAndSearch {
 
         }
 
-        Job job = new Job(conf, "VisitAndSearch");
-        job.setJarByClass(VisitAndSearch.class);
-        job.setMapperClass(VisitAndSearch.TokenizerMapper.class);
-        job.setReducerClass(VisitAndSearch.IntSumReducer.class);
+        Job job = new Job(conf, "SHOffLineStock");
+        job.setJarByClass(SHOffLineStock.class);
+        job.setMapperClass(SHOffLineStock.TokenizerMapper.class);
+        job.setReducerClass(SHOffLineStock.IntSumReducer.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
 

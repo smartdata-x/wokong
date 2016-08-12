@@ -8,10 +8,10 @@
 - shanghaitelecom (跑在公司服务器上的从公司的 kafka 中获取 kv 表里的实时原始数据)
 
 ### stock
-- sh_spark (旧的上海电信离线热度数据匹配规则)
+- oldmatchrules (旧的上海电信离线热度数据匹配规则)
 - SHOffLineStock.java (跑在上海电信服务器上的过滤离线热度数据的程序)
 - shanghaisearchspark (测试中跑在上海电信服务器上的过滤离线热度数据的程序)
-- shdx_kv_down (跑在公司服务器上的接离线热度数据的程序)
+- ShangHaiMRKVDataDown (跑在公司服务器上的接离线热度数据的程序)
 - stockheat （新版悟空离线热度数据分析程序）
 - telecomDataAnalysis （旧版悟空离线热度数据分析程序，杨阁在用，用途不明）
 
