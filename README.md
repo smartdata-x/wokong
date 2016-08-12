@@ -17,7 +17,7 @@
 
 ---
 ## jiangsu
-- jiangsusearchandvisit （跑在江苏电信服务器上的过滤实时热度数据的程序）
+- JSRealTimeStock （跑在江苏电信服务器上的过滤实时热度数据的程序）
 - JSAndZJOfflineStock.java （跑在江苏和浙江电信服务器上的过滤离线热度数据的程序）
 
 ---
