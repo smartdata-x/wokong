@@ -1,3 +1,5 @@
+package com.kunyan.telecom
+
 import java.io.ByteArrayInputStream
 
 import kafka.serializer.Decoder

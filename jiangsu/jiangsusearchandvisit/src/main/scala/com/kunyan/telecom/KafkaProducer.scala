@@ -1,6 +1,7 @@
+package com.kunyan.telecom
+
 import java.util.Properties
 
-import com.kunyan.telecom.SUELogger
 import kafka.producer.{KeyedMessage, Producer, ProducerConfig}
 
 /**
