@@ -1,16 +1,22 @@
-name := "jiangsusearchandvisit"
+name := "jsofflinestockfromkv"
 
-version := "1.5"
+version := "1.0"
 
 scalaVersion := "2.10.4"
 
+libraryDependencies += "org.apache.spark" % "spark-streaming_2.10" % "1.5.2"
+
 libraryDependencies += "org.apache.spark" % "spark-core_2.10" % "1.5.2"
 
-libraryDependencies += "org.apache.spark" % "spark-streaming_2.10" % "1.5.2"
+libraryDependencies += "org.apache.spark" % "spark-sql_2.10" % "1.5.2"
+
+libraryDependencies += "mysql" % "mysql-connector-java" % "5.1.8"
+
+libraryDependencies += "org.json" % "json" % "20140107"
 
 libraryDependencies += "org.apache.spark" % "spark-streaming-kafka_2.10" % "1.5.2"
 
-libraryDependencies += "log4j" % "log4j" % "1.2.17"
+libraryDependencies += "org.jsoup" % "jsoup" % "1.8.3"
 
 assemblyMergeStrategy in assembly := {
   case PathList("javax", "servlet", xs @ _*) => MergeStrategy.last
@@ -32,3 +38,5 @@ assemblyMergeStrategy in assembly := {
     val oldStrategy = (assemblyMergeStrategy in assembly).value
     oldStrategy(x)
 }
+
+
