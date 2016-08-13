@@ -8,7 +8,7 @@ import util.TimeUtil
 object Scheduler {
 
 
-  def main(args: Array[String]) {
+  // def main(args: Array[String]) {
 
 
     val timeKey = TimeUtil.getTimeKey(-4)
@@ -35,6 +35,6 @@ object Scheduler {
 
 
 
-  }
+//  }
 
 }

@@ -17,11 +17,14 @@ object Request {
 
     val url = "http://180.96.28.74:58279/kv/get?token=" + Token.token() + "&database="+TelecomConfig.DATABASE + "&table="+TelecomConfig.TABLE  + "&key=" + key
 
+    // println("url:"+ url)
+
     try {
       val result = new JSONObject(Jsoup.connect(url).timeout(3000).execute().body()).get("result").toString
 
       if (result != "null") {
-        value = (new JSONObject(result).get("value").toString)
+        value = new JSONObject(result).get("value").toString
+       // println("value:" + value)
 
       }
     } catch {

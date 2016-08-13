@@ -43,14 +43,15 @@ class MyTimerTask(offSet: Int) extends  TimerTask {
 
     es.shutdown()
 
-    for(sec <- 0 to 5 ) {
+    for(sec <- 0 to 23 ) {
 
       val tempResult = compService.take().get()
+      // println("size:" + tempResult.size)
       FileUtil.writeToFile(FileConfig.DATA_DIR + "/" + timeKey._2, tempResult)
 
     }
-
-    println("is over!")
+    println("is over")
+    FileUtil.writeString(FileConfig.LOG_DIR +"/" + timeKey._2, "current time: "+ TimeUtil.getTimeKey(0)._1 + ", last request is over at: " + timeKey._1)
 
   }
 }

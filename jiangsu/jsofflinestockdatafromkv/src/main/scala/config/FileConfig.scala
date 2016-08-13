@@ -5,8 +5,16 @@ package config
   */
 object FileConfig {
 
+
   val LOG_DIR = "F:/jsdx/log"
 
   val DATA_DIR = "F:/jsdx"
+
+
+
+  /*val LOG_DIR = "/home/telecom/jsdx/data/realStockData/log"
+
+  val DATA_DIR = "/home/telecom/jsdx/data/realStockData"
+*/
 
 }

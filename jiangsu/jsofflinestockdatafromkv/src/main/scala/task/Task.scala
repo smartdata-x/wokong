@@ -20,7 +20,7 @@ class Task (key: String, second: Int, start:Int, end: Int, last:Int) extends Cal
 
     val listBuffer = new ListBuffer[String]
 
-    val threadInfo = "anme: "+ Thread.currentThread().getName +",id:"+ Thread.currentThread().getId
+    val threadInfo = "name: "+ Thread.currentThread().getName +",id:"+ Thread.currentThread().getId
 
     val thread = 10
     val es = Executors.newFixedThreadPool(thread)
