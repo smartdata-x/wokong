@@ -21,7 +21,7 @@ object Test {
 
     val task = new MyTimerTask(args(3).toInt)
 
-    // val task = new MyTimerTask(-31)
+    // val task = new MyTimerTask(-110)
     task.run()
     val timer = new Timer()
     val cal = Calendar.getInstance()

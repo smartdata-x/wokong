@@ -1,8 +1,9 @@
 package task
 
-import java.util.concurrent.{Callable, ExecutorCompletionService, Executors}
+import java.util.concurrent.Callable
 
 import config.FileConfig
+import thread.ThreadPool
 import util.FileUtil
 
 import scala.collection.mutable.ListBuffer
@@ -24,12 +25,19 @@ class Task (key: String, second: Int, start:Int, end: Int, last:Int) extends Cal
 
     val threadInfo = "name: "+ Thread.currentThread().getName +",id:"+ Thread.currentThread().getId
 
-    val thread = 50
-    val es = Executors.newFixedThreadPool(thread)
-    val compService  = new ExecutorCompletionService[String](es)
     val break = new Breaks
 
     var max = start
+
+    val threshold = 20
+
+    var count = 0
+
+    val dir = FileConfig.LOG_DIR +"/" + requestKey.substring(0,8)
+
+    FileUtil.mkDir(dir)
+
+    // 每秒日志数据分割-----
 
     break.breakable {
 
@@ -37,11 +45,15 @@ class Task (key: String, second: Int, start:Int, end: Int, last:Int) extends Cal
 
         val subTask = new SubTask(requestKey + "_ky_" + index)
         // compService.submit(subTask)
-        val value = es.submit(subTask).get()
+        val value = ThreadPool.timeThreadExecutorService.submit(subTask).get()
 
         if(value.isEmpty) {
-          // FileUtil.writeString(FileConfig.LOG_DIR +"/" + requestKey.substring(0,10), "null value "+ last + ":" + requestKey + "_ky_" + index + "---" + threadInfo)
-          break.break()
+          count = count + 1
+          if(count > threshold) {
+            FileUtil.writeString(dir +"/" + requestKey.substring(0,10) + "_" + sec, key + "__log_" + sec + " >>>>>>>>>>>-----------------------")
+            FileUtil.writeString(dir +"/" + requestKey.substring(0,10) + "_" + sec, "key from:" + (index - threshold) + "to " + index + "is null,set threshold: " + threshold)
+            break.break()
+          }
         }
         else {
 
@@ -53,6 +65,7 @@ class Task (key: String, second: Int, start:Int, end: Int, last:Int) extends Cal
       }
 
     }
+
     /*for(index <- start until end) {
       val value = compService.take().get()
       if(value.isEmpty) {
@@ -65,9 +78,7 @@ class Task (key: String, second: Int, start:Int, end: Int, last:Int) extends Cal
     }*/
 
     if(max != start)
-      FileUtil.writeString(FileConfig.LOG_DIR +"/" + requestKey.substring(0,10) + "_" + sec, "is null value at "+ sec + ":" + requestKey + "_ky_ max index is less than :" + max + "---" + threadInfo)
-
-    es.shutdown()
+      FileUtil.writeString(dir +"/" + requestKey.substring(0,10) + "_" + sec, "is null value at "+ sec + ":" + requestKey + "_ky_ max index is less than :" + max + "---" + threadInfo + " <<<<<<<<<<<-------------------------------")
 
    listBuffer
 

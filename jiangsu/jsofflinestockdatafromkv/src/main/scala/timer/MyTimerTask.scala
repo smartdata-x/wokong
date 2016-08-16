@@ -1,13 +1,11 @@
 package timer
 
 import java.util.TimerTask
-import java.util.concurrent.{ExecutorCompletionService, Executors}
 
 import config.FileConfig
 import task.Task
+import thread.ThreadPool
 import util.{FileUtil, TimeUtil}
-
-import scala.collection.mutable.ListBuffer
 
 /**
   * Created by C.J.YOU on 2016/8/13.
@@ -22,9 +20,9 @@ class MyTimerTask(offSet: Int) extends  TimerTask {
 
     val MAX_REQUEST = 3000
 
-    val thread = 130
+   /* val thread = 130
     val es = Executors.newFixedThreadPool(thread)
-    val compService  = new ExecutorCompletionService[ListBuffer[String]](es)
+    val compService  = new ExecutorCompletionService[ListBuffer[String]](es)*/
 
     FileUtil.writeString(FileConfig.PROGRESS_DIR +"/" + timeKey._2, "current time: " + TimeUtil.getTimeKey(0)._1+",timer runner start at:" + timeKey._1 )
     println("current time: " + TimeUtil.getTimeKey(0)._1+",timer runner start at:" + timeKey._1 )
@@ -35,18 +33,18 @@ class MyTimerTask(offSet: Int) extends  TimerTask {
 
         val taskBeforeIn = new Task(timeKey._1, sec, num * MAX_REQUEST, (num + 1) * MAX_REQUEST, 0)
         val taskAfterIn = new Task(timeKey._1, sec, num * MAX_REQUEST, (num + 1) * MAX_REQUEST, 5)
-        compService.submit(taskBeforeIn)
-        compService.submit(taskAfterIn)
+        ThreadPool.compService.submit(taskBeforeIn)
+        ThreadPool.compService.submit(taskAfterIn)
 
       }
 
     }
 
-    es.shutdown()
+    // es.shutdown()
 
     for(sec <- 0 to 119) {
 
-      val tempResult = compService.take().get()
+      val tempResult = ThreadPool.compService.take().get()
 
       if(tempResult.nonEmpty) {
         println("size:" + tempResult.size)

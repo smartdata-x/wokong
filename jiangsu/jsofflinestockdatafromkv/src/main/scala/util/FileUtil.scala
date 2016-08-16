@@ -20,7 +20,7 @@ object FileUtil extends  FileInterface{
     *
     * @param name 指定目录名
     */
-  private def mkDir(name: String): Unit = {
+  def mkDir(name: String): Unit = {
     val dir = new File(name)
     if(!isExist(name)){
       dir.mkdir
