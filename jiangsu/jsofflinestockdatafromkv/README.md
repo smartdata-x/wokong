@@ -3,7 +3,10 @@
 
 kv表：kunyan_spark_tab
 
+实时stock热度数据采用全匹配方式（离线热度数据采用的通配）
+
 注：
+
 
 jar版本说明
 
