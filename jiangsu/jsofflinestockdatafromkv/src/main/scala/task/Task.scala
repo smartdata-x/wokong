@@ -35,6 +35,8 @@ class Task (key: String, second: Int, start:Int, end: Int, last:Int) extends Cal
 
     val dir = FileConfig.LOG_DIR +"/" + requestKey.substring(0,8)
 
+    val file = dir +"/" + requestKey.substring(0,10) + "_" + sec
+
     FileUtil.mkDir(dir)
 
     // 每秒日志数据分割-----
@@ -48,15 +50,19 @@ class Task (key: String, second: Int, start:Int, end: Int, last:Int) extends Cal
         val value = ThreadPool.timeThreadExecutorService.submit(subTask).get()
 
         if(value.isEmpty) {
-          count = count + 1
-          if(count > threshold) {
-            FileUtil.writeString(dir +"/" + requestKey.substring(0,10) + "_" + sec, key + "__log_" + sec + " >>>>>>>>>>>-----------------------")
-            FileUtil.writeString(dir +"/" + requestKey.substring(0,10) + "_" + sec, "key from:" + (index - threshold) + "to " + index + "is null,set threshold: " + threshold)
-            break.break()
-          }
-        }
-        else {
 
+          count = count + 1
+
+          if(count > threshold) {
+
+            FileUtil.writeString(file, key + "__log_" + sec + " >>>>>>>>>>>-----------------------")
+            FileUtil.writeString(file, "key from:" + (index - threshold) + " to " + index + " is null,set threshold: " + threshold)
+            break.break()
+
+          }
+        } else {
+
+          count = 0
           max = index
           listBuffer.+=(value)
 
@@ -78,7 +84,7 @@ class Task (key: String, second: Int, start:Int, end: Int, last:Int) extends Cal
     }*/
 
     if(max != start)
-      FileUtil.writeString(dir +"/" + requestKey.substring(0,10) + "_" + sec, "is null value at "+ sec + ":" + requestKey + "_ky_ max index is less than :" + max + "---" + threadInfo + " <<<<<<<<<<<-------------------------------")
+      FileUtil.writeString(file, "is null value at "+ sec + ":" + requestKey + "_ky_ max index is less than :" + max + "---" + threadInfo + " <<<<<<<<<<<-------------------------------")
 
    listBuffer
 

@@ -2,7 +2,6 @@ package Test
 
 import java.util.{Calendar, Date, Timer}
 
-import config.FileConfig
 import timer.MyTimerTask
 
 /**
@@ -15,13 +14,13 @@ object Test {
 
   def main(args: Array[String]) {
 
-    FileConfig.DATA_DIR = args(0)
+   /* FileConfig.DATA_DIR = args(0)
     FileConfig.LOG_DIR = args(1)
     FileConfig.PROGRESS_DIR = args(2)
 
-    val task = new MyTimerTask(args(3).toInt)
+    val task = new MyTimerTask(args(3).toInt)*/
 
-    // val task = new MyTimerTask(-110)
+    val task = new MyTimerTask(-23)
     task.run()
     val timer = new Timer()
     val cal = Calendar.getInstance()
