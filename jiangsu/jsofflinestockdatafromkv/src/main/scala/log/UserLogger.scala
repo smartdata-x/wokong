@@ -4,29 +4,30 @@ import org.apache.log4j.Logger
 
 /**
   * Created by C.J.YOU on 2016/8/13.
+  * 日志类
   */
-object UserLogger extends Serializable{
+object UserLogger extends Serializable {
 
-  private  val logger = Logger.getLogger("Logger")
+  private  val LOGGER = Logger.getLogger("Logger")
 
   def debug(msg: String): Unit = {
-    logger.debug(msg)
+    LOGGER.debug(msg)
   }
 
   def info(msg: String): Unit = {
-    logger.info(msg)
+    LOGGER.info(msg)
   }
 
   def warn(msg: String): Unit = {
-    logger.warn(msg)
+    LOGGER.warn(msg)
   }
 
   def error(msg: String): Unit = {
-    logger.error(msg)
+    LOGGER.error(msg)
   }
 
   def exception(e: Exception): Unit = {
-    logger.error(e.getStackTrace)
+    LOGGER.error(e.getStackTrace)
   }
 
 }

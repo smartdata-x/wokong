@@ -6,6 +6,7 @@ import request.Request
 
 /**
   * Created by C.J.YOU on 2016/8/13.
+  * 单个请求的子线程处理类
   */
 class SubTask(key: String) extends Callable[String] {
 
@@ -13,9 +14,8 @@ class SubTask(key: String) extends Callable[String] {
 
     val threadInfo = "anme: "+ Thread.currentThread().getName +",id:"+ Thread.currentThread().getId
 
-    // FileUtil.writeString(FileConfig.LOG_DIR +"/subTask_" + key.substring(0,10), "Request:  "+ key +",  using threadInfo ---" + threadInfo)
-
     val value = Request.getValue(key)
+
     value
 
   }
