@@ -7,6 +7,7 @@ import sun.misc.BASE64Decoder
 
 /**
   * Created by C.J.YOU on 2016/8/12.
+  * 向kv请求数据
   */
 object Request {
 
@@ -17,21 +18,15 @@ object Request {
 
     val url = "http://180.96.28.74:58279/kv/get?token=" + Token.token() + "&database="+TelecomConfig.DATABASE + "&table="+TelecomConfig.TABLE  + "&key=" + key
 
-    // println("url:"+ url)
-
     try {
-      val result = new JSONObject(Jsoup.connect(url).timeout(3000).execute().body()).get("result").toString
+      val result = new JSONObject(Jsoup.connect(url).timeout(5000).execute().body()).get("result").toString
 
       if (result != "null") {
         value = new JSONObject(result).get("value").toString
-       // println("value:" + value)
-
       }
     } catch {
       case e:Exception => println(e.getMessage)
     }
-
-    // println("value:" + value)
 
     value
 
