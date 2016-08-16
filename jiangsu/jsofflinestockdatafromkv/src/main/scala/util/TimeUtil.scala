@@ -25,6 +25,11 @@ object TimeUtil {
   }
 
 
+  /**
+    * http请求中key的获取，精确到分，秒后续取整处理
+    * @param offset 时间偏移量：+ ：将来时间偏移量， -：过去时间的偏移量
+    * @return
+    */
   def getTimeKey(offset: Int): (String,String) = {
 
     val sdf: SimpleDateFormat = new SimpleDateFormat("yyyyMMddHHmm")
@@ -35,7 +40,9 @@ object TimeUtil {
     val date = calendar.getTime
     val time: String = sdf.format(date)
     val hour = sdfHour.format(date)
+
     (time,hour)
+
   }
 
 }
