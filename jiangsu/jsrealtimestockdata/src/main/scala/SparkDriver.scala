@@ -182,7 +182,9 @@ object SparkDriver {
       // 搜索数据处理
       linesRePartition.map(VisitAndSearch).filter(_ != null).foreachRDD { rdd =>
         val ts = getCurrentTime
-        rdd.zipWithIndex().foreach(record => sendToKafka(sendTopic ,table, ts + "_ky_" + record._2, record._1))
+        val res = rdd.zipWithIndex()
+        res.saveAsTextFile("hdfs://ns1/user/sparkuser/private/kunyan/data/send_" + ts)
+        res.foreach(record => sendToKafka(sendTopic ,table, ts + "_ky_" + record._2, record._1))
       }
 
     } catch {
