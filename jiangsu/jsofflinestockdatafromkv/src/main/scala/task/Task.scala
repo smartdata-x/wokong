@@ -17,7 +17,7 @@ class Task (key: String, second: Int, start:Int, end: Int, last:Int) extends Cal
 
   override def call(): ListBuffer[String] = {
 
-    // val sec = second * 10 + last
+    val sec = second * 10 + last
     val requestKey = key // +  sec
 
     val listBuffer = new ListBuffer[String]
