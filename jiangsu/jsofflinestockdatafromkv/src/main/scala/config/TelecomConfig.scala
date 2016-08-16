@@ -2,6 +2,7 @@ package config
 
 /**
   * Created by C.J.YOU on 2016/8/12.
+  * telecom 有关参数配置
   */
 object TelecomConfig {
 
