@@ -1,7 +1,8 @@
 package Test
 
-import java.util.{Date, Timer}
+import java.util.{Calendar, Date, Timer}
 
+import config.FileConfig
 import timer.MyTimerTask
 
 /**
@@ -9,20 +10,27 @@ import timer.MyTimerTask
   */
 object Test {
 
-
-
   val PERIOD_TIME = 60 * 1000
 
 
   def main(args: Array[String]) {
 
-    val task = new MyTimerTask(-31)
+    FileConfig.DATA_DIR = args(0)
+    FileConfig.LOG_DIR = args(1)
+    FileConfig.PROGRESS_DIR = args(2)
+
+    val task = new MyTimerTask(args(3).toInt)
+
+    // val task = new MyTimerTask(-31)
     task.run()
     val timer = new Timer()
-    timer.schedule(task, new Date(),PERIOD_TIME)
+    val cal = Calendar.getInstance()
+    cal.setTime(new Date())
+    cal.set(Calendar.MINUTE, cal.get(Calendar.MINUTE) + 1)
+    val startData = cal.getTime
+    timer.schedule(task, startData ,PERIOD_TIME) // 1 Min 之后开始每一分钟跑一次
 
   }
-
 
 
 }
