@@ -31,7 +31,6 @@ class MyTimerTask(offSet: Int) extends  TimerTask {
         ThreadPool.compService.submit(taskBeforeIn)
 
       }
-
     }
 
     for(sec <- 0 to 599) {

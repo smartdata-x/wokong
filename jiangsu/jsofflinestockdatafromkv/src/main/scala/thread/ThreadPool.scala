@@ -9,7 +9,7 @@ import scala.collection.mutable.ListBuffer
   */
 object ThreadPool {
 
-  val thread = 150
+  val thread = 600
   val es = Executors.newFixedThreadPool(thread)
   val compService  = new ExecutorCompletionService[ListBuffer[String]](es)
 

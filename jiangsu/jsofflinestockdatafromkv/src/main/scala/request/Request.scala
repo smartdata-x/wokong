@@ -17,14 +17,15 @@ object Request {
     var value = ""
 
     val url = "http://61.129.39.71/telecom-dmp/kv/getValueByKey?token=" + Token.token() + "&table="+TelecomConfig.TABLE  + "&key=" + key
-    // println("url:" + url)
+
+    println("url:" + url)
 
     try {
       val result = new JSONObject(Jsoup.connect(url).timeout(5000).execute().body()).get("result").toString
 
       if (result != "null") {
         value = getFromBASE64(new JSONObject(result).get("value").toString)
-        // println("value:" + value)
+         println("value:" + value)
       }
     } catch {
       case e:Exception => println(e.getMessage)
