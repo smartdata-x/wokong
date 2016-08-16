@@ -20,6 +20,8 @@
 - jsrealtimestockdata （跑在江苏电信服务器上的过滤实时热度数据的程序）
 - JSAndZJOfflineStock.java （跑在江苏和浙江电信服务器上的过滤离线热度数据的程序）
 
+注：实时stock热度数据采用全匹配方式（离线热度数据采用的通配）
+
 ---
 ## guangzhou
 - gztelecomtest （跑在广州电信服务器上的测试程序）
