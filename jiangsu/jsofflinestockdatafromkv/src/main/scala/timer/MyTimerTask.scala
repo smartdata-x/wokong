@@ -33,8 +33,8 @@ class MyTimerTask(offSet: Int) extends  TimerTask {
 
       for(num <- 0 to 9) {
 
-        val taskBeforeIn = new Task(timeKey._1, sec, num * MAX_REQUEST, (num + 1) * MAX_REQUEST, 0)
-        val taskAfterIn = new Task(timeKey._1, sec, num * MAX_REQUEST, (num + 1) * MAX_REQUEST, 5)
+        val taskBeforeIn = new Task(timeKey._1, sec, num * MAX_REQUEST, (num + 1) * MAX_REQUEST, -1)
+        val taskAfterIn = new Task(timeKey._1, sec, num * MAX_REQUEST, (num + 1) * MAX_REQUEST, -1)
         compService.submit(taskBeforeIn)
         compService.submit(taskAfterIn)
 
