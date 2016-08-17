@@ -265,7 +265,9 @@ object SearchAndVisitSchedulerRule {
       case e:Exception =>
         PrismLogger.error(s"mapFunct error:$s")
     }
+
     words
+
   }
 
   val sparkConf = new SparkConf()
