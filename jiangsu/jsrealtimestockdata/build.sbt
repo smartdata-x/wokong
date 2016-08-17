@@ -1,6 +1,6 @@
 name := "jiangsusearchandvisit"
 
-version := "1.5"
+version := "1.7"
 
 scalaVersion := "2.10.4"
 
