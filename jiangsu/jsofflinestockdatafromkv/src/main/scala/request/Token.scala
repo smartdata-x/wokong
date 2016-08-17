@@ -5,6 +5,7 @@ import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
 import config.TelecomConfig
+import log.UserLogger
 import org.apache.commons.codec.binary.Hex
 import org.json.JSONObject
 import org.jsoup.Jsoup
@@ -14,7 +15,6 @@ import org.jsoup.Jsoup
   * 请求token
   */
 object Token {
-
 
   def token(): String ={
 
@@ -26,9 +26,9 @@ object Token {
       res = new JSONObject(respond.body()).get("result").toString
 
     } catch {
-      case e: Exception => println("request token error")
+      case e: Exception =>
+        UserLogger.error("request token error")
     }
-
 
     res
 
@@ -56,9 +56,8 @@ object Token {
       md5 = MessageDigest.getInstance("MD5")
     }
     catch {
-      case e: Exception => {
+      case e: Exception =>
         return ""
-      }
     }
 
     val byteArray: Array[Byte] = str.getBytes("UTF-8")

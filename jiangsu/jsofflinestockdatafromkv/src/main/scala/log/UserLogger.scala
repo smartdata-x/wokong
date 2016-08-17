@@ -1,6 +1,6 @@
 package log
 
-import org.apache.log4j.Logger
+import org.apache.log4j.{Logger, PropertyConfigurator}
 
 /**
   * Created by C.J.YOU on 2016/8/13.
@@ -9,6 +9,12 @@ import org.apache.log4j.Logger
 object UserLogger extends Serializable {
 
   private  val LOGGER = Logger.getLogger("Logger")
+
+  def logConfigureFile(string: String): Unit = {
+
+    PropertyConfigurator.configure(string)
+
+  }
 
   def debug(msg: String): Unit = {
     LOGGER.debug(msg)

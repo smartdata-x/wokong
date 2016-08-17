@@ -1,6 +1,7 @@
 package request
 
 import config.TelecomConfig
+import log.UserLogger
 import org.json.JSONObject
 import org.jsoup.Jsoup
 import sun.misc.BASE64Decoder
@@ -25,7 +26,8 @@ object Request {
         value = new JSONObject(result).get("value").toString
       }
     } catch {
-      case e:Exception => println(e.getMessage)
+      case e:Exception =>
+        UserLogger.exception(e)
     }
 
     value
