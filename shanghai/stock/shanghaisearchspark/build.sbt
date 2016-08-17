@@ -2,7 +2,7 @@ mainClass in (Compile, packageBin) := Some("SparkDriver")
 
 name := "search_spark"
 
-version := "1.9"
+version := "2.0"
 
 scalaVersion := "2.10.4"
 
