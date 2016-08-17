@@ -21,10 +21,9 @@ object SparkDriver {
     * @param value kv的返回value值
     */
 
-  def sendToKafka(sendTopic: String, table: String, key: String, value: String): Unit = {
+  def sendToKafka(table: String, key: String, value: String): Unit = {
 
-    val kafkaProducer = KafkaProducer.apply(sendTopic)
-    kafkaProducer.send(table + "\001" + EXPIRE_DAY + "\001" + key + "\001" + value)
+    KafkaProducer.send(table + "\001" + EXPIRE_DAY + "\001" + key + "\001" + value)
 
   }
 
@@ -160,8 +159,6 @@ object SparkDriver {
       sys.error("Usage: <kv_table> <group_id> <sendTopic>")
     }
 
-    val  sendTopic = "kafka2kv"
-
     val Array(table, groupID) = args
 
     val conf  = new SparkConf()
@@ -184,7 +181,7 @@ object SparkDriver {
         val ts = getCurrentTime
         val res = rdd.zipWithIndex()
         res.saveAsTextFile("hdfs://ns1/user/sparkuser/private/kunyan/data/send_" + ts)
-        res.foreach(record => sendToKafka(sendTopic ,table, ts + "_ky_" + record._2, record._1))
+        res.foreach(record => sendToKafka(table, ts + "_ky_" + record._2, record._1))
       }
 
     } catch {
