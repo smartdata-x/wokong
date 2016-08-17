@@ -8,9 +8,9 @@ import kafka.producer.{KeyedMessage, Producer, ProducerConfig}
   * Created by C.J.YOU on 2016/8/5.
   * kafka producer
   */
-class KafkaProducer(topic: String) {
+object KafkaProducer {
 
-    private  val SEND_TOPIC = topic
+    private  val SEND_TOPIC = "kafka2kv"
 
     private  val props = new Properties()
     props.put("serializer.class", "kafka.serializer.StringEncoder")
@@ -35,9 +35,4 @@ class KafkaProducer(topic: String) {
         }
     }
 
-}
-
-object KafkaProducer {
-
-    def apply(topic: String): KafkaProducer = new KafkaProducer(topic)
 }
