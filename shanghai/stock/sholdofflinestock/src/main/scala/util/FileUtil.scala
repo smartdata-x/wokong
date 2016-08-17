@@ -56,7 +56,7 @@ object FileUtil {
 
     val file = new File(path)
 
-    if(!isExist(path)){
+    if(!isExist(path)) {
       file.createNewFile()
     }
 
@@ -74,7 +74,7 @@ object FileUtil {
     val writer = new PrintWriter(out, false)
     writer.append("\"v_stock\",\"v_hour\",\"i_frequency\"" + "\n")
 
-    for (line <- array){
+    for (line <- array) {
       writer.append("\""+line._1+"\",\""+line._2+"\",\""+line._3+"\"\n")
     }
 
@@ -95,7 +95,7 @@ object FileUtil {
     val writer = new PrintWriter(out, false)
     writer.append("\"v_rule\",\"i_frequency\"" + "\n")
 
-    for (line <- array){
+    for (line <- array) {
       writer.append("\""+line._1+"\",\""+line._2+"\"\n")
     }
 
