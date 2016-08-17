@@ -5,6 +5,3 @@
 ---
 ##ShangHaiMRKVDataDown.java
 ### 用于请求上海电信的离线搜索查看数据
-
-## MergedFiles.java
-### 用于合并ShangHaiMRKVDataDown.java运行之后的若干个数据文件
