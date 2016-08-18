@@ -2,8 +2,6 @@ package util
 
 import java.io._
 
-import scala.collection.mutable.ListBuffer
-
 /**
   * Created by C.J.YOU on 2016/1/14.
   * HDFS操作的工具类
@@ -15,25 +13,6 @@ object FileUtil {
 
     val dir = new File(name)
     dir.mkdir
-  }
-
-  def readFile(path: String): ListBuffer[String] = {
-
-    var lines = new ListBuffer[String]()
-
-    val br = new BufferedReader(new FileReader(path))
-
-    try {
-      var line = br.readLine()
-
-      while (line != null) {
-        lines += line
-        line = br.readLine()
-      }
-      lines
-    } finally {
-      br.close()
-    }
   }
 
   /**
@@ -49,37 +28,80 @@ object FileUtil {
     writer.close()
   }
 
-  /**
-    * override the old one
-    * @author yangshuai
-    */
-  def createFile(path: String, lines: Seq[String], num: Int): Unit = {
-
-    val writer = new PrintWriter(path, "UTF-8")
-    var count = num
-    if(count == 0){
-      writer.println("no user exist")
-      writer.close()
-      System.exit(-1)
-    }
-    for (line <- lines) {
-      if (count > 0) {
-        writer.println(line)
-        count -= 1
-      }
-    }
-    writer.close()
-  }
-
-  def createFile(path: String, lines:String): Unit = {
-    val writer = new PrintWriter(path, "UTF-8")
-    writer.println(lines)
-    writer.close()
-  }
-
   def readUserFile(dir: File): Iterator[File] = {
+
     val d = dir.listFiles.filter(_.isDirectory)
     val f = dir.listFiles.toIterator
     f ++ d.toIterator.flatMap(readUserFile)
+
   }
+
+  /**
+    * 判断文件是否存在
+    * @param path 文件路径
+    * @return 存在返回true，否则返回false
+    */
+  private def isExist(path:String): Boolean = {
+
+    val file = new File(path)
+    file.exists()
+
+  }
+
+  /**
+    * 创建文件
+    * @param path 文件路径
+    */
+  private def createFile(path:String): Unit = {
+
+    val file = new File(path)
+
+    if(!isExist(path)) {
+      file.createNewFile()
+    }
+
+  }
+
+  /**
+    * 写stock热度数据到本地CSV中，方便需要时导入到数据库中
+    * @param path 存储文件路径
+    * @param array 存储的数据形式
+    */
+  def writeToCSV(path: String, array:Array[(String,String,String)]): Unit = {
+
+    createFile(path)
+    val out = new FileOutputStream(new File(path),true)
+    val writer = new PrintWriter(out, false)
+    writer.append("\"v_stock\",\"v_hour\",\"i_frequency\"" + "\n")
+
+    for (line <- array) {
+      writer.append("\""+line._1+"\",\""+line._2+"\",\""+line._3+"\"\n")
+    }
+
+    writer.flush()
+    writer.close()
+
+  }
+
+  /**
+    * stock 热度数据不同匹配规则有效数据的统计，存储为CSV。
+    * @param path 存储的文件路径
+    * @param array 存储的数据格式
+    */
+  def writeRuleCountToCSV(path: String, array:Array[(String,String)]): Unit = {
+
+    createFile(path)
+    val out = new FileOutputStream(new File(path),true)
+    val writer = new PrintWriter(out, false)
+    writer.append("\"v_rule\",\"i_frequency\"" + "\n")
+
+    for (line <- array) {
+      writer.append("\""+line._1+"\",\""+line._2+"\"\n")
+    }
+
+    writer.flush()
+    writer.close()
+
+  }
+
 }
