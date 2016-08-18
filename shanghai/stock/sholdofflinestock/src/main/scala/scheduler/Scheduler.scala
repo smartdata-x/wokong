@@ -108,7 +108,6 @@ object Scheduler {
 
   /**
     * 判断原始数据是搜索还是查看
-    *
     * @param line 原始数据
     * @return 区分后的数据集合
     */
@@ -130,7 +129,7 @@ object Scheduler {
 
       if(visitWebsite forall Character.isDigit) {
 
-        if (visitWebsite.toInt >= 42  && visitWebsite.toInt <= 80) {
+        if (visitWebsite.toInt >= 42  && visitWebsite.toInt <= 95) {
           lineList += ("hash:visit:" + hour + "," + stockCode)
         } else if (visitWebsite.toInt >= 0 && visitWebsite.toInt <= 41) {
           lineList += ("hash:search:" + hour + "," + stockCode)
