@@ -5,6 +5,7 @@ import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
 import config.TelecomConfig
+import log.UserLogger
 import org.apache.commons.codec.binary.Hex
 import org.json.JSONObject
 import org.jsoup.Jsoup
@@ -15,20 +16,19 @@ import org.jsoup.Jsoup
   */
 object Token {
 
-
   def token(): String ={
 
     var res:String = ""
 
-    val url = "http://61.129.39.71/telecom-dmp/getToken?apiKey=" + TelecomConfig.API_KEY + "&sign=" + sign(md5Encode(TelecomConfig.PASSWORD), TelecomConfig.USER_NAME + TelecomConfig.API_KEY)
+    val url = "http://180.96.28.74:58279/getToken?apiKey=" + TelecomConfig.API_KEY + "&sign=" + sign(md5Encode(TelecomConfig.PASSWORD), TelecomConfig.USER_NAME + TelecomConfig.API_KEY)
     try {
       val respond = Jsoup.connect(url).timeout(5000).execute()
       res = new JSONObject(respond.body()).get("result").toString
 
     } catch {
-      case e: Exception => println("request token error")
+      case e: Exception =>
+        UserLogger.error("request token error")
     }
-
 
     res
 
@@ -56,9 +56,8 @@ object Token {
       md5 = MessageDigest.getInstance("MD5")
     }
     catch {
-      case e: Exception => {
+      case e: Exception =>
         return ""
-      }
     }
 
     val byteArray: Array[Byte] = str.getBytes("UTF-8")

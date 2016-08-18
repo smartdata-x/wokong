@@ -4,7 +4,7 @@ import java.util.concurrent.Callable
 
 import config.FileConfig
 import thread.ThreadPool
-import util.{FileUtil, TimeUtil}
+import util.FileUtil
 
 import scala.collection.mutable.ListBuffer
 import scala.util.control.Breaks
@@ -14,13 +14,12 @@ import scala.util.control.Breaks
   * key 为分钟级别细分两部分（0 与 5）: second 用来对秒取整
   * 多个请求的线程处理类
   */
-class Task (key: String, min: Int, start:Int, end: Int, last:Int) extends Callable[ListBuffer[String]] {
+class Task (key: String, second: Int, start:Int, end: Int, last:Int) extends Callable[ListBuffer[String]] {
 
   override def call(): ListBuffer[String] = {
 
-    var requestKey = ""
-
-    val finalMin = TimeUtil.formatTime(min)
+    val sec = second * 10 + last
+    val requestKey = key +  sec
 
     val listBuffer = new ListBuffer[String]
 
@@ -30,34 +29,49 @@ class Task (key: String, min: Int, start:Int, end: Int, last:Int) extends Callab
 
     var max = start
 
-    for(sec <- 0 to 59) {
+    val threshold = 20
 
-        val finalSec = TimeUtil.formatTime(sec)
+    var count = 0
 
-         requestKey = key + finalMin + finalSec
+    val dir = FileConfig.LOG_DIR +"/" + requestKey.substring(0,8)
 
-        break.breakable {
+    val file = dir +"/" + requestKey.substring(0,10) + "_" + sec
 
-          for (index <- start until end) {
+    FileUtil.mkDir(dir)
 
-            val subTask = new SubTask(requestKey + index)
-            // compService.submit(subTask)
-            val value = ThreadPool.es.submit(subTask).get()
+    // 每秒日志数据分割-----
 
-            if(value.isEmpty) {
-              // FileUtil.writeString(FileConfig.LOG_DIR +"/" + requestKey.substring(0,10), "null value "+ last + ":" + requestKey + "_ky_" + index + "---" + threadInfo)
-              break.break()
-            }
-            else {
+    break.breakable {
 
-              max = index
-              listBuffer.+=(value)
+      for (index <- start until end) {
 
-            }
+        val subTask = new SubTask(requestKey + "_ky_" + index)
+        // compService.submit(subTask)
+        val value = ThreadPool.timeThreadExecutorService.submit(subTask).get()
+
+        if(value.isEmpty) {
+
+          count = count + 1
+
+          if(count > threshold) {
+
+            FileUtil.writeString(file, key + "__log_" + sec + " >>>>>>>>>>>-----------------------")
+            FileUtil.writeString(file, "key from:" + (index - threshold) + " to " + index + " is null,set threshold: " + threshold)
+            break.break()
+
           }
+        } else {
+
+          count = 0
+          max = index
+          listBuffer.+=(value)
 
         }
+
+      }
+
     }
+
     /*for(index <- start until end) {
       val value = compService.take().get()
       if(value.isEmpty) {
@@ -70,9 +84,9 @@ class Task (key: String, min: Int, start:Int, end: Int, last:Int) extends Callab
     }*/
 
     if(max != start)
-      FileUtil.writeString(FileConfig.LOG_DIR +"/" + requestKey.substring(0,10) + "_" + min, "is null value at "+ min + ":" + requestKey + "_ky_ max index is less than :" + max + "---" + threadInfo)
+      FileUtil.writeString(file, "is null value at "+ sec + ":" + requestKey + "_ky_ max index is less than :" + max + "---" + threadInfo + " <<<<<<<<<<<-------------------------------")
 
-   listBuffer
+    listBuffer
 
   }
 }

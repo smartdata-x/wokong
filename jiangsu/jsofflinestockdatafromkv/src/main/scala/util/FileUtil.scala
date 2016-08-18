@@ -20,7 +20,7 @@ object FileUtil extends  FileInterface{
     *
     * @param name 指定目录名
     */
-  private def mkDir(name: String): Unit = {
+  def mkDir(name: String): Unit = {
     val dir = new File(name)
     if(!isExist(name)){
       dir.mkdir
@@ -36,15 +36,15 @@ object FileUtil extends  FileInterface{
 
   def writeToFile(path: String, array:ListBuffer[String]): Unit = {
 
-     createFile(path)
-     val out = new FileOutputStream(new File(path),true)
-     val writer = new PrintWriter(out, false)
+    createFile(path)
+    val out = new FileOutputStream(new File(path),true)
+    val writer = new PrintWriter(out, false)
 
-     for (arr <- array){
-       writer.append(arr + "\n")
-     }
-     writer.flush()
-     writer.close()
+    for (arr <- array){
+      writer.append(arr + "\n")
+    }
+    writer.flush()
+    writer.close()
   }
 
   def writeString(path: String, array:String): Unit = {

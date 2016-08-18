@@ -20,20 +20,29 @@ class MyTimerTask(offSet: Int) extends  TimerTask {
 
     val MAX_REQUEST = 3000
 
+    /* val thread = 130
+     val es = Executors.newFixedThreadPool(thread)
+     val compService  = new ExecutorCompletionService[ListBuffer[String]](es)*/
+
     FileUtil.writeString(FileConfig.PROGRESS_DIR +"/" + timeKey._2, "current time: " + TimeUtil.getTimeKey(0)._1+",timer runner start at:" + timeKey._1 )
     println("current time: " + TimeUtil.getTimeKey(0)._1+",timer runner start at:" + timeKey._1 )
 
-    for(min <- 0 to 59) {
+    for(sec <- 0 to 5) {
 
       for(num <- 0 to 9) {
 
-        val taskBeforeIn = new Task(timeKey._1, min, num * MAX_REQUEST, (num + 1) * MAX_REQUEST, -1)
+        val taskBeforeIn = new Task(timeKey._1, sec, num * MAX_REQUEST, (num + 1) * MAX_REQUEST, 0)
+        val taskAfterIn = new Task(timeKey._1, sec, num * MAX_REQUEST, (num + 1) * MAX_REQUEST, 5)
         ThreadPool.compService.submit(taskBeforeIn)
+        ThreadPool.compService.submit(taskAfterIn)
 
       }
+
     }
 
-    for(sec <- 0 to 599) {
+    // es.shutdown()
+
+    for(sec <- 0 to 119) {
 
       val tempResult = ThreadPool.compService.take().get()
 

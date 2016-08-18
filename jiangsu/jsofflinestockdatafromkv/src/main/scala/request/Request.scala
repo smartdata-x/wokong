@@ -1,6 +1,7 @@
 package request
 
 import config.TelecomConfig
+import log.UserLogger
 import org.json.JSONObject
 import org.jsoup.Jsoup
 import sun.misc.BASE64Decoder
@@ -16,19 +17,17 @@ object Request {
 
     var value = ""
 
-    val url = "http://61.129.39.71/telecom-dmp/kv/getValueByKey?token=" + Token.token() + "&table="+TelecomConfig.TABLE  + "&key=" + key
-
-    println("url:" + url)
+    val url = "http://180.96.28.74:58279/kv/get?token=" + Token.token() + "&database="+TelecomConfig.DATABASE + "&table="+TelecomConfig.TABLE  + "&key=" + key
 
     try {
       val result = new JSONObject(Jsoup.connect(url).timeout(5000).execute().body()).get("result").toString
 
       if (result != "null") {
-        value = getFromBASE64(new JSONObject(result).get("value").toString)
-         println("value:" + value)
+        value = new JSONObject(result).get("value").toString
       }
     } catch {
-      case e:Exception => println(e.getMessage)
+      case e:Exception =>
+        UserLogger.exception(e)
     }
 
     value
@@ -57,11 +56,9 @@ object Request {
 
     } catch {
       case e:Exception => println(e.getMessage)
-      null
+        null
 
     }
   }
-
-
 
 }

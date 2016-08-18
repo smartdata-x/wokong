@@ -12,7 +12,7 @@ class SubTask(key: String) extends Callable[String] {
 
   override def call(): String = {
 
-    val threadInfo = "anme: "+ Thread.currentThread().getName +",id:"+ Thread.currentThread().getId
+    val threadInfo = "name: "+ Thread.currentThread().getName +",id:"+ Thread.currentThread().getId
 
     val value = Request.getValue(key)
 

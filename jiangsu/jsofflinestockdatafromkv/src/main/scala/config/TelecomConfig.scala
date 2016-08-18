@@ -8,11 +8,11 @@ object TelecomConfig {
 
   val HMAC_SHA1_ALGORITHM = "HmacSHA1"
 
-  val API_KEY  = "98f5103019170612fd3a486e3d872c48"
-  val USER_NAME  = "e_kunyan"
-  val PASSWORD  = "kunyan123"
+  val API_KEY  = "4aa2o75yE3Azc2yJjljJLmxSLW9pRUXz"
+  val USER_NAME  = "kunyan"
+  val PASSWORD  = "kunyan!@#456"
 
   val DATABASE = "kunyan"
-  val TABLE = "kunyan_to_upload_inter_tab_mr_sp"
+  val TABLE = "kunyan_spark_tab"
 
 }

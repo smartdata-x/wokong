@@ -32,33 +32,17 @@ object TimeUtil {
     */
   def getTimeKey(offset: Int): (String,String) = {
 
-    val sdf: SimpleDateFormat = new SimpleDateFormat("yyyyMMddHH")
+    val sdf: SimpleDateFormat = new SimpleDateFormat("yyyyMMddHHmm")
+    val sdfHour: SimpleDateFormat = new SimpleDateFormat("yyyyMMddHH")
     val calendar = Calendar.getInstance
     calendar.setTime(new Date)
     calendar.set(Calendar.MINUTE, calendar.get(Calendar.MINUTE)  + offset)
     val date = calendar.getTime
     val time: String = sdf.format(date)
-    val hour = sdf.format(date)
+    val hour = sdfHour.format(date)
 
     (time,hour)
 
-  }
-
-  def formatTime(num: Int): String = {
-
-    var newNum = ""
-
-    if (num < 10) {
-
-      newNum = "0" + num
-
-    } else {
-
-      newNum = num.toString
-
-    }
-
-     newNum
   }
 
 }
