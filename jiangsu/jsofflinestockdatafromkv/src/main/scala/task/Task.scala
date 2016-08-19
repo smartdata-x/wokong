@@ -40,14 +40,13 @@ class Task (key: String, second: Int, start:Int, end: Int, last:Int) extends Cal
     FileUtil.mkDir(dir)
 
     // 每秒日志数据分割-----
-
     break.breakable {
 
       for (index <- start until end) {
 
         val subTask = new SubTask(requestKey + "_ky_" + index)
-        // compService.submit(subTask)
-        val value = ThreadPool.timeThreadExecutorService.submit(subTask).get()
+
+        val value = ThreadPool.THREAD_EXECUTOR_SERVICE.submit(subTask).get()
 
         if(value.isEmpty) {
 
@@ -71,17 +70,6 @@ class Task (key: String, second: Int, start:Int, end: Int, last:Int) extends Cal
       }
 
     }
-
-    /*for(index <- start until end) {
-      val value = compService.take().get()
-      if(value.isEmpty) {
-        // FileUtil.writeString(FileConfig.LOG_DIR +"/" + requestKey.substring(0,10), "null value "+ last + ":" + requestKey + "_ky_" + index + "---" + threadInfo)
-        // break.break()
-      }else {
-        max = index
-        listBuffer.+=(value)
-      }
-    }*/
 
     if(max != start)
       FileUtil.writeString(file, "is null value at "+ sec + ":" + requestKey + "_ky_ max index is less than :" + max + "---" + threadInfo + " <<<<<<<<<<<-------------------------------")
