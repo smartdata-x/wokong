@@ -13,6 +13,11 @@ import sun.misc.BASE64Decoder
 object Request {
 
 
+  /**
+    * kv 根据key值请求value数据
+    * @param key key
+    * @return value
+    */
   def getValue(key: String): String = {
 
     var value = ""

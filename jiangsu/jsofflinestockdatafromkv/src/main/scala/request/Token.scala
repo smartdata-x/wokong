@@ -16,6 +16,11 @@ import org.jsoup.Jsoup
   */
 object Token {
 
+
+  /**
+    * 获取token，请求value时需要token
+    * @return
+    */
   def token(): String ={
 
     var res:String = ""
@@ -35,6 +40,13 @@ object Token {
   }
 
 
+  /**
+    * 接口秘钥算法实现
+    * @param secretKey 秘钥
+    * @param data 需要加密的数据
+    * @throws Exception
+    * @return  加密后结果数据
+    */
   @throws[Exception]
   private  def sign(secretKey: String, data: String): String = {
 
@@ -47,6 +59,13 @@ object Token {
 
   }
 
+  /**
+    * md5处理密码
+    * @param str 密码
+    * @throws Exception
+    * @return MD5处理后结果
+    *
+    */
   @throws[Exception]
   private  def md5Encode(str: String): String = {
 
@@ -66,13 +85,13 @@ object Token {
 
     for (md5Byte <- md5Bytes) {
 
-      val `val`: Int = md5Byte.toInt & 0xff
+      val res: Int = md5Byte.toInt & 0xff
 
-      if (`val` < 16) {
+      if (res < 16) {
         hexValue.append("0")
       }
 
-      hexValue.append(Integer.toHexString(`val`))
+      hexValue.append(Integer.toHexString(res))
 
     }
 
