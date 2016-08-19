@@ -21,7 +21,6 @@ class MyTimerTask(offSet: Int) extends  TimerTask {
     val MAX_REQUEST = 3000
 
     FileUtil.writeString(FileConfig.PROGRESS_DIR +"/" + timeKey._2, "current time: " + TimeUtil.getTimeKey(0)._1+",timer runner start at:" + timeKey._1 )
-    println("current time: " + TimeUtil.getTimeKey(0)._1+",timer runner start at:" + timeKey._1 )
 
     for(sec <- 0 to 5) {
 
@@ -39,14 +38,10 @@ class MyTimerTask(offSet: Int) extends  TimerTask {
     for(sec <- 0 to 119) {
 
       val tempResult = ThreadPool.COMPLETION_SERVICE.take().get()
-
-      if(tempResult.nonEmpty) {
-        println("size:" + tempResult.size)
-      }
       FileUtil.write(FileConfig.DATA_DIR + "/" + timeKey._2, tempResult.toArray)
+
     }
 
-    println("is over")
     FileUtil.writeString(FileConfig.PROGRESS_DIR +"/" + timeKey._2, "current time: "+ TimeUtil.getTimeKey(0)._1 + ", last request is over at: " + timeKey._1)
 
   }

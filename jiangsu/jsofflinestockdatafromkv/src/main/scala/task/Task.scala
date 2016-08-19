@@ -23,7 +23,7 @@ class Task (key: String, second: Int, start:Int, end: Int, last:Int) extends Cal
 
     val listBuffer = new ListBuffer[String]
 
-    val threadInfo = "name: "+ Thread.currentThread().getName +",id:"+ Thread.currentThread().getId
+    val threadInfo = "name: "+ Thread.currentThread().getName +",id: "+ Thread.currentThread().getId
 
     val break = new Breaks
 
@@ -54,8 +54,8 @@ class Task (key: String, second: Int, start:Int, end: Int, last:Int) extends Cal
 
           if(count > threshold) {
 
-            FileUtil.writeString(file, key + "__log_" + sec + " >>>>>>>>>>>-----------------------")
-            FileUtil.writeString(file, "key from:" + (index - threshold) + " to " + index + " is null,set threshold: " + threshold)
+            FileUtil.writeString(file, key + " __log__ " + sec + " >>>>>>>>>>>-----------------------")
+            FileUtil.writeString(file, "key from: " + (index - threshold) + " to " + index + " is null,set threshold: " + threshold)
             break.break()
 
           }
@@ -72,7 +72,7 @@ class Task (key: String, second: Int, start:Int, end: Int, last:Int) extends Cal
     }
 
     if(max != start)
-      FileUtil.writeString(file, "is null value at "+ sec + ":" + requestKey + "_ky_ max index is less than :" + max + "---" + threadInfo + " <<<<<<<<<<<-------------------------------")
+      FileUtil.writeString(file, "is null value at "+ sec + " : " + requestKey + " _ky_ max index is less than :" + max + "---" + threadInfo + " <<<<<<<<<<<-------------------------------")
 
     listBuffer
 
