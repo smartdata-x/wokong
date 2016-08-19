@@ -44,11 +44,9 @@ object Token {
     * 接口秘钥算法实现
     * @param secretKey 秘钥
     * @param data 需要加密的数据
-    * @throws Exception
     * @return  加密后结果数据
     */
-  @throws[Exception]
-  private  def sign(secretKey: String, data: String): String = {
+  private  def sign(secretKey: String, data: String) = {
 
     val signingKey: SecretKeySpec = new SecretKeySpec(secretKey.getBytes, TelecomConfig.HMAC_SHA1_ALGORITHM)
     val mac: Mac = Mac.getInstance(TelecomConfig.HMAC_SHA1_ALGORITHM)
@@ -62,11 +60,8 @@ object Token {
   /**
     * md5处理密码
     * @param str 密码
-    * @throws Exception
     * @return MD5处理后结果
-    *
     */
-  @throws[Exception]
   private  def md5Encode(str: String): String = {
 
     var md5: MessageDigest = null

@@ -2,13 +2,11 @@ package util
 
 import java.io._
 
-import scala.collection.mutable.ListBuffer
-
 /**
   * Created by C.J.YOU on 2016/8/13.
   * FileSystem 操作的工具类
   */
-object FileUtil extends  FileInterface{
+object FileUtil extends  FileInterface {
 
   private def isExist(path:String): Boolean ={
     val file = new File(path)
@@ -17,7 +15,6 @@ object FileUtil extends  FileInterface{
 
   /**
     * 创建目录
-    *
     * @param name 指定目录名
     */
   def mkDir(name: String): Unit = {
@@ -34,42 +31,30 @@ object FileUtil extends  FileInterface{
     }
   }
 
-  def writeToFile(path: String, array:ListBuffer[String]): Unit = {
+  override def writeString(path: String, data:String): Unit = {
 
     createFile(path)
     val out = new FileOutputStream(new File(path),true)
     val writer = new PrintWriter(out, false)
-
-    for (arr <- array){
-      writer.append(arr + "\n")
-    }
-    writer.flush()
-    writer.close()
-  }
-
-  def writeString(path: String, array:String): Unit = {
-
-    createFile(path)
-    val out = new FileOutputStream(new File(path),true)
-    val writer = new PrintWriter(out, false)
-    writer.append(array + "\n")
+    writer.append(data + "\n")
 
     writer.flush()
     writer.close()
 
   }
 
-  override def write(path: String, array: Array[(String,Int)]): Unit = {
+  override def write[T](path: String, array: Array[T]): Unit = {
 
-    createFile(path)
-    val out = new FileOutputStream(new File(path),true)
-    val writer = new PrintWriter(out, false)
+      createFile(path)
+      val out = new FileOutputStream(new File(path),true)
+      val writer = new PrintWriter(out, false)
 
-    for (arr <- array){
-      writer.append(arr + "\n")
-    }
+      for (arr <- array){
+        writer.append(arr + "\n")
+      }
 
-    writer.flush()
-    writer.close()
+      writer.flush()
+      writer.close()
   }
+
 }

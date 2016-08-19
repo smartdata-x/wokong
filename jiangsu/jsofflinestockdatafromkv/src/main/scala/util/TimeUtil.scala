@@ -4,7 +4,7 @@ import java.text.SimpleDateFormat
 import java.util.{Calendar, Date}
 
 /**
-  * Created by Administrator on 2016/8/13.
+  * Created by C.J.YOU on 2016/8/13.
   */
 object TimeUtil {
 

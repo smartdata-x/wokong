@@ -6,13 +6,14 @@ import scala.collection.mutable.ListBuffer
 
 /**
   * Created by C.J.YOU on 2016/8/16.
+  * 线程池的维护
   */
 object ThreadPool {
 
-  val timerThreadNum = 150
+  val THREAD_NUMBER = 150
 
-  val timeThreadExecutorService = Executors.newFixedThreadPool(timerThreadNum)
+  val THREAD_EXECUTOR_SERVICE = Executors.newFixedThreadPool(THREAD_NUMBER)
 
-  val compService  = new ExecutorCompletionService[ListBuffer[String]](timeThreadExecutorService)
+  val COMPLETION_SERVICE  = new ExecutorCompletionService[ListBuffer[String]](THREAD_EXECUTOR_SERVICE)
 
 }

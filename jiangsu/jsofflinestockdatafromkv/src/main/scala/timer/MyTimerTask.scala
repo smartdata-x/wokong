@@ -20,10 +20,6 @@ class MyTimerTask(offSet: Int) extends  TimerTask {
 
     val MAX_REQUEST = 3000
 
-    /* val thread = 130
-     val es = Executors.newFixedThreadPool(thread)
-     val compService  = new ExecutorCompletionService[ListBuffer[String]](es)*/
-
     FileUtil.writeString(FileConfig.PROGRESS_DIR +"/" + timeKey._2, "current time: " + TimeUtil.getTimeKey(0)._1+",timer runner start at:" + timeKey._1 )
     println("current time: " + TimeUtil.getTimeKey(0)._1+",timer runner start at:" + timeKey._1 )
 
@@ -33,24 +29,21 @@ class MyTimerTask(offSet: Int) extends  TimerTask {
 
         val taskBeforeIn = new Task(timeKey._1, sec, num * MAX_REQUEST, (num + 1) * MAX_REQUEST, 0)
         val taskAfterIn = new Task(timeKey._1, sec, num * MAX_REQUEST, (num + 1) * MAX_REQUEST, 5)
-        ThreadPool.compService.submit(taskBeforeIn)
-        ThreadPool.compService.submit(taskAfterIn)
+        ThreadPool.COMPLETION_SERVICE.submit(taskBeforeIn)
+        ThreadPool.COMPLETION_SERVICE.submit(taskAfterIn)
 
       }
 
     }
 
-    // es.shutdown()
-
     for(sec <- 0 to 119) {
 
-      val tempResult = ThreadPool.compService.take().get()
+      val tempResult = ThreadPool.COMPLETION_SERVICE.take().get()
 
       if(tempResult.nonEmpty) {
         println("size:" + tempResult.size)
       }
-      FileUtil.writeToFile(FileConfig.DATA_DIR + "/" + timeKey._2, tempResult)
-
+      FileUtil.write(FileConfig.DATA_DIR + "/" + timeKey._2, tempResult.toArray)
     }
 
     println("is over")
@@ -59,6 +52,10 @@ class MyTimerTask(offSet: Int) extends  TimerTask {
   }
 }
 
+
+/**
+  * 伴生对象
+  */
 object MyTimerTask {
 
   def apply(offSet: Int): MyTimerTask = new MyTimerTask(offSet)
