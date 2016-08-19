@@ -1,4 +1,4 @@
-name := "jsofflinestockfromkv"
+name := "offlinestockfromkv"
 
 version := "1.3"
 
