@@ -8,9 +8,11 @@ import java.io._
   */
 object FileUtil extends  FileInterface {
 
-  private def isExist(path:String): Boolean ={
+  private def isExist(path:String): Boolean = {
+
     val file = new File(path)
     file.exists()
+
   }
 
   /**
@@ -18,17 +20,23 @@ object FileUtil extends  FileInterface {
     * @param name 指定目录名
     */
   def mkDir(name: String): Unit = {
+
     val dir = new File(name)
-    if(!isExist(name)){
+
+    if(!isExist(name)) {
       dir.mkdir
     }
+
   }
 
   private def createFile(path:String): Unit = {
+
     val file = new File(path)
-    if(!isExist(path)){
+
+    if(!isExist(path)) {
       file.createNewFile()
     }
+
   }
 
   override def writeString(path: String, data:String): Unit = {
@@ -49,7 +57,7 @@ object FileUtil extends  FileInterface {
       val out = new FileOutputStream(new File(path),true)
       val writer = new PrintWriter(out, false)
 
-      for (arr <- array){
+      for (arr <- array) {
         writer.append(arr + "\n")
       }
 
