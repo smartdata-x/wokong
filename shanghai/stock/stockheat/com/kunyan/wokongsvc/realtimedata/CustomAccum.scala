@@ -11,6 +11,8 @@
 
 package com.kunyan.wokongsvc.realtimedata
 
+import JsonHandle.StockInfo
+
 import org.apache.spark.AccumulatorParam
 import org.apache.spark.Accumulator
 
@@ -102,6 +104,29 @@ object CustomAccum {
       * @author wukun
       */
     def zero(initialValue: (String, Int)): (String, Int) = ("0", 0)
+  }
+
+  implicit object ListObjectAccumulatorParam extends AccumulatorParam[List[StockInfo]] {
+
+    /**
+      * 实现List类型相加
+      * @param t1 被加List
+      * @param t2 加List
+      * @author wukun
+      */
+    def addInPlace(
+      t1: List[StockInfo],
+      t2: List[StockInfo]
+    ): List[StockInfo] = {
+      t1 ::: t2
+    }
+
+    /**
+      * 第一个元组赋初值
+      * @param initialValue 初始元组值
+      * @author wukun
+      */
+    def zero(initialValue: List[StockInfo]): List[StockInfo] = Nil
   }
 }
 
