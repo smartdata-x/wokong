@@ -51,7 +51,7 @@ object FileUtil extends  FileInterface {
 
   }
 
-  override def write[T](path: String, array: Array[T]): Unit = {
+  override def write(path: String, array: Array[String]): Unit = {
 
       createFile(path)
       val out = new FileOutputStream(new File(path),true)

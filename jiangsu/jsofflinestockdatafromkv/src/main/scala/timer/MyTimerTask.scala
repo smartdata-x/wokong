@@ -11,7 +11,7 @@ import util.{FileUtil, TimeUtil}
   * Created by C.J.YOU on 2016/8/13.
   * 定时开始请求的Task类，定时一分钟
   */
-class MyTimerTask(offSet: Int) extends  TimerTask {
+class MyTimerTask(offSet: Int) extends TimerTask {
 
 
   override def run(): Unit = {
