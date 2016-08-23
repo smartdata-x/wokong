@@ -8,6 +8,10 @@ import java.util.{Calendar, Date}
   */
 object TimeUtil {
 
+  /**
+    * 获取格式化日期
+    * @return yyyy-MM-dd
+    */
   def getDay: String = {
 
     val sdf: SimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd")
@@ -17,6 +21,10 @@ object TimeUtil {
 
   }
 
+  /**
+    * 获取小时
+    * @return  小时
+    */
   def getCurrentHour: Int = {
 
     val calendar = Calendar.getInstance
@@ -25,6 +33,10 @@ object TimeUtil {
 
   }
 
+  /**
+    * 获取时间戳
+    * @return 时间戳 long
+    */
   def getTimeStamp:Long = {
     System.currentTimeMillis()
   }
