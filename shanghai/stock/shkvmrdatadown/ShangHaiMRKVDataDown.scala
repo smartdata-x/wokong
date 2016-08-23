@@ -9,7 +9,11 @@ import java.util.concurrent.Executors
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
+import com.kunyan.Parameter
 import org.apache.commons.codec.binary.Hex
+import org.apache.commons.codec.binary.Hex
+import org.json.JSONException
+import org.json.JSONObject
 import org.json.{JSONException, JSONObject}
 import sun.misc.BASE64Decoder
 
@@ -29,8 +33,7 @@ object ShangHaiMRKVDataDown {
     val token = getToken
     val yearToHour = getYearToHour(Integer.valueOf(args(0)))
     val pool = Executors.newFixedThreadPool(60)
-    var dataList = new ListBuffer[String]
-    val write = new PrintWriter(args(1) + yearToHour + ".txt")
+    var dataListBuf = new ListBuffer[String]
 
     for (minInt <- 0 to 59) {
 
@@ -47,7 +50,7 @@ object ShangHaiMRKVDataDown {
 
           val yearToMinute = yearToHour + minute
           val data = getOneMinuteData(yearToMinute, token)
-          dataList = dataList ++: data
+          dataListBuf = dataListBuf ++: data
 
         }
       }
@@ -61,8 +64,11 @@ object ShangHaiMRKVDataDown {
       Thread.sleep(5000)
     }
 
-    for (index <- dataList.indices) {
-      write.write(dataList(index) + "\n")
+    val write = new PrintWriter(args(1) + yearToHour + ".txt")
+    val dataList = dataListBuf.toList
+
+    for (data <- dataList) {
+      write.write(data + "\n")
     }
 
     write.close()
