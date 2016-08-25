@@ -1,20 +1,20 @@
 /*=============================================================================
-  #    Copyright (c) 2015
-  #    ShanghaiKunyan.  All rights reserved
+  # Copyright (c) 2015
+  # ShanghaiKunyan.  All rights reserved
   #
-  #    Filename     : /home/wukun/work/Wokong/src/main/scala/com/kunyan/wokongsvc/realtimedata/TimerHandle.scala
-  #    Author       : Sunsolo
-  #    Email        : wukun@kunyan-inc.com
-  #    Date         : 2016-05-22 16:04
-  #    Description  : 
+  # Filename : /home/wukun/work/Wokong/src/main/scala/com/kunyan/wokongsvc/realtimedata/TimerHandle.scala
+  # Author   : Sunsolo
+  # Email    : wukun@kunyan-inc.com
+  # Date     : 2016-05-22 16:04
   =============================================================================*/
 
  package com.kunyan.wokongsvc.realtimedata
 
  import com.kunyan.wokongsvc.realtimedata.CustomAccum._
- import MixTool.TupleHashMapSet
 
  import org.apache.hadoop.conf.Configuration
+ import org.apache.hadoop.hbase.client.RetriesExhaustedException
+ import org.apache.hadoop.hbase.TableNotFoundException
  import org.apache.hadoop.hbase.util.Bytes
  import org.apache.spark.rdd.RDD
  import org.apache.spark.storage.StorageLevel
@@ -26,9 +26,9 @@
  import scala.collection.mutable.HashSet
  import scala.collection.mutable.HashMap
  import scala.collection.mutable.ListBuffer
- import scala.util.Try
- import scala.util.Success
  import scala.util.Failure
+ import scala.util.Success
+ import scala.util.Try
 
  /** 
    * Created by wukun on 2016/5/23
@@ -38,29 +38,23 @@
    hbaseContext: HbaseContext, 
    pool: MysqlPool,
    stock: HashSet[String],
-   stockHyGn: TupleHashMapSet,
-   path: String
+   path: String,
+   tamp: Long
  ) extends TimerTask with Serializable with CustomLogger {
 
    @transient val hc = hbaseContext
-
    @transient val masterPool = pool
 
    val colInfo = hc.getColInfo
-
    val getStock = HbaseContext.dataHandle
    val executorPool = hc.broadcastPool
    val stockCode = hc.broadcastSource[HashSet[String]](stock)
-   val stockHy = hc.broadcastSource(stockHyGn._1._1)
-   val stockGn = hc.broadcastSource(stockHyGn._1._2)
-
-   val accumATotal = hc.accum[Int](0)
-
    var lastUpdateTime = 0
+   var isFirstLaunch = true
+
    var prevRdd: RDD[(String, Int)] = null
-   var prevHyGn: HashMap[String, Int] = null
-   val hyGn = stockHyGn._2
-   var temp: HashMap[String, Int] = new HashMap[String, Int]
+
+   val accum = hc.accum[(String, Int)]("0", 0)
 
    /**
      * 每次提交时执行的逻辑
@@ -69,43 +63,93 @@
    override def run() {
 
      val cal: Calendar = Calendar.getInstance
+     val nowUpdateTime = TimeHandle.getDay
      val month = TimeHandle.getMonth(cal, 1)
      val day = TimeHandle.getDay(cal)
+     var nowTime = TimeHandle.maxStamp
+     val prevTime = nowTime - 3600000
 
-     if(day != lastUpdateTime && TimeHandle.getNowHour(cal) == 0) {
+     if(nowUpdateTime != lastUpdateTime && TimeHandle.getNowHour(cal) == 0) {
 
-       RddOpt.resetData(masterPool.getConnect, "proc_resetData")
-       lastUpdateTime = day
+       RddOpt.updateAccum(masterPool.getConnect, "stock_follow", 0)
+       lastUpdateTime = nowUpdateTime
 
-     } else {
-       RddOpt.resetDiffData(masterPool.getConnect, "proc_resetDiffData")
      }
 
-     val monthTable = month%2 match {
-       case 0 => ("s_v_month_prev", "hy_v_month_prev", "gn_v_month_prev")
-       case 1 => ("s_v_month_now", "hy_v_month_now", "gn_v_month_now")
-      }
+     try {
+       dataManage(prevTime, nowTime, month, day)
+     } catch {
 
-     val nowTime = TimeHandle.maxStamp
-     val prevTime = nowTime - 3600000
+       case retry: RetriesExhaustedException => {
+         warnLog(fileInfo, "[retries is exhausted。Ip(" + hc.getIp + ")**Family(" + hc.getFamily + ")]")
+       }
+
+       case table: TableNotFoundException => {
+         warnLog(fileInfo, "[Hbase table(" + hc.getTable + ") not exist]")
+         System.exit(-1)
+       }
+
+       case e: Exception => {
+         warnLog(fileInfo, "[Request hbase exception: " + e.getMessage + "]")
+       }
+
+     }
+
+   }
+
+   def dataManage(prevTime: Long, nowTime: Long, month: Int, day: Int) {
+
+     if(isFirstLaunch == true) {
+
+       isFirstLaunch = false
+
+       hc.changeScan(prevTime - 3600000, prevTime)
+       hc.changeConf
+
+       prevRdd = hc.generateRDD
+         .map(_._2)
+         .flatMap( x => {
+
+           val value = Bytes.toString(x.getValue(Bytes.toBytes(colInfo._1), 
+             Bytes.toBytes(colInfo._2)))
+
+           getStock(value)
+         }).filter( x => {
+
+           if((stockCode.value)(x._1)) {
+             true
+           } else {
+             false
+           }
+
+         }).reduceByKey(_ + _)
+     } 
+     
 
      hc.changeScan(prevTime, nowTime)
      hc.changeConf
 
      val timeTamp = nowTime / 1000
 
-     val hbaseData = hc.generateRDD.map(_._2).persist(StorageLevel.MEMORY_AND_DISK)
+     val nowFollowData = hc.generateRDD
+       .map(_._2)
+       .persist(StorageLevel.MEMORY_AND_DISK)
 
      /* 记录一次更新有多少用户数 */
-     val userCount = hbaseData.count
+     val userCount = nowFollowData.count
 
-     val sourceData = hbaseData.flatMap( x => {
-       val value = Bytes.toString(x.getValue(Bytes.toBytes(colInfo._1), 
+     val sourceData = nowFollowData.flatMap( x => {
+
+       val value = Bytes.toString(
+         x.getValue(Bytes.toBytes(colInfo._1), 
          Bytes.toBytes(colInfo._2)))
        getStock(value)
+
      })
 
-     val eachCodeCount = sourceData.filter( x => {
+     nowFollowData.unpersist()
+
+     val stockCount = sourceData.filter( x => {
 
        if((stockCode.value)(x._1)) {
          true
@@ -115,90 +159,150 @@
 
      }).reduceByKey(_ + _).persist(StorageLevel.MEMORY_AND_DISK)
 
-     if(prevRdd == null) {
+     stockCount.foreachPartition( x => {
 
-       eachCodeCount.map( x => (x._1, x._2)).foreachPartition( y => {
-         RddOpt.updateADataFirst(executorPool.value.getConnect, y, "proc_visit_A_data", timeTamp, monthTable._1, day, accumATotal)
-       })
+       executorPool.value.getConnect match {
 
-     } else {
+         case Some(connect) => {
 
-       eachCodeCount.fullOuterJoin[Int](prevRdd).map( x=> (x._1, x._2)).foreachPartition( y => {
-         RddOpt.updateAData(executorPool.value.getConnect, y, "proc_visit_A_data", timeTamp, monthTable._1, "s_v_diff", day, accumATotal)
-       })
+           val mysqlHandle = MysqlHandle(connect)
 
-     }
+           x.foreach( y => {
 
-     prevRdd = eachCodeCount
+             mysqlHandle.execInsertInto(
+               MixTool.insertCount("stock_follow", y._1, timeTamp, y._2)
+             ) recover {
+               case e: Exception => warnLog(fileInfo, e.getMessage + "[Update data failure]")
+             }
 
-     val nowHyGnData = eachCodeCount.flatMap( x => {
+             mysqlHandle.execInsertInto(
+               MixTool.insertOldCount("stock_follow_old", y._1, timeTamp, y._2)
+             ) recover {
+               case e: Exception => warnLog(fileInfo, e.getMessage + "[Update old data failure]")
+             }
 
-       /* gnInfo保存的是单只股票对应的所有概念 */
-      val gnInfo = stockGn.value.getOrElse(x._1, new ListBuffer[String])
+             mysqlHandle.execInsertInto(
+               MixTool.updateAccum("stock_follow_accum", y._1, y._2)
+             ) recover {
+               case e: Exception => warnLog(fileInfo, e.getMessage + "[Update accum failure]")
+             }
 
-      /* hyInfo保存的是单只股票对应的所有行业 */
-      val hyInfo = stockHy.value.getOrElse(x._1, new ListBuffer[String])
+             accum += y
+           })
 
-      hyInfo.map( y => (y, x._2)) ++ gnInfo.map( z => (z, x._2))
-     }).reduceByKey(_ + _).collectAsMap
+           mysqlHandle.close
+         }
 
-     nowHyGnData.foreach( x => {
-
-       /* kind为0代表行业 ,1代表概念 */
-      var kind = 0
-      var table: String = monthTable._2
-
-      if(hyGn._2(x._1)) {
-
-        kind = 1
-        table = monthTable._3
-
-      }
-
-      temp += (x)
-
-      val diff = {
-
-        if(prevHyGn != null) {
-
-          prevHyGn.get(x._1) match {
-
-            case Some(v) => {
-              prevHyGn -= x._1
-              x._2 - v
-            }
-            case None => {
-              x._2
-            }
-
-          }
-
-          } else {
-            x._2
-          }
-      }
-
-      RddOpt.updateHyGnData(masterPool.getConnect, x, diff, "proc_visit_hygn_data", timeTamp, day, kind, table)
+         case None => warnLog(fileInfo, "[Get connect failure]")
+       }
      })
 
-     if(prevHyGn != null) {
+     RddOpt.updateMax(masterPool.getConnect, "stock_max", "max_f", accum.value._2)
+     accum.setValue("0", 0)
 
-       prevHyGn.foreach( x => {
+     if(prevRdd == null) {
+       stockCount.foreachPartition( x => {
 
-         if(hyGn._1(x._1)) {
-           RddOpt.updateHyGnDiff(masterPool.getConnect, x._1, timeTamp, "hy_v_diff", 0 - x._2)
-         } else {
-           RddOpt.updateHyGnDiff(masterPool.getConnect, x._1, timeTamp, "gn_v_diff", 0 - x._2)
+         executorPool.value.getConnect match {
+           case Some(connect) => {
+
+             val mysqlHandle = MysqlHandle(connect)
+
+             x.foreach( y => {
+
+               mysqlHandle.execInsertInto(
+               {
+                 MixTool.insertCount("stock_follow_add", y._1, timeTamp, y._2)
+               }
+               ) recover {
+                 case e: Exception => warnLog(fileInfo, e.getMessage + "[Update data failure]")
+               }
+
+               mysqlHandle.execInsertInto(
+               {
+                 MixTool.updateMonthAccum("stock_follow_month_", y._1, month, day, y._2)
+               }
+               ) recover {
+                 case e: Exception => warnLog(fileInfo, e.getMessage + "[Update accum failure]")
+               }
+             })
+
+             mysqlHandle.close
+           }
+
+           case None => warnLog(fileInfo, "[Get connect failure]")
          }
        })
+     } else {
+       stockCount.fullOuterJoin[Int](prevRdd).foreachPartition( x => {
 
+         executorPool.value.getConnect match {
+           case Some(connect) => {
+
+             val mysqlHandle = MysqlHandle(connect)
+
+             x.foreach( y => {
+               val now = y._2._1 match {
+                 case Some(z) => z
+                 case None    => 0
+               }
+
+               val prev = y._2._2 match {
+                 case Some(z) => z
+                 case None    => 0
+               }
+
+               mysqlHandle.execInsertInto(
+                 MixTool.insertCount("stock_follow_add", y._1, timeTamp, now - prev)
+               ) recover {
+                 case e: Exception => warnLog(fileInfo, e.getMessage + "[Update data failure]")
+               }
+
+               mysqlHandle.execInsertInto(
+                 MixTool.updateMonthAccum("stock_follow_month_", y._1, month, day, now - prev)
+               ) recover {
+                 case e: Exception => warnLog(fileInfo, e.getMessage + "[Update accum failure]")
+               }
+             })
+
+             mysqlHandle.close
+           }
+
+           case None => warnLog(fileInfo, "[Get connect failure]")
+         }
+       })
      }
 
-     /* 更新单个时间总和与更新时间 */
-     RddOpt.updateTotalTime(masterPool.getConnect, timeTamp, accumATotal.value)
+     prevRdd = stockCount
 
-     prevHyGn = temp
-     temp.clear
+     /* 计算所有股票关注的总次数 */
+     val allCount = stockCount.map( x => x._2 ).fold(0)( (y, z) => y + z)
+
+     if(allCount > 0) {
+
+       masterPool.getConnect match {
+
+         case Some(connect) => {
+           val mysqlHandle = MysqlHandle(connect)
+
+           mysqlHandle.execInsertInto(
+             MixTool.insertTotal("stock_follow_count", timeTamp, allCount)
+           ) recover {
+             case e: Exception => warnLog(fileInfo, e.getMessage + "[Update all_data failure]")
+           }
+
+           mysqlHandle.execInsertInto(
+             MixTool.insertTime("update_follow", timeTamp)
+           ) recover {
+             case e: Exception => warnLog(fileInfo, e.getMessage + "[Update time failure]")
+           }
+
+           mysqlHandle.close
+         }
+
+         case None => warnLog(fileInfo, "[Get connect failure]")
+       }
+     }
 
      val userWriter = Try(new FileWriter(path, true)) match {
        case Success(write) => write
@@ -208,8 +312,6 @@
      val writer = userWriter.asInstanceOf[FileWriter]
      writer.write(timeTamp + ":" + userCount + "\n")
      writer.close
-
-     accumATotal.setValue(0)
    }
  }
 
@@ -223,23 +325,22 @@
      hc: HbaseContext, 
      pool: MysqlPool,
      stock: HashSet[String],
-     stockHyGn: TupleHashMapSet,
-     path: String): TimerHandle = {
-     new TimerHandle(hc, pool, stock, stockHyGn, path)
+     path: String,
+     timeTamp: Long): TimerHandle = {
+     new TimerHandle(hc, pool, stock, path, timeTamp)
    }
 
    def work(
      hc: HbaseContext, 
      pool: MysqlPool, 
      stock: HashSet[String],
-     stockHyGn: TupleHashMapSet,
-     path: String) {
+     path: String,
+     timeTamp: Long) {
 
-     val TIMERHANDLE: Timer = new Timer
-     val COMPUTETIME: Calendar = Calendar.getInstance
-     val HOUR = TimeHandle.getHour(COMPUTETIME)
-
-     TimeHandle.setTime(COMPUTETIME, HOUR, 0, 0, 0)
-     TIMERHANDLE.scheduleAtFixedRate(TimerHandle(hc, pool, stock, stockHyGn, path), COMPUTETIME.getTime(), 60 * 60 * 1000)
+     val timerHandle:Timer = new Timer
+     val computeTime:Calendar = Calendar.getInstance
+     val hour = TimeHandle.getHour(computeTime)
+     TimeHandle.setTime(computeTime, hour, 0, 0, 0)
+     timerHandle.scheduleAtFixedRate(TimerHandle(hc, pool, stock, path, timeTamp), computeTime.getTime(), 60 * 60 * 1000)
    }
  }

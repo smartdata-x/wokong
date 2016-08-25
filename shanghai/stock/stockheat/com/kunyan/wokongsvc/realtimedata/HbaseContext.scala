@@ -33,7 +33,7 @@ import scala.reflect.ClassTag
   * Created by wukun on 2016/5/20
   * 自定义hbase相关的上下文类
   */
-class HbaseContext(xml:XmlHandle) { self =>
+class HbaseContext(xml:XmlHandle) extends CustomLogger { self =>
 
   type Writable = ImmutableBytesWritable
 
@@ -71,12 +71,23 @@ class HbaseContext(xml:XmlHandle) { self =>
     self.scan.setTimeRange(minStamp, maxStamp)
   }
 
+  def getTable: String = {
+    xml.getElem("hbase", "tablename")
+  }
+
+  def getIp: String = {
+    xml.getElem("hbase", "quorum")
+  }
+
+  def getFamily: String = {
+    xml.getElem("hbase", "colfamilly")
+  }
+
   def initConf: Configuration = {
 
     val configuration = HBaseConfiguration.create
-
     val zookeeper = (xml.getElem("hbase", "clientport"),xml.getElem("hbase", "quorum"))
-    configuration.set("hbase.zookeeper.property.clientPort", zookeeper._1)
+    configuration.set("hbase.zookeeper.property.clientport", zookeeper._1)
     configuration.set("hbase.zookeeper.quorum", zookeeper._2)
     configuration.set(TableInputFormat.INPUT_TABLE, initTable)
 
@@ -95,7 +106,7 @@ class HbaseContext(xml:XmlHandle) { self =>
     * @author wukun
     */
   def generateRDD: RDD[(Writable, Result)] = {
-    sparkContext.newAPIHadoopRDD(self.conf, classOf[TableInputFormat], classOf[Writable], classOf[Result])
+      sparkContext.newAPIHadoopRDD(self.conf, classOf[TableInputFormat], classOf[Writable], classOf[Result])
   }
 
   def broadcastPool: Broadcast[MysqlPool] = {
@@ -135,10 +146,8 @@ object HbaseContext {
       val iterator = pattern.findAllMatchIn(value)
 
       while(iterator.hasNext) {
-
         val item = iterator.next
         followStockCodeList += ((item.toString, 1))
-
       }
 
       followStockCodeList
@@ -151,6 +160,26 @@ object HbaseContext {
 
   def apply(xml:XmlHandle): HbaseContext = {
     new HbaseContext(xml)
+  }
+
+  def main(args: Array[String]) {
+
+    val nowTime = 1469116800000L 
+    val prevTime = nowTime - 3600000 
+
+    val xmlHanlde: XmlHandle = XmlHandle("./config.xml")
+
+    val hc: HbaseContext = HbaseContext(xmlHanlde)
+
+    hc.changeScan(prevTime, nowTime)
+    hc.changeConf
+
+    val timeTamp = nowTime / 1000
+
+    val hbaseData = hc.generateRDD.map({
+      println("1111")
+      _._2
+    })
   }
 }
 

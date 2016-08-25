@@ -1,31 +1,28 @@
 /*=============================================================================
 #    Copyright (c) 2015
 #    ShanghaiKunyan.  All rights reserved
-#
 #    Filename     : /home/wukun/work/Wokong/src/main/scala/com/kunyan/wokongsvc/realtimedata/SearchHandle.scala
 #    Author       : Sunsolo
 #    Email        : wukun@kunyan-inc.com
 #    Date         : 2016-06-01 20:11
-#    Description  : 
 =============================================================================*/
 
 package com.kunyan.wokongsvc.realtimedata
 
-import com.kunyan.wokongsvc.realtimedata.MixTool.{Tuple2Map, TupleHashMapSet}
-
+import com.kunyan.wokongsvc.realtimedata.MixTool.Tuple2Map
+import com.kunyan.scalautil.message.TextSender
 import CustomAccum._
 
+import org.apache.spark.rdd.RDD 
+import org.apache.spark.storage.StorageLevel
+
+import java.util.Calendar
 import java.util.Timer
 import java.util.TimerTask
-import java.util.Calendar
+import scala.reflect.ClassTag
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
-import org.apache.spark.storage.StorageLevel
-import scala.reflect.ClassTag
-import org.apache.spark.rdd.RDD 
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.ArrayBuffer
 
 /** 
  * Created by wukun on 2016/06/01
@@ -35,26 +32,21 @@ class SearchHandle(
   fileContext: FileContext,
   pool: MysqlPool,
   stockAlias: Tuple2Map,
-  hyGnInfo: TupleHashMapSet
+  path: String
 ) extends TimerTask with Serializable with CustomLogger {
 
   @transient val fc = fileContext 
-
   @transient val masterPool = pool
 
   val executorPool = fc.broadcastPool
-  val alias = fc.broadcastSource(stockAlias)
-  val stockHy = fc.broadcastSource(hyGnInfo._1._1)
-  val stockGn = fc.broadcastSource(hyGnInfo._1._2)
+  val alias = fc.broadcastSource[Tuple2Map](stockAlias)
 
-  /* 初始化计算某时刻A股访问总量；累加器 */
-  val accumATotal = fc.accum[Int](0)
-
-  var prevRdd: RDD[(String, Int)] = null
-  var prevHyGn: HashMap[String, Int] = null
-  var lastUpdateTime = 0
-  val hyGn = hyGnInfo._2
-  var temp: HashMap[String, Int] = new HashMap[String, Int]
+  var prevRdd: RDD[((String, String), Int)] = null
+  val accum = fc.accum[(String, Int)](("0", 0))
+  var isAlarm: Int = 0
+  var prevDay = 0
+  var isEnd = ""
+  var isSameHour = 0
 
   /**
    * 每次提交时执行的逻辑
@@ -62,28 +54,60 @@ class SearchHandle(
    */
   override def run() {
 
-    val date = TimeHandle.getTamp(fc.getTamp)
-    val month = date.getMonth + 1
-    val day = date.getDate
+    val timeTamp: String = fc.getTamp
+    val timeRef = getFileDate(timeTamp)
 
-    if(day != lastUpdateTime && date.getHours == 0) {
+    val nowHour = timeRef._1._3
+    val nowDay  = timeRef._1._2
+    val nowMonth= timeRef._1._1
 
-      RddOpt.resetData(masterPool.getConnect, "proc_resetData")
-      lastUpdateTime = day
+    if(nowDay != prevDay && nowHour == 0 && nowHour != isSameHour) {
 
-    } else {
-      RddOpt.resetDiffData(masterPool.getConnect, "proc_resetDiffData")
+      RddOpt.updateAccum(masterPool.getConnect, "stock_search", 0)
+      prevDay = nowDay
+
     }
 
-    val monthTable = month % 2 match {
-      case 0 => ("s_v_month_prev", "hy_v_month_prev", "gn_v_month_prev")
-      case 1 => ("s_v_month_now", "hy_v_month_now", "gn_v_month_now")
+    if(nowHour != isSameHour) {
+      dataManage(nowDay, timeRef._2, nowMonth, true, "shdx_" + timeTamp)
+      isSameHour = nowHour
     }
 
+    while({
+
+      isEnd = fc.getLazyFile(path)
+      isEnd
+
+    } != null) {
+
+      val timeRel = getFileDate(isEnd.substring(5))
+
+      if(prevDay == timeRel._1._2) {
+        dataManage(timeRel._1._2, timeRel._2, timeRel._1._1, false, isEnd)
+      } else {
+        dataManage(isEnd, (timeRel._1._1, timeRel._1._2, timeRel._2))
+      }
+    } 
+
+  }
+
+  def getFileDate(fileTimeTamp: String): ((Int, Int, Int), Long) = {
+
+    val date     = TimeHandle.getTamp(fileTimeTamp)
+    val now_day  = date.getDate
     val timeTamp = date.getTime / 1000
+    val month    = date.getMonth + 1
+    val hour     = date.getHours
 
-    val dataRdd = fc.generateRdd.map( x => {
+    ((month, now_day, hour), timeTamp)
+  }
+
+  def dataManage(day: Int, timeTamp: Long, month: Int, is_now: Boolean, fileName: String) {
+
+    val dataRdd = fc.generateRdd(fileName).map( x => {
+
       MixTool.stockClassify(x, alias.value)
+
     }).filter( x => {
 
       if(x._1._2.compareTo("0") == 0 || x._1._2.compareTo("1") == 0) {
@@ -91,102 +115,169 @@ class SearchHandle(
       } else {
         true
       }
-    }).persist(StorageLevel.MEMORY_AND_DISK_SER)
 
+    }).persist(StorageLevel.MEMORY_AND_DISK_SER)
 
     Try(dataRdd.take(1)) match {
 
       case Success(z) => {
 
         val eachCodeCount = dataRdd.map( (y: ((String,String),String)) => {
-          (y._1._1, 1)
+          (y._1, 1)
         }).reduceByKey(_ + _).persist(StorageLevel.MEMORY_AND_DISK_SER)
 
+        eachCodeCount.foreachPartition( x => {
+
+          executorPool.value.getConnect match {
+
+            case Some(connect) => {
+
+              val mysqlHandle = MysqlHandle(connect)
+
+              RddOpt.updateCount(fileInfo, mysqlHandle, x, accum, MixTool.SEARCH, timeTamp, month, day)
+
+              mysqlHandle.batchExec recover {
+                case e: Exception => {
+                  warnLog(fileInfo, "[exec updateCount failure]" + e.getMessage)
+                }
+              }
+
+              mysqlHandle.close
+            }
+
+            case None => warnLog(fileInfo, "Get connect exception")
+          }
+        })
+
+        RddOpt.updateMax(masterPool.getConnect, "stock_max", "max_s", accum.value._2)
+        accum.setValue("0", 0)
+
         if(prevRdd == null) {
+          eachCodeCount.map( x => (x._1._1, x._2)).foreachPartition( y => {
 
-          eachCodeCount.map( x => (x._1, x._2)).foreachPartition( y => {
-            RddOpt.updateADataFirst(executorPool.value.getConnect, y, "proc_visit_A_data", timeTamp, monthTable._1, day, accumATotal)
+            executorPool.value.getConnect match {
+
+              case Some(connect) => {
+
+                val mysqlHandle = MysqlHandle(connect)
+
+                RddOpt.updateAddFirst(mysqlHandle, y, "stock_search_add", timeTamp)
+
+                mysqlHandle.batchExec recover {
+                  case e: Exception => {
+                    warnLog(fileInfo, "[exec updateAddFirst failure]" + e.getMessage)
+                  }
+                }
+
+                mysqlHandle.close
+              }
+
+              case None => warnLog(fileInfo, "Get connect exception")
+            }
           })
-
         } else {
 
-          eachCodeCount.fullOuterJoin[Int](prevRdd).map( x=> (x._1, x._2)).foreachPartition( y => {
-            RddOpt.updateAData(executorPool.value.getConnect, y, "proc_visit_A_data", timeTamp, monthTable._1, "s_v_diff", day, accumATotal)
-          })
+          eachCodeCount.fullOuterJoin[Int](prevRdd).map( x=> (x._1._1, x._2)).foreachPartition( y => {
 
+            executorPool.value.getConnect match {
+
+              case Some(connect) => {
+
+                val mysqlHandle = MysqlHandle(connect)
+
+                RddOpt.updateAdd(mysqlHandle, y, "stock_search_add", timeTamp)
+
+                mysqlHandle.batchExec recover {
+                  case e: Exception => {
+                    warnLog(fileInfo, "[exec updateAdd failure]" + e.getMessage)
+                  }
+                }
+
+                mysqlHandle.close
+              }
+
+              case None => warnLog(fileInfo, "Get connect exception")
+            }
+          })
         }
 
         prevRdd = eachCodeCount
 
-        val nowHyGnData = eachCodeCount.flatMap( x => {
+        eachCodeCount.map( y => {
+          (y._1._2, y._2)
+        }).reduceByKey(_ + _).foreach( z => {
+          RddOpt.updateTotal(fileInfo, executorPool.value.getConnect, MixTool.ALL_SEARCH, timeTamp, z._2)
+        })
 
-            /* gnInfo保存的是单只股票对应的所有概念 */
-           val gnInfo = stockGn.value.getOrElse(x._1, new ArrayBuffer[String])
+        RddOpt.updateTime(masterPool.getConnect, "update_search", timeTamp)
 
-            /* hyInfo保存的是单只股票对应的所有行业 */
-           val hyInfo = stockHy.value.getOrElse(x._1, new ArrayBuffer[String])
+        isAlarm += 1
+      }
 
-           hyInfo.map( y => (y, x._2)) ++ gnInfo.map( z => (z, x._2))
-        }).reduceByKey(_ + _).collectAsMap
+      case Failure(e) => {
+        e.getMessage
+      }
+    }
 
-        nowHyGnData.foreach( x => {
+    if(isAlarm == 0 && is_now) {
+      TextSender.send("C4545CC1AE91802D2C0FBA7075ADA972", fc.getTamp + "时刻的离线搜索数据不存在或大小为0", "18106557417,18817511172,15026804656,18600397635")
+    }
 
-          /* kind为0代表行业 ,1代表概念 */
-          var kind = 0
-          var table: String = monthTable._2
+    isAlarm = 0
+  }
 
-          if(hyGn._2(x._1)) {
+  def dataManage(fileName: String, time: (Int, Int, Long)) {
 
-            kind = 1
-            table = monthTable._3
+    val dataRdd = fc.generateRdd(fileName).map( x => {
 
-          }
+      MixTool.stockClassify(x, alias.value)
 
-          temp += (x)
-            
-          val diff = {
+    }).filter( x => {
 
-            if(prevHyGn != null) {
+      if(x._1._2.compareTo("0") == 0 || x._1._2.compareTo("2") == 0) {
+        false
+      } else {
+        true
+      }
 
-              prevHyGn.get(x._1) match {
+    }).persist(StorageLevel.MEMORY_AND_DISK_SER)
 
-                case Some(v) => {
-                  prevHyGn -= x._1
-                  x._2 - v
-                }
-                case None => {
-                  x._2
+    Try(dataRdd.take(1)) match {
+
+      case Success(z) => {
+
+        val eachCodeCount = dataRdd.map( (y: ((String,String),String)) => {
+          (y._1, 1)
+        }).reduceByKey(_ + _).persist(StorageLevel.MEMORY_AND_DISK_SER)
+
+        eachCodeCount.foreachPartition( x => {
+
+          executorPool.value.getConnect match {
+
+            case Some(connect) => {
+
+              val mysqlHandle = MysqlHandle(connect)
+
+              RddOpt.updateCount(fileInfo, mysqlHandle, x, MixTool.SEARCH, time._3, time._1, time._2) 
+
+              mysqlHandle.batchExec recover {
+                case e: Exception => {
+                  warnLog(fileInfo, "[exec updateCount failure]" + e.getMessage)
                 }
               }
 
-            } else {
-              x._2
+              mysqlHandle.close
             }
+
+            case None => warnLog(fileInfo, "Get connect exception")
           }
-
-          RddOpt.updateHyGnData(masterPool.getConnect, x, diff, "proc_visit_hygn_data", timeTamp, day, kind, table)
         })
-
-        if(prevHyGn != null) {
-
-          prevHyGn.foreach( x => {
-
-            if(hyGn._1(x._1)) {
-              RddOpt.updateHyGnDiff(masterPool.getConnect, x._1, timeTamp, "hy_v_diff", 0 - x._2)
-            } else {
-              RddOpt.updateHyGnDiff(masterPool.getConnect, x._1, timeTamp, "gn_v_diff", 0 - x._2)
-            }
-          })
-
-        }
-
-        RddOpt.updateTotalTime(masterPool.getConnect, timeTamp, accumATotal.value)
       }
 
-      case Failure(e) => e
+      case Failure(e) => {
+        e.getMessage
+      }
     }
-
-    accumATotal.setValue(0)
   }
 }
 
@@ -200,21 +291,20 @@ object SearchHandle {
     fc: FileContext, 
     pool: MysqlPool, 
     alias: Tuple2Map,
-    hyGn: TupleHashMapSet): SearchHandle = {
-      new SearchHandle(fc, pool, alias, hyGn)
+    path: String): SearchHandle = {
+      new SearchHandle(fc, pool, alias, path)
   }
 
   def work(
     fc: FileContext, 
     pool: MysqlPool,
     alias: Tuple2Map,
-    hyGn: TupleHashMapSet) {
+    path: String) {
 
-      val TIMERHANDLE: Timer = new Timer
-      val COMPUTRTIME: Calendar = Calendar.getInstance
-      val HOUR = TimeHandle.getHour(COMPUTRTIME)
-
-      TimeHandle.setTime(COMPUTRTIME, HOUR, 0, 0, 0)
-      TIMERHANDLE.scheduleAtFixedRate(SearchHandle(fc, pool, alias, hyGn), COMPUTRTIME.getTime(), 60 * 60 * 1000)
+      val timerHandle:Timer = new Timer
+      val computeTime:Calendar = Calendar.getInstance
+      val hour = TimeHandle.getHour(computeTime)
+      TimeHandle.setTime(computeTime, hour, 0, 0, 0)
+      timerHandle.scheduleAtFixedRate(SearchHandle(fc, pool, alias, path), computeTime.getTime(), 30 * 60 * 1000)
   }
 }

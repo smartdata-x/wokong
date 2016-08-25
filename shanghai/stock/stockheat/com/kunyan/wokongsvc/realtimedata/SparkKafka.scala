@@ -1,18 +1,21 @@
 /*============================================================================= 
-#    Copyright (c) 2015
-#    ShanghaiKunyan.  All rights reserved
-#
-#    Filename     : /opt/spark-1.2.2-bin-hadoop2.4/work/spark/spark_kafka/src/main/scala/SparkKafka.scala
-#    Author       : Sunsolo
-#    Email        : wukun@kunyan-inc.com
-#    Date         : 2016-05-17 21:34
-#    Description  : 
+# Copyright (c) 2015
+# ShanghaiKunyan.  All rights reserved
+# Filename : /opt/spark-1.2.2-bin-hadoop2.4/work/spark/spark_kafka/src/main/scala/SparkKafka.scala
+# Author   : Sunsolo
+# Email    : wukun@kunyan-inc.com
+# Date     : 2016-05-17 21:34
 =============================================================================*/
 package com.kunyan.wokongsvc.realtimedata
 
-import com.kunyan.wokongsvc.realtimedata.MixTool.{Tuple2Map, TupleHashMapSet}
+import com.kunyan.scalautil.message.TextSender
 import CustomAccum._
+import JsonHandle._
+import JsonHandle.MyJsonProtocol._
+import MixTool.Tuple2Map
 
+import spray.json._
+import DefaultJsonProtocol._ 
 import kafka.serializer.StringDecoder
 import org.apache.log4j.PropertyConfigurator
 import org.apache.spark.rdd.RDD 
@@ -23,13 +26,11 @@ import org.apache.spark.streaming.kafka._
 import org.apache.spark.storage.StorageLevel
 
 import java.util.Calendar
+import scala.collection.mutable.HashMap
+import scala.collection.mutable.ListBuffer
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
-import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.HashSet
-import scala.collection.mutable.ListBuffer
 
 /**
   * Created by wukun on 2016/5/23
@@ -37,50 +38,49 @@ import scala.collection.mutable.ListBuffer
   */
 object SparkKafka extends CustomLogger {
 
+  type TupleHashMap = (HashMap[String, ListBuffer[String]], HashMap[String, ListBuffer[String]])
+
   def main(args: Array[String]) {
 
     if(args.length != 2) {
-
       errorLog(fileInfo, "args too little")
       System.exit(-1)
-
     }
 
     /* 加载日志配置文件 */
     PropertyConfigurator.configure(args(0))
-    /* 初始化应用程序配置文件 */
+
     val xmlHandle = XmlHandle(args(1))
-    /* 初始化执行节点mysql连接池 */
+
+    /* 初始化mysql连接池 */
     val execPool = MysqlPool(xmlHandle)
-    /* 初始化驱动节点mysql连接池 */
+    val otherPool = MysqlPool(xmlHandle, false)
+
+    /* 初始化mysql连接池 */
     val masterPool = MysqlPool(xmlHandle)
-    masterPool.setConfig(1, 2)
+    masterPool.setConfig(1, 1, 3)
+
+    /* 初始化kafka生产者 */
+    val kafkaProducer = KafkaProducer(xmlHandle)
+
     /* 初始化股票名称的各种表示方式 */
-    val stockInfo = masterPool.getConnect match {
+    val stockalias = masterPool.getConnect match {
 
       case Some(connect) => {
 
         val sqlHandle = MysqlHandle(connect)
 
         val alias = sqlHandle.execQueryStockAlias(MixTool.SYN_SQL) match {
-
           case Success(z) => z
           case Failure(e) => {
             errorLog(fileInfo, e.getMessage + "[Query stockAlias exception]")
             System.exit(-1)
           }
-
-        }
-
-        val stockHyGn = sqlHandle.execQueryHyGn(MixTool.STOCK_HY_GN) recover {
-          case e: Exception => {
-            errorLog(fileInfo, e.getMessage + "[initial stock_hy_gn exception]")
-            System.exit(-1)
-          }
         }
 
         sqlHandle.close
-        (alias, stockHyGn)
+
+        alias
       }
 
       case None => {
@@ -89,191 +89,199 @@ object SparkKafka extends CustomLogger {
       }
     }
 
-    val molt = stockInfo.asInstanceOf[(Tuple2Map, Try[TupleHashMapSet])]
-    val stockAlias = molt._1
-    val hyGn = molt._2.get._2
-    val stockHyGn = molt._2.get._1
-
     /* 初始化spark运行上下文环境 */
     val sparkConf = new SparkConf().setAppName("visitHeat")
     val spc = new SparkContext(sparkConf)
-    val stc = new StreamingContext(spc, Seconds(300))
+    val stc = new StreamingContext(spc, Seconds(60))
 
-    /* 广播执行节点mysql连接池 */
-    val pool = stc.sparkContext.broadcast(execPool)
-    /* 广播股票的各种别名 */
-    val alias = stc.sparkContext.broadcast(stockAlias)
-    /* 广播行业与股票的映射 */
-    val stockHy = stc.sparkContext.broadcast[HashMap[String, ListBuffer[String]]](stockHyGn._1)
-    /* 广播概念与股票的映射 */
-    val stockGn = stc.sparkContext.broadcast(stockHyGn._2)
+    var prevRdd: RDD[((String, String), Int)] = null
 
-    /* 初始化计算某时刻A股访问总量；累加器 */
-    val accumATotal = stc.sparkContext.accumulator[Int](0)
+    /* 广播连接池、股票和到行业及概念的映射 */
+    val stockPool = stc.sparkContext.broadcast(execPool)
+    val testPool = stc.sparkContext.broadcast(otherPool)
+    val alias = stc.sparkContext.broadcast(stockalias.asInstanceOf[Tuple2Map])
+
+    /* 初始化计算最大股票访问量；累加器 */
+    val accum = stc.sparkContext.accumulator[(String, Int)](("0", 0))
+    val isAlarm = stc.sparkContext.accumulator[Int](0)
+    val heatInfo = stc.sparkContext.accumulator[List[StockInfo]](Nil)
+    var isToHour: Long = 0L
     var lastUpdateTime = 0
 
-    var prevRdd: RDD[(String, Int)] = null
-    var prevHyGn: HashMap[String, Int] = null
-    var temp: HashMap[String, Int] = new HashMap[String, Int]
-
     /* 初始化kafka参数并创建Dstream对象 */
-    val kafkaParam = Map("metadata.broker.list" -> xmlHandle.getElem("kafka", "broker"))
+    val kafkaParam = Map("metadata.broker.list" -> xmlHandle.getElem("kafka", "broker"), "group.id" -> "jia")
     val topicParam = xmlHandle.getElem("kafka", "topic")
-    val lines = KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](stc, kafkaParam, topicParam.split(",").toSet)
+    KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](stc, kafkaParam, topicParam.split(",").toSet)
+    .foreach( rows => {
 
-    /* 进入工作逻辑 */
-    val messages = lines.map( x => {
-      x._2
-    })
-
-    /* 0是异常的股票代码，2是搜索种类的股票代码 */
-    messages.map( x => MixTool.stockClassify(x, alias.value)).filter( x => {
-
-      if(x._1._2.compareTo("0") == 0 || x._1._2.compareTo("2") == 0) {
-        false
-      } else {
-        true
+      val cal: Calendar = Calendar.getInstance
+      val nowUpdateTime = TimeHandle.getDay
+      if(nowUpdateTime != lastUpdateTime && TimeHandle.getNowHour(cal) == 0) {
+        RddOpt.updateAccum(masterPool.getConnect, "stock_visit", 0)
+        lastUpdateTime = nowUpdateTime
       }
 
-    }).foreach( x => {
-
-      /* 每天0时清空不保存历史数据的表 */
-      val cal: Calendar = Calendar.getInstance
       val month = TimeHandle.getMonth(cal, 1)
       val day = TimeHandle.getDay(cal)
+      val stamp = TimeHandle.getStamp(cal)
 
-      if(day != lastUpdateTime && TimeHandle.getNowHour(cal) == 0) {
+      val eachCodeCount = rows
+      .map( row => row._2)
+      .map( x => MixTool.stockClassify(x, alias.value))
+      .filter( x => {
+        isAlarm += 1
 
-        RddOpt.resetData(masterPool.getConnect, "proc_resetData")
-        lastUpdateTime = day
+        if(x._1._2.compareTo("0") == 0 || x._1._2.compareTo("2") == 0) {
+          false
+        } else {
+          true
+        }
+      })
+      .map( (y: ((String,String),String)) => (y._1, 1))
+      .reduceByKey(_ + _)
+      .coalesce(3)
+      .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
-      } else {
-        /* 每次更新都要清空diff表，这个表不需要保存一整天的 */
-        RddOpt.resetDiffData(masterPool.getConnect, "proc_resetDiffData")
-      }
+      eachCodeCount.foreachPartition( x => {
 
-      /* 计算这个月的数据存在哪个月份表里 */
-      val monthTable = month%2 match {
-        case 0 => ("s_v_month_prev", "hy_v_month_prev", "gn_v_month_prev")
-        case 1 => ("s_v_month_now", "hy_v_month_now", "gn_v_month_now")
-      }
+        stockPool.value.getConnect match {
 
-      /* x._1._1是股票代码，x._1._2是股票种类，x._2是访问时间戳 */
-      val timeTamp = x.map((y: ((String, String), String)) => {
-        new StringBuilder(y._2).toLong
-      }).persist(StorageLevel.MEMORY_AND_DISK_SER)
+          case Some(connect) => {
 
-      val count = timeTamp.count
-      val sum = timeTamp.fold(0)((x,y) => x + y )
+            val stockHandle = MysqlHandle(connect)
 
-      /* 计算平均时间戳, 此处是微秒为单位 */
-      val averageTime = {
-        Try(sum / count)
-      }
+            testPool.value.getConnect match {
 
-      averageTime match {
+              case Some(conn) => {
 
-        case Success(z) => {
+                val testHandle = MysqlHandle(conn)
 
-          val timeTamp = z / 1000
+                RddOpt.updateCount(fileInfo, stockHandle, testHandle, x, accum, heatInfo, MixTool.VISIT, stamp, month, day)
 
-          /* 计算相同种类下的相同股票访问次数 */
-          val eachCodeCount = x.map( (y: ((String,String),String)) => {
-            (y._1._1, 1)
-          }).reduceByKey(_ + _).persist(StorageLevel.MEMORY_AND_DISK_SER)
-
-          if(prevRdd == null) {
-
-            eachCodeCount.map( x => (x._1, x._2)).foreachPartition( y => {
-              RddOpt.updateADataFirst(pool.value.getConnect, y, "proc_visit_A_data", timeTamp, monthTable._1, day, accumATotal)
-            })
-
-          } else {
-
-            eachCodeCount.fullOuterJoin[Int](prevRdd).map( x=> (x._1, x._2)).foreachPartition( y => {
-              RddOpt.updateAData(pool.value.getConnect, y, "proc_visit_A_data", timeTamp, monthTable._1, "s_v_diff", day, accumATotal)
-            })
-
-          }
-
-          prevRdd = eachCodeCount
-
-          val nowHyGnData = eachCodeCount.flatMap( x => {
-
-            /* gnInfo保存的是单只股票对应的所有概念 */
-            val gnInfo = stockGn.value.getOrElse(x._1, new ListBuffer[String])
-
-            /* hyInfo保存的是单只股票对应的所有行业 */
-            val hyInfo = stockHy.value.getOrElse(x._1, new ListBuffer[String])
-
-            hyInfo.map( y => (y, x._2)) ++ gnInfo.map( z => (z, x._2))
-          }).reduceByKey(_ + _).collectAsMap
-
-          nowHyGnData.foreach( x => {
-
-            /* kind为0代表行业 ,1代表概念 */
-            var kind = 0
-            var table: String = monthTable._2
-
-            if(hyGn._2(x._1)) {
-
-              kind = 1
-              table = monthTable._3
-
-            }
-
-            temp += (x)
-            
-            val diff = {
-
-              if(prevHyGn != null) {
-
-                prevHyGn.get(x._1) match {
-
-                  case Some(v) => {
-                    prevHyGn -= x._1
-                    x._2 - v
+                stockHandle.batchExec recover {
+                  case e: Exception => {
+                    warnLog(fileInfo, "[exec updateCount failure]" + e.getMessage)
                   }
-                  case None => {
-                    x._2
-                  }
-
                 }
 
-              } else {
-                x._2
+                testHandle.batchExec recover {
+                  case e: Exception => {
+                    warnLog(fileInfo, "[exec updateTestCount failure]" + e.getMessage)
+                  }
+                }
+
+                testHandle.close
+                stockHandle.close
               }
+
+              case None => warnLog(fileInfo, "Get connect exception")
             }
-
-            RddOpt.updateHyGnData(masterPool.getConnect, x, diff, "proc_visit_hygn_data", timeTamp, day, kind, table)
-          })
-
-          if(prevHyGn != null) {
-
-            prevHyGn.foreach( x => {
-
-              if(hyGn._1(x._1)) {
-                RddOpt.updateHyGnDiff(masterPool.getConnect, x._1, timeTamp, "hy_v_diff", 0 - x._2)
-              } else {
-                RddOpt.updateHyGnDiff(masterPool.getConnect, x._1, timeTamp, "gn_v_diff", 0 - x._2)
-              }
-            })
-
           }
 
-          /* 更新单个时间总和与更新时间 */
-          RddOpt.updateTotalTime(masterPool.getConnect, timeTamp, accumATotal.value)
-
-          prevHyGn = temp
-          temp.clear
+          case None => warnLog(fileInfo, "Get connect exception")
         }
+      })
 
-        case Failure(e) => e
+      if(prevRdd == null) {
+
+        eachCodeCount.map( x => (x._1._1, x._2)).foreachPartition( y => {
+
+          stockPool.value.getConnect match {
+
+            case Some(connect) => {
+
+              val mysqlHandle = MysqlHandle(connect)
+
+              RddOpt.updateAddFirst(mysqlHandle, y, "stock_visit_add", stamp)
+
+              mysqlHandle.batchExec recover {
+                case e: Exception => {
+                  warnLog(fileInfo, "[exec updateAddFirst failure]" + e.getMessage)
+                }
+              }
+
+              mysqlHandle.close
+            }
+
+            case None => warnLog(fileInfo, "Get connect exception")
+          }
+        })
+
+      } else {
+
+        eachCodeCount.fullOuterJoin[Int](prevRdd).map( x=> (x._1._1,x._2)).foreachPartition( y => {
+
+          stockPool.value.getConnect match {
+
+            case Some(connect) => {
+
+              val mysqlHandle = MysqlHandle(connect)
+
+              RddOpt.updateAdd(mysqlHandle, y, "stock_visit_add", stamp)
+
+              mysqlHandle.batchExec recover {
+                case e: Exception => {
+                  warnLog(fileInfo, "[exec updateAdd failure]" + e.getMessage)
+                }
+              }
+
+              mysqlHandle.close
+            }
+
+            case None => warnLog(fileInfo, "Get connect exception")
+          }
+        })
       }
 
-      accumATotal.setValue(0)
-    })
+      prevRdd = eachCodeCount
 
+      eachCodeCount.map( y => {
+        (y._1._2, y._2)
+      }).reduceByKey(_ + _).foreach( z => {
+        RddOpt.updateTotal(fileInfo, stockPool.value.getConnect, MixTool.ALL_VISIT, stamp, z._2)
+      })
+
+      RddOpt.updateTime(masterPool.getConnect, "update_visit", stamp)
+
+      accum.setValue(("0", 0))
+
+      if(isAlarm.value == 0) {
+
+        if((isToHour % 12) == 0) {
+          TextSender.send("C4545CC1AE91802D2C0FBA7075ADA972", "The real visit data is exception", "15026804656,18600397635")
+        }
+
+        isToHour += 1
+
+      }
+
+      isAlarm.setValue(0)
+
+      val stockInfo = heatInfo.value
+      val json = MixData(stamp, month, day, stockInfo).toJson.compactPrint
+      println(json)
+
+      kafkaProducer.send("0", json)
+
+      val topic = xmlHandle.getElem("kafkaconsumer", "topic")
+
+      val ret = KafkaProducer.constructKeyMessage(
+        Seq(
+          KafkaProducer.packMessageParam(
+            topic, "0", month, day, stockInfo, 1, 3
+          ),
+          KafkaProducer.packMessageParam(
+            topic, "1", month, day, stockInfo, 2, 3
+          ),
+          KafkaProducer.packMessageParam(
+            topic, "2", month, day, stockInfo, 3, 3
+          )
+        ):_*
+      )
+      kafkaProducer.send(ret) 
+
+      heatInfo.setValue(Nil) 
+    })
 
     stc.start
     stc.awaitTermination

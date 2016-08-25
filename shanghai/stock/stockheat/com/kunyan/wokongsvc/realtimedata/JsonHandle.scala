@@ -32,7 +32,7 @@ class JsonHandle {
 object JsonHandle {
 
   /** 把要发送的json格式定义成伴生类，这样要发送数据只要初始化类就好 */
-  case class MixData(stamp: Long, month: Int, day: Int, stock: List[StockInfo])
+  case class MixData(stamp: Long = 0, month: Int, day: Int, stock: List[StockInfo])
   case class StockInfo(code: String, value: Int)
 
   object MyJsonProtocol extends DefaultJsonProtocol {
@@ -43,6 +43,10 @@ object JsonHandle {
 
   /** 在使用上面得转化格式时，要显示调用下面的语句，进行导入 */
   import JsonHandle.MyJsonProtocol._
+
+  def toString(value: MixData): String = {
+    value.toJson.compactPrint
+  }
 
   def apply(): JsonHandle = {
     new JsonHandle

@@ -12,7 +12,7 @@
 package com.kunyan.wokongsvc.realtimedata
 
 import org.apache.log4j.PropertyConfigurator
-import MixTool.{Tuple2Map, TupleHashMapSet}
+import MixTool.Tuple2Map
 import scala.util.Try
 import scala.util.Success
 import scala.util.Failure
@@ -25,7 +25,7 @@ object SparkFile extends CustomLogger {
 
   def main(args: Array[String]) {
 
-    if(args.length != 2) {
+    if(args.length != 3) {
       errorLog(fileInfo, "args too little")
       System.exit(-1)
     }
@@ -37,36 +37,23 @@ object SparkFile extends CustomLogger {
 
    /* 初始化mysql连接池 */
    val mysqlPool = MysqlPool(xmlHandle)
-   mysqlPool.setConfig(1, 2)
+   mysqlPool.setConfig(1, 2, 3)
 
-   val stockInfo = mysqlPool.getConnect match {
-
+   val stockalias = mysqlPool.getConnect match {
      case Some(connect) => {
-
        val sqlHandle = MysqlHandle(connect)
 
        val alias = sqlHandle.execQueryStockAlias(MixTool.SYN_SQL) match {
-
          case Success(z) => z
          case Failure(e) => {
            errorLog(fileInfo, e.getMessage + "[Query stockAlias exception]")
            System.exit(-1)
          }
-
        }
-
-       val stockHyGn = sqlHandle.execQueryHyGn(MixTool.STOCK_HY_GN) recover {
-
-         case e: Exception => {
-           errorLog(fileInfo, e.getMessage + "[initial stock_hy_gn exception]")
-           System.exit(-1)
-         }
-
-       }
-
        sqlHandle.close
 
-       (alias, stockHyGn)
+
+       alias
      }
 
      case None => {
@@ -75,10 +62,9 @@ object SparkFile extends CustomLogger {
      }
    }
 
-   val molt = stockInfo.asInstanceOf[(Tuple2Map, Try[TupleHashMapSet])]
    val fileContext = FileContext(xmlHandle)
 
-   SearchHandle.work(fileContext, mysqlPool, molt._1, molt._2.get)
+   SearchHandle.work(fileContext, mysqlPool, stockalias.asInstanceOf[Tuple2Map], args(2))
   }
 }
 
