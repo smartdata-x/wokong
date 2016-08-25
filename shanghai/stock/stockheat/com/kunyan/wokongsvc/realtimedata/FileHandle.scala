@@ -13,27 +13,36 @@ package com.kunyan.wokongsvc.realtimedata
 
 import java.io.BufferedReader
 import java.io.File 
-import java.io.FileWriter
-import scala.util.Try
-import scala.util.Success
-import scala.util.Failure
 import java.io.FileInputStream
+import java.io.FileReader
+import java.io.FileWriter
 import java.io.InputStreamReader
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 /**
   * Created by wukun on 2016/07/18
   * 操作文件句柄
   */
-class FileHandle(val path: String) {
+class FileHandle(val path: String) extends CustomLogger {
 
-  lazy val file: File = createFile
+  lazy val file: File = initFile
 
-  def createFile(): File = {
+  def initFile(): File = {
 
     val sourceFile = Try(new File(path)) match {
 
-      case Success(file) => file
-      case Failure(e) => System.exit(-1)
+      case Success(source) => {
+        println("success")
+        source
+      }
+      case Failure(e) => {
+
+        errorLog(fileInfo, "Initial File Object Failure, errorkey: " + e.getMessage)
+        System.exit(-1)
+
+      }
 
     }
 
@@ -44,11 +53,16 @@ class FileHandle(val path: String) {
     * 获取写句柄
     * @author wukun
     */
-  def createWriter(): FileWriter = {
+  def initWriter(): FileWriter = {
 
     val writer = Try(new FileWriter(path, false)) match {
       case Success(writer) => writer
-      case Failure(e) => System.exit(-1)
+      case Failure(e) => {
+
+        errorLog(fileInfo, "Initial Writer Object Failure, errorkey: " + e.getMessage)
+        System.exit(-1)
+
+      }
     }
 
     writer.asInstanceOf[FileWriter]
@@ -58,10 +72,30 @@ class FileHandle(val path: String) {
     * 获取读句柄
     * @author wukun
     */
-  def createReader(): BufferedReader = {
+  def initReader(): FileReader = {
 
-    val read = new InputStreamReader(new FileInputStream(file.asInstanceOf[File]))
-    val bufferedReader = new BufferedReader(read)
+    val reader = Try(new FileReader(path)) match {
+      case Success(reader) => reader
+      case Failure(e) => {
+
+        errorLog(fileInfo, "Initial Writer Object Failure, errorkey: " + e.getMessage)
+        System.exit(-1)
+
+      }
+    }
+
+    reader.asInstanceOf[FileReader]
+  }
+
+  /**
+    * 获取读缓存句柄
+    * @author wukun
+    */
+  def initBuff(): BufferedReader = {
+
+    println("path: " + path)
+
+    val bufferedReader = new BufferedReader(new FileReader(path))
 
     bufferedReader
   }

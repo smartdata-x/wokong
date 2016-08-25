@@ -35,7 +35,6 @@ object DataPattern {
   def stockCodeMatch(stockStr: String, alias: Tuple2Map): String = {
 
     stockStr match {
-
       case DIGITPATTERN(first) => if(alias._1(first)) first else "0"
       case ENCODEPATTERN(_*) => alias._2._1.getOrElse(stockStr, "0")
       case ALPHAPATTERN(first) => {
@@ -43,7 +42,6 @@ object DataPattern {
         alias._2._2.getOrElse(stock, alias._2._3.getOrElse(stock, "0"))
       }
       case _ => "0"
-
     }
   }
 }
