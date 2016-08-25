@@ -21,7 +21,10 @@ object Test {
     FileConfig.PROGRESS_DIR = args(2)
     UserLogger.logConfigureFile(args(3))
 
-    val task = new MyTimerTask(args(4).toInt)
+    val startExecutorTask = args(4).toInt
+    val endExecutorTask = args(5).toInt
+
+    val task = new MyTimerTask(args(6).toInt, startExecutorTask, endExecutorTask)
 
     task.run()
     val timer = new Timer()

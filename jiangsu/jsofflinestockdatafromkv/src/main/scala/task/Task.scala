@@ -14,7 +14,7 @@ import scala.util.control.Breaks
   * key 为分钟级别细分两部分（0 与 5）: second 用来对秒取整
   * 多个请求的线程处理类
   */
-class Task (key: String, second: Int, start:Int, end: Int, last:Int) extends Callable[ListBuffer[String]] {
+class Task (key: String, second: Int, start:Int, end: Int, last:Int, taskId: Int) extends Callable[ListBuffer[String]] {
 
   override def call(): ListBuffer[String] = {
 
@@ -33,9 +33,9 @@ class Task (key: String, second: Int, start:Int, end: Int, last:Int) extends Cal
 
     var count = 0
 
-    val dir = FileConfig.LOG_DIR +"/" + requestKey.substring(0,8)
+    val dir = FileConfig.LOG_DIR + "/" + requestKey.substring(0,8)
 
-    val file = dir +"/" + requestKey.substring(0,10) + "_" + sec
+    val file = dir + "/" + requestKey.substring(0,10) + "__" + taskId + "__" + sec
 
     FileUtil.mkDir(dir)
 

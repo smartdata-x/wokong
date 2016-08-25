@@ -28,6 +28,7 @@ object Token {
     val url = "http://180.96.28.74:58279/getToken?apiKey=" + TelecomConfig.API_KEY + "&sign=" + sign(md5Encode(TelecomConfig.PASSWORD), TelecomConfig.USER_NAME + TelecomConfig.API_KEY)
 
     try {
+
       val respond = Jsoup.connect(url).timeout(5000).execute()
       res = new JSONObject(respond.body()).get("result").toString
 
