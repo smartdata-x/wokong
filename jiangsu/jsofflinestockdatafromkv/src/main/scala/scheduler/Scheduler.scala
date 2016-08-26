@@ -20,7 +20,7 @@ object Scheduler {
     FileConfig.PROGRESS_DIR = args(2)
     UserLogger.logConfigureFile(args(3))*/
 
-    val task = new MyTimerTask( -1,0,1)
+    val task = new MyTimerTask( -10,0,1)
 
     task.run()
     val timer = new Timer()

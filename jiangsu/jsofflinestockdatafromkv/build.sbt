@@ -1,6 +1,6 @@
 name := "offlinestockfromkv"
 
-version := "1.4"
+version := "1.6"
 
 scalaVersion := "2.10.4"
 

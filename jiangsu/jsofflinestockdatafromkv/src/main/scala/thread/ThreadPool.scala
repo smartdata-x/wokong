@@ -14,6 +14,6 @@ object ThreadPool {
 
   val THREAD_EXECUTOR_SERVICE = Executors.newFixedThreadPool(THREAD_NUMBER)
 
-  val COMPLETION_SERVICE  = new ExecutorCompletionService[ListBuffer[String]](THREAD_EXECUTOR_SERVICE)
+  val COMPLETION_SERVICE  = new ExecutorCompletionService[(ListBuffer[String],Int)](THREAD_EXECUTOR_SERVICE)
 
 }
