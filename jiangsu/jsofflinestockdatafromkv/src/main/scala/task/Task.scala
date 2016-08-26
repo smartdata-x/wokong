@@ -14,9 +14,9 @@ import scala.util.control.Breaks
   * key 为分钟级别细分两部分（0 与 5）: second 用来对秒取整
   * 多个请求的线程处理类
   */
-class Task (key: String, second: Int, start:Int, end: Int, last:Int, taskId: Int) extends Callable[ListBuffer[String]] {
+class Task (key: String, second: Int, start:Int, end: Int, last:Int, taskId: Int) extends Callable[(ListBuffer[String],Int)] {
 
-  override def call(): ListBuffer[String] = {
+  override def call(): (ListBuffer[String],Int) = {
 
     val sec = second * 10 + last
     val requestKey = key +  sec
@@ -35,9 +35,12 @@ class Task (key: String, second: Int, start:Int, end: Int, last:Int, taskId: Int
 
     val dir = FileConfig.LOG_DIR + "/" + requestKey.substring(0,8)
 
-    val file = dir + "/" + requestKey.substring(0,10) + "__" + taskId + "__" + sec
+    val taskIdDir = dir + "/" + taskId
+
+    val file = taskIdDir + "/" + requestKey.substring(0,10) + "__" + taskId + "__" + sec
 
     FileUtil.mkDir(dir)
+    FileUtil.mkDir(taskIdDir)
 
     // 每秒日志数据分割-----
     break.breakable {
@@ -72,9 +75,9 @@ class Task (key: String, second: Int, start:Int, end: Int, last:Int, taskId: Int
     }
 
     if(max != start)
-      FileUtil.writeString(file, "is null value at "+ sec + " : " + requestKey + " _ky_ max index is less than :" + max + "---" + threadInfo + " <<<<<<<<<<<-------------------------------")
+      FileUtil.writeString(file, "is null value at "+ sec + " : " + requestKey.substring(0,12) + "_ky_ max index is less than :" + max + "---" + threadInfo + " <<<<<<<<<<<-------------------------------")
 
-    listBuffer
+    (listBuffer,max - start + 1)
 
   }
 }

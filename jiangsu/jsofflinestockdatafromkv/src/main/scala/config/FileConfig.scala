@@ -7,11 +7,11 @@ package config
 object FileConfig {
 
 
-  var LOG_DIR = ""
+  var LOG_DIR = "F:/jsdx/log"
 
-  var DATA_DIR = ""
+  var DATA_DIR = "F:/jsdx"
 
-  var PROGRESS_DIR = ""
+  var PROGRESS_DIR = "F:/jsdx/progress"
 
 
 }

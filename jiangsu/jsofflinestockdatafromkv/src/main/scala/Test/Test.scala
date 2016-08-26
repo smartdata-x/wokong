@@ -26,6 +26,8 @@ object Test {
 
     val task = new MyTimerTask(args(6).toInt, startExecutorTask, endExecutorTask)
 
+    // val task = new MyTimerTask( -10,0,9)
+
     task.run()
     val timer = new Timer()
     val cal = Calendar.getInstance()
@@ -33,6 +35,7 @@ object Test {
     cal.set(Calendar.MINUTE, cal.get(Calendar.MINUTE) + 1)
     val startData = cal.getTime
     timer.schedule(task, startData ,PERIOD_TIME)  // 1 Min 之后开始每一分钟跑一次
+
 
   }
 
