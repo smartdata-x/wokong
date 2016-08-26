@@ -8,6 +8,7 @@ import scala.xml.XML
 
 class XMLConfig(xmlFilePath:String) {
 
+
   val xmlConfig  = XML.loadFile(xmlFilePath)
 
   val IP = ( xmlConfig  \ "FTP" \ "IP").text
