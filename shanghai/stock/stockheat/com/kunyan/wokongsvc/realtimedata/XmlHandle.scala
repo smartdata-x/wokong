@@ -18,7 +18,6 @@ import scala.xml._
   * xml操作句柄
   */
 class XmlHandle private(val xmlPath:String) extends Serializable {
-
   val xmlConfig = loadXml()
 
   def loadXml():Elem = {
@@ -44,20 +43,24 @@ class XmlHandle private(val xmlPath:String) extends Serializable {
   */
 object XmlHandle {
 
-  var XMLHANDLE:XmlHandle = _
+  var xmlHandle:XmlHandle = _
 
   /**
     * 获取全局唯一的操作句柄实例
     * @param xmlPath 路径
     * @author wukun
     */
-  def apply(xmlPath:String):XmlHandle = {
+  def apply(xmlPath:String): XmlHandle = {
 
-    if(XMLHANDLE == null) {
-      XMLHANDLE = new XmlHandle(xmlPath)
+    if(xmlHandle == null) {
+      xmlHandle = new XmlHandle(xmlPath)
     }
 
-    XMLHANDLE
+    xmlHandle
+  }
+
+  def getInstance: XmlHandle = {
+    xmlHandle
   }
 }
 
