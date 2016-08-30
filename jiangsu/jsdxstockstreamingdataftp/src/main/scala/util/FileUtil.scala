@@ -69,6 +69,10 @@ object FileUtil extends FileInterface {
 
   }
 
+  /**
+    * 批量删除文件操作
+    * @param sourceFile [文件名，文件上级目录]
+    */
   def batchFileDelete(sourceFile: Array[(String,String)]): Unit = {
 
     for(file <- sourceFile) {
@@ -93,7 +97,6 @@ object FileUtil extends FileInterface {
 
   /**
     * 写入String数组到文件中
-    *
     * @param path 文件路径
     * @param array Array[String]
     */
@@ -131,6 +134,7 @@ object FileUtil extends FileInterface {
           outChannel.write(bb)
           bb.clear()
       }
+
       fc.close()
 
 
@@ -151,6 +155,11 @@ object FileUtil extends FileInterface {
     }
   }
 
+  /**
+    * 多个文件合并
+    * @param destinationPath 合并文件名
+    * @param sourceFile 需要合并的文件列表：[文件名，文件上级目录]
+    */
   override def mergeFile(destinationPath: String, sourceFile: Array[(String,String)]): Unit = {
 
     val bufferSize = 1024 * 8

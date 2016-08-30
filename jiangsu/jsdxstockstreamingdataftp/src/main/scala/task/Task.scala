@@ -25,10 +25,17 @@ class Task (key: String, second: Int, last:Int, taskId: Int) extends Callable[St
 
     val res = FTPDownload.downloadFile(fileName, fileTime)
 
-    if(res) {
-      taskId + "," + fileName + ",successed, file size: " + new File(XMLConfig.ftpConfig.DATA_DIR + "/" + fileTime.substring(0,8) +"/" + fileName).length() / 1024 + "!!!"
+    val fileSize = new File(XMLConfig.ftpConfig.DATA_DIR + "/" + fileTime.substring(0,8) +"/" + fileName).length() / 1024
+
+    // 文件下载正常与否处理逻辑
+    if(res && fileSize > 0 ) {
+
+      taskId + "," + fileName + ",successed, file size: " + fileSize + "!!!"
+
     } else {
+
       taskId + "," + fileName + ",failed !!!"
+
     }
 
 

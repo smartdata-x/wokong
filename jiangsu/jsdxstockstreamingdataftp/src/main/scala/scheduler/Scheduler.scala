@@ -7,6 +7,7 @@ import timer.MyTimerTask
 
 /**
   * Created by C.J.YOU on 2016/8/26.
+  * 调度主类
   */
 object Scheduler {
 
