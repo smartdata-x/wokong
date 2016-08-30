@@ -21,8 +21,6 @@ class Task (key: String, second: Int, last:Int, taskId: Int) extends Callable[St
 
     val fileName = XMLConfig.ftpConfig.FILE_PREFIX_NAME +  fileTime + XMLConfig.ftpConfig.FILE_SUFFIX_NAME
 
-    // println("fileName:" + fileName)
-
     val res = FTPDownload.downloadFile(fileName, fileTime)
 
     val fileSize = new File(XMLConfig.ftpConfig.DATA_DIR + "/" + fileTime.substring(0,8) +"/" + fileName).length() / 1024

@@ -58,7 +58,7 @@ class MyTimerTask(offSet: Int,startExecutorTask: Int, endExecutorTask: Int) exte
     for(num <- 0 to totalThread ) {
 
       val result = ThreadPool.COMPLETION_SERVICE.take().get()
-      // println("result:" + result)
+
       FileUtil.writeString(file, result + "--------<<<<<<<<<<<-------------------------------")
 
       // 处理多个文件哪些合并逻辑
@@ -96,7 +96,6 @@ class MyTimerTask(offSet: Int,startExecutorTask: Int, endExecutorTask: Int) exte
     }
 
     //  变量清空
-    // println("list:" + list)
     failedFileList.clear()
     list.clear()
 

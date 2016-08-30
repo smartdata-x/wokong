@@ -41,8 +41,6 @@ object FTPDownload {
 
       FileUtil.mkDir(dir)
 
-      // println("remoteFileName:" + remoteFileName)
-
       fos = new FileOutputStream(file)
 
       ftpClient.setBufferSize(1024)
@@ -62,7 +60,6 @@ object FTPDownload {
     } catch {
 
       case e: IOException =>
-        // println("FTP连接发生异常:" +e.getMessage )
         UserLogger.error("FTP连接发生异常:" + e.getMessage)
         false
 
@@ -76,7 +73,6 @@ object FTPDownload {
 
       } catch {
         case  e:IOException=>
-          // println("关闭FTP连接发生异常:"+ e.getMessage)
           UserLogger.error("关闭FTP连接发生异常！")
       }
     }

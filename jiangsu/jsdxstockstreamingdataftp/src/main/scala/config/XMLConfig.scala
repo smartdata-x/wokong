@@ -10,33 +10,33 @@ import scala.xml.XML
 class XMLConfig(xmlFilePath:String) {
 
 
-  val xmlConfig  = XML.loadFile(xmlFilePath)
+  val XML_CONFIG  = XML.loadFile(xmlFilePath)
 
-  val IP = ( xmlConfig  \ "FTP" \ "IP").text
+  val IP = ( XML_CONFIG  \ "FTP" \ "IP").text
 
-  val USER_NAME = ( xmlConfig  \ "FTP" \ "USER").text
+  val USER_NAME = ( XML_CONFIG  \ "FTP" \ "USER").text
 
-  val PASSWORD = ( xmlConfig  \ "FTP" \ "PASSWORD" ).text
+  val PASSWORD = ( XML_CONFIG  \ "FTP" \ "PASSWORD" ).text
 
-  val REMOTE_DIR = (xmlConfig  \ "FTP" \ "ROOTDIR").text
+  val REMOTE_DIR = (XML_CONFIG  \ "FTP" \ "ROOTDIR").text
 
-  val FILE_PREFIX_NAME = (xmlConfig  \ "FTP" \ "PREFFIX").text
+  val FILE_PREFIX_NAME = (XML_CONFIG  \ "FTP" \ "PREFFIX").text
 
-  val FILE_SUFFIX_NAME = (xmlConfig  \ "FTP" \ ".DAT" ).text
+  val FILE_SUFFIX_NAME = (XML_CONFIG  \ "FTP" \ ".DAT" ).text
 
-  val LOG_DIR = (xmlConfig  \ "FILE" \ "LOG" ).text
+  val LOG_DIR = (XML_CONFIG  \ "FILE" \ "LOG" ).text
 
-  var DATA_DIR = (xmlConfig  \ "FILE" \ "DATA").text
+  var DATA_DIR = (XML_CONFIG  \ "FILE" \ "DATA").text
 
-  var PROGRESS_DIR =( xmlConfig  \ "FILE" \ "PROCESS" ).text
+  var PROGRESS_DIR =( XML_CONFIG  \ "FILE" \ "PROCESS" ).text
 
-  val LOG_CONFIG = (xmlConfig  \ "LOGGER" \ "CONF").text
+  val LOG_CONFIG = (XML_CONFIG  \ "LOGGER" \ "CONF").text
 
-  val RECEIVER = (xmlConfig \ "Message" \ "receiver").text
+  val RECEIVER = (XML_CONFIG \ "Message" \ "receiver").text
 
-  val KEY = (xmlConfig \ "Message" \ "key").text
+  val KEY = (XML_CONFIG \ "Message" \ "key").text
 
-  val MESSAGE_CONTEXT = (xmlConfig \ "Message" \ "context").text
+  val MESSAGE_CONTEXT = (XML_CONFIG \ "Message" \ "context").text
 
 
 }
