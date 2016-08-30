@@ -11,8 +11,6 @@
 
 package com.kunyan.wokongsvc.realtimedata
 
-import MixTool.{Tuple2Map, TupleHashMapSet}
-
 import java.sql.CallableStatement
 import java.sql.Connection
 import java.sql.PreparedStatement
@@ -26,7 +24,6 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 import scala.collection.mutable.ListBuffer
-import scala.collection.mutable.ArrayBuffer
 
 /**
   * Created by wukun on 2016/5/19
@@ -35,11 +32,18 @@ import scala.collection.mutable.ArrayBuffer
 class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
 
   type TryHashMap = Try[HashMap[String, (String, String)]]
+  type TryTuple3HashMap = Try[(HashSet[String], (HashMap[String, String], HashMap[String, String], HashMap[String, String]))]
+  type TupleHashMap = (HashMap[String, ListBuffer[String]], HashMap[String, ListBuffer[String]])
 
   private var dbConn = conn
 
+  private var stateMent: Statement = dbConn.createStatement
+
   def close {
-    dbConn.close();
+
+    stateMent.close()
+    dbConn.close()
+
   }
 
   /**
@@ -77,6 +81,20 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
     }
   }
 
+  def batchExec(): Try[Array[Int]] = {
+
+    val ret = Try(stateMent.executeBatch)
+
+    ret
+  }
+
+  def addCommand(sql: String): Try[Unit] = {
+
+    val ret = Try(stateMent.addBatch(sql))
+
+    ret
+  }
+
   /**
     * 执行插入操作
     * @param  sql sql语句
@@ -90,7 +108,6 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
       val count = stmt.executeUpdate(sql)
       stmt.close
       count
-
     })
 
     ret
@@ -109,7 +126,6 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
       val count = stmt.executeUpdate(sql)
       stmt.close
       count
-
     })
 
     ret
@@ -145,7 +161,7 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
     * @param  sql sql语句
     * @author wukun
     */
-  def execQueryStockAlias(sql: String): Try[Tuple2Map] = {
+  def execQueryStockAlias(sql: String): TryTuple3HashMap = {
 
     val ret = Try({
 
@@ -159,20 +175,19 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
       val stockQuan = new HashMap[String, String]
 
       while (allInfo.next && col == 4) {
-
         val code = allInfo.getString(1)
         stockCode.add(code)
         stockChina += (allInfo.getString(2) -> code)
         stockJian += (allInfo.getString(3).toUpperCase -> code)
         stockQuan += (allInfo.getString(4).toUpperCase -> code)
-
       }
 
       stmt.close
-      stockCode  -= "000001"
+      stockCode -= "000001"
       stockChina -= "000001"
-      stockJian  -= "000001"
-      stockQuan  -= "000001"
+      stockJian -= "000001"
+      stockQuan -= "000001"
+      (stockCode, stockChina.filter( x => x._2.compareTo("000001") != 0))
       (stockCode, (stockChina, stockJian, stockQuan))
     })
 
@@ -232,145 +247,32 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
     ret
   }
 
-  def execHyGnDiff(sql: String): Try[Unit] = {
-
-    Try({
-      val stmt = dbConn.createStatement
-      stmt.execute(sql)
-      stmt.close
-    })
-  }
-
   /**
     * 存储过程调用接口，以后会用到
     * @param  sql sql语句
-    * @param  code 股票代码
-    * @param  tamp 时间戳
-    * @param  count 访问总数
-    * @param  diff  访问差值
-    * @param  table 表名
-    * @param  day 第几天
     * @author wukun
     */
-  def execADataProc(
-    sql  : String,
-    code : String, 
-    tamp : Long, 
-    count: Long, 
-    diff : Long, 
-    table: String, 
-    day  : Int): Try[Unit] = {
+  def execProc(sql: String): Try[HashMap[String, String]] = {
 
-    Try({
+    val ret = Try({
 
       val proc = dbConn.prepareCall(sql)
-
-      proc.setString(1, code)
-      proc.setString(5, table)
-      proc.setLong(2, tamp)
-      proc.setLong(3, count)
-      proc.setLong(4, diff)
-      proc.setInt(6, day)
+      proc.setInt(1, 5)
       proc.execute
+      val allInfo = proc.getResultSet
+      val col = allInfo.getMetaData().getColumnCount
+
+      val stockInfo = new HashMap[String, String]
+
+      while (allInfo.next && col == 2) {
+        stockInfo += ((allInfo.getString(1), allInfo.getString(2)))
+      }
+
       proc.close
-
+      stockInfo
     })
-  }
 
-  /**
-    * 存储过程调用接口，以后会用到
-    * @param  sql sql语句
-    * @param  name 行业名称
-    * @param  tamp 时间戳
-    * @param  count 访问总数
-    * @param  diff  访问差值
-    * @param  table 表名
-    * @param  day 第几天
-    * @param  distinct 月份表标识
-    * @author wukun
-    */
-  def execHyGnDataProc(
-    sql  : String,
-    name : String, 
-    tamp : Long, 
-    count: Long, 
-    diff : Long, 
-    table: String,
-    day  : Int,
-    distinct: Int): Try[Unit] = {
-
-    Try({
-
-      val proc = dbConn.prepareCall(sql)
-
-      proc.setString(1, name)
-      proc.setLong(2, tamp)
-      proc.setLong(3, count)
-      proc.setLong(4, diff)
-      proc.setString(5, table)
-      proc.setInt(6, day)
-      proc.setInt(7, distinct)
-      proc.execute
-      proc.close
-
-    })
-  }
-
-  /**
-    * 存储过程调用接口，以后会用到
-    * @param  sql sql语句
-    * @param  tamp 时间戳
-    * @param  total 访问总数
-    * @author wukun
-    */
-  def execTotalTimeProc(
-    sql: String,
-    tamp: Long,
-    total: Long): Try[Unit] = {
-
-    Try({
-
-      val proc = dbConn.prepareCall(sql)
-
-      proc.setLong(1, tamp)
-      proc.setLong(2, total)
-      proc.execute
-      proc.close
-
-    })
-  }
-
-  /**
-    * 执行初始化操作
-    * @param  sql sql语句
-    * @author wukun
-    */
-  def execInitProc(sql: String): Try[Unit] = {
-
-    Try({
-
-      val proc = dbConn.prepareCall(sql)
-
-      proc.execute
-      proc.close
-
-    })
-  }
-
-  /**
-    * 执行差值计算
-    * @param  sql sql语句
-    * @author wukun
-    */
-  def execDiffInit(sql: String): Try[Unit] = {
-
-    Try({
-
-      val proc = dbConn.prepareCall(sql)
-
-      proc.execute
-      proc.close
-    })
+    ret
   }
 
   /**
@@ -378,7 +280,7 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
     * @param  sql sql语句
     * @author wukun
     */
-  def execQueryHyGn(sql: String): Try[TupleHashMapSet] = {
+  def execQueryHyGn(sql: String): Try[TupleHashMap] = {
 
     val ret = Try({
 
@@ -389,51 +291,28 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
       val stockHy = new HashMap[String, ListBuffer[String]]
       val stockGn = new HashMap[String, ListBuffer[String]]
 
-      val hy = new HashSet[String]
-      val gn = new HashSet[String]
-
       while (allInfo.next && col == 3) {
 
         val code = allInfo.getString(1)
         val hyInfos = allInfo.getString(2).split(",")
-
         if(hyInfos.size > 0) {
-
           stockHy += ((code, new ListBuffer[String]))
-
           for(hyInfo <- hyInfos) {
-
-            if(hyInfo.compareTo("null") != 0) {
-
-              stockHy(code) += hyInfo
-              hy += hyInfo
-
-            }
+            stockHy(code) += (hyInfo)
           }
-
         }
 
         val gnInfos = allInfo.getString(3).split(",")
-
         if(gnInfos.size > 0) {
-
           stockGn += ((code, new ListBuffer[String]))
-
           for(gnInfo <- gnInfos) {
-
-            if(gnInfo.compareTo("null") != 0) {
-
-              stockGn(code) += gnInfo
-              gn += gnInfo
-
-            }
+            stockGn(code) += (gnInfo)
           }
-
         }
       }
 
       stmt.close
-      ((stockHy, stockGn), (hy, gn))
+      (stockHy, stockGn)
     })
 
     ret
@@ -456,5 +335,6 @@ object MysqlHandle {
   ): MysqlHandle = {
     new MysqlHandle(url, xml)
   }
+
 }
 
