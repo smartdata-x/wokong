@@ -4,6 +4,7 @@ import scala.xml.XML
 
 /**
   * Created by C.J.YOU on 2016/8/26.
+  * 配置文件的加载
   */
 
 class XMLConfig(xmlFilePath:String) {
@@ -30,11 +31,18 @@ class XMLConfig(xmlFilePath:String) {
   var PROGRESS_DIR =( xmlConfig  \ "FILE" \ "PROCESS" ).text
 
   val LOG_CONFIG = (xmlConfig  \ "LOGGER" \ "CONF").text
+
+  val RECEIVER = (xmlConfig \ "Message" \ "receiver").text
+
+  val KEY = (xmlConfig \ "Message" \ "key").text
+
+  val MESSAGE_CONTEXT = (xmlConfig \ "Message" \ "context").text
+
+
 }
 
 
-// 备用ftp 180.96.28.68 账号e_kunyan 密码沿用老密码
-
+// 伴生对象
 object XMLConfig {
 
   var ftpConfig: XMLConfig =  null
