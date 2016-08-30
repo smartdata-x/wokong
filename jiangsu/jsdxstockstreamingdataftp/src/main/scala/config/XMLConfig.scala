@@ -14,6 +14,8 @@ class XMLConfig(xmlFilePath:String) {
 
   val IP = ( XML_CONFIG  \ "FTP" \ "IP").text
 
+  val BACK_IP = ( XML_CONFIG  \ "FTP" \ "BACKIP").text
+
   val USER_NAME = ( XML_CONFIG  \ "FTP" \ "USER").text
 
   val PASSWORD = ( XML_CONFIG  \ "FTP" \ "PASSWORD" ).text
@@ -22,7 +24,7 @@ class XMLConfig(xmlFilePath:String) {
 
   val FILE_PREFIX_NAME = (XML_CONFIG  \ "FTP" \ "PREFFIX").text
 
-  val FILE_SUFFIX_NAME = (XML_CONFIG  \ "FTP" \ ".DAT" ).text
+  val FILE_SUFFIX_NAME = (XML_CONFIG  \ "FTP" \ "SUFFIX" ).text
 
   val LOG_DIR = (XML_CONFIG  \ "FILE" \ "LOG" ).text
 

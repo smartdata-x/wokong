@@ -14,25 +14,40 @@ import util.FileUtil
   */
 object FTPDownload {
 
-
   /**
     * ftp 下载
+    *
     * @param fileName 文件名
     * @param fileTime 文件中的时间信息
     * @return 下载成功与否
     */
-  def downloadFile(fileName: String, fileTime: String): Boolean = {
+  def downloadFile(fileName: String, fileTime: String, normal:Int): Boolean = {
 
 
     // ftp 连接
     val ftpClient = new FTPClient()
-    ftpClient.connect(XMLConfig.ftpConfig.IP)
-    ftpClient.login(XMLConfig.ftpConfig.USER_NAME, XMLConfig.ftpConfig.PASSWORD)
-
     var fos: FileOutputStream = null
-    val remoteFileName = XMLConfig.ftpConfig.REMOTE_DIR + "/" + fileName
 
     try {
+
+      // 连接主备ftp
+      if(normal == 1) {
+
+        ftpClient.connect(XMLConfig.ftpConfig.IP)
+
+
+      } else {
+
+        ftpClient.connect(XMLConfig.ftpConfig.BACK_IP)
+
+      }
+
+      ftpClient.login(XMLConfig.ftpConfig.USER_NAME, XMLConfig.ftpConfig.PASSWORD)
+
+      ftpClient.setConnectTimeout(5000)
+
+
+      val remoteFileName = XMLConfig.ftpConfig.REMOTE_DIR + "/" + fileName
 
 
       val dir = XMLConfig.ftpConfig.DATA_DIR + "/" + fileTime.substring(0,8)
@@ -59,9 +74,11 @@ object FTPDownload {
 
     } catch {
 
-      case e: IOException =>
+      case e: Exception =>
+
         UserLogger.error("FTP连接发生异常:" + e.getMessage)
-        false
+        // ftp 备份 连接
+        if(normal == 0)  false  else throw new Exception
 
     } finally {
 

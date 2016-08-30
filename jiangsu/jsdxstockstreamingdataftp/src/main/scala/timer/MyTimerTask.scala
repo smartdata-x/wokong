@@ -5,7 +5,7 @@ import java.util.TimerTask
 import config.XMLConfig
 import log.UserLogger
 import message.TextSender
-import task.Task
+import task.{RegetTask, Task}
 import thread.ThreadPool
 import util.{FileUtil, TimeUtil}
 
@@ -47,8 +47,10 @@ class MyTimerTask(offSet: Int,startExecutorTask: Int, endExecutorTask: Int) exte
 
     }
 
+    // 需要合并文件的集合
     val list = new ListBuffer[(String, String)]
 
+    // 获取文件失败的集合
     val failedFileList = new ListBuffer[String]
 
 
@@ -61,15 +63,18 @@ class MyTimerTask(offSet: Int,startExecutorTask: Int, endExecutorTask: Int) exte
 
       FileUtil.writeString(file, result + "--------<<<<<<<<<<<-------------------------------")
 
-      // 处理多个文件哪些合并逻辑
+      // 处理哪些文件需要合并逻辑
       val fileName = result.split(",")(1)
       val time = fileName.replace(XMLConfig.ftpConfig.FILE_PREFIX_NAME,"").replace(XMLConfig.ftpConfig.FILE_SUFFIX_NAME,"")
       hourTime = time.substring(0,10)
       date = time.substring(0,8)
-      list.+=((fileName,date))
 
       // 添加failed文件提醒
-      if(result.contains("failed")) failedFileList.+=(fileName)
+      if(result.contains("failed"))
+        failedFileList.+=(fileName)
+      else
+        list.+=((fileName,date))
+
 
       /*
       // mergefile 来一个合并一个
@@ -80,6 +85,38 @@ class MyTimerTask(offSet: Int,startExecutorTask: Int, endExecutorTask: Int) exte
       FileUtil.mergeFile(FileConfig.DATA_DIR + "/" + date + "/jsdx_" + hourTime , FileConfig.DATA_DIR + "/" + date + "/temp/" + fileName)
       FileUtil.deleteFile( FileConfig.DATA_DIR + "/" + date + "/" + fileName)
       */
+
+    }
+
+    // reget after 30 s
+    Thread.sleep(30000)
+
+    for(item <- failedFileList) {
+
+      val fileTime =  item.replace(XMLConfig.ftpConfig.FILE_PREFIX_NAME,"").replace(XMLConfig.ftpConfig.FILE_SUFFIX_NAME,"")
+      val regetTask =  new RegetTask(item, fileTime)
+      ThreadPool.COMPLETION_SERVICE.submit(regetTask)
+
+    }
+
+
+    for(index <- failedFileList.indices ) {
+
+      val result = ThreadPool.COMPLETION_SERVICE.take().get()
+
+      FileUtil.writeString(file, result + "--------<<<<<<<<<<<-------------------------------")
+
+      // 处理哪些文件需要合并逻辑
+      val fileName = result.split(",")(1)
+      val time = fileName.replace(XMLConfig.ftpConfig.FILE_PREFIX_NAME,"").replace(XMLConfig.ftpConfig.FILE_SUFFIX_NAME,"")
+      hourTime = time.substring(0,10)
+      date = time.substring(0,8)
+
+      // 添加failed文件提醒
+      if(!result.contains("failed"))
+        failedFileList.-=(fileName)
+      else
+        list.+=((fileName,date))
 
     }
 
