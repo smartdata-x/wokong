@@ -1,6 +1,6 @@
 name := "jsdxstockstreamingdataftp"
 
-version := "1.1"
+version := "1.1.1"
 
 scalaVersion := "2.10.4"
 
@@ -11,6 +11,10 @@ libraryDependencies += "commons-net" % "commons-net" % "3.3"
 libraryDependencies += "org.apache.logging.log4j" % "log4j-core" % "2.6.1"
 
 libraryDependencies += "org.apache.spark" % "spark-core_2.10" % "1.5.2"
+
+libraryDependencies += "mysql" % "mysql-connector-java" % "5.1.6" excludeAll ExclusionRule(organization = "javax.servlet")
+
+libraryDependencies += "org.apache.spark" % "spark-sql_2.10" % "1.5.2" excludeAll ExclusionRule(organization = "javax.servlet")
 
 
 assemblyMergeStrategy in assembly := {
