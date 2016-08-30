@@ -9,6 +9,8 @@
 jar版本说明
 
  1.0 ： 稳定正式版本
- 1.1 ：增加xmlConfig 和 jsdx search 和 visit的统计 功能
- 1.1.1： jsdx search 和 visit的统计有效股票功能
+
+ 1.1 ：增加xmlConfig, 短信通知,jsdx search 和 visit 的统计功能 , 间隔一段时间从新获取功能
+
+ 1.1.1： jsdx search 和 visit 的统计有效股票功能
  
