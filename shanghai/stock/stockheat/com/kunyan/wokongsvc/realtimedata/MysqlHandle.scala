@@ -336,17 +336,5 @@ object MysqlHandle {
     new MysqlHandle(url, xml)
   }
 
-  /*def main(args: Array[String]) {
-    val xml = XmlHandle("./config.xml")
-    val url = xml.getElem("mySql", "totalurl")
-    val sqlHandle = MysqlHandle(url, xml)
-
-    val ret = sqlHandle.execProc("{call query_stock_info(?)}")
-    ret match {
-      case Success(e) => println(e)
-      case Failure(e) => println(e)
-    }
-  } */
-
 }
 

@@ -110,26 +110,5 @@ object KafkaConsumer extends CustomLogger {
       "group"       -> xmlHandle.getElem("kafkaconsumer", "group")
     )
   }
-
-  def main(args: Array[String]) {
-    try {
-      val useConsumer = new KafkaConsumer
-      useConsumer.getSpecifyStream("month_heat") match {
-        case Some(listStream) => {
-          val iter = listStream(0).iterator
-          while(iter.hasNext) {
-            println(new String(iter.next.message))
-          }
-        }
-        case None => {
-          System.exit(-1)
-        }
-      }
-    } catch {
-      case e: Exception => {
-        println(e.getMessage)
-      }
-    }
-  }
 }
 

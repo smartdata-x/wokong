@@ -186,7 +186,4 @@ object KafkaProducer extends CustomLogger {
 
   }
 
-  def main(args: Array[String]) {
-    val value = 0
-  }
 }

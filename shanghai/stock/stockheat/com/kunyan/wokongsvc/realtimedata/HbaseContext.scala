@@ -162,24 +162,5 @@ object HbaseContext {
     new HbaseContext(xml)
   }
 
-  def main(args: Array[String]) {
-
-    val nowTime = 1469116800000L 
-    val prevTime = nowTime - 3600000 
-
-    val xmlHanlde: XmlHandle = XmlHandle("./config.xml")
-
-    val hc: HbaseContext = HbaseContext(xmlHanlde)
-
-    hc.changeScan(prevTime, nowTime)
-    hc.changeConf
-
-    val timeTamp = nowTime / 1000
-
-    val hbaseData = hc.generateRDD.map({
-      println("1111")
-      _._2
-    })
-  }
 }
 
