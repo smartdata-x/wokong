@@ -15,7 +15,7 @@ object Scheduler {
 
   def main(args: Array[String]) {
 
-    if(args.length < 7) {
+    if(args.length < 4) {
       sys.error(
         """
           |args
