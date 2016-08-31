@@ -52,8 +52,8 @@ object Scheduler {
     sqlContext.read.jdbc(connection,tableName,properties).foreach( row => {
       stockCodes.add(row(0).toString)
       nameUrls.+=(row(2).toString)
-      jianPins.+=(row(3).toString)
-      quanPins.+=(row(4).toString)
+      jianPins.+=(row(3).toString.toLowerCase)
+      quanPins.+=(row(4).toString.toLowerCase)
 
     })
 
