@@ -52,8 +52,8 @@ object Scheduler {
     sqlContext.read.jdbc(connection,tableName,properties).foreach( row => {
       stockCodes.add(row(0).toString)
       nameUrls.+=(row(2).toString)
-      jianPins.+=(row(3).toString)
-      quanPins.+=(row(4).toString)
+      jianPins.+=(row(3).toString.toLowerCase)
+      quanPins.+=(row(4).toString.toLowerCase)
     })
 
   }
@@ -130,7 +130,7 @@ object Scheduler {
 
       if(visitWebsite forall Character.isDigit) {
 
-        if (visitWebsite.toInt >= 42  && visitWebsite.toInt <= 80) {
+        if (visitWebsite.toInt >= 42  && visitWebsite.toInt <= 95) {
           lineList += ("hash:visit:" + hour + "," + stockCode)
         } else if (visitWebsite.toInt >= 0 && visitWebsite.toInt <= 41) {
           lineList += ("hash:search:" + hour + "," + stockCode)
