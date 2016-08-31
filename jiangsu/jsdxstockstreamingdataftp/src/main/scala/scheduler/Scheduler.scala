@@ -3,6 +3,7 @@ package scheduler
 import java.util.{Calendar, Date, Timer}
 
 import config.XMLConfig
+import log.UserLogger
 import timer.MyTimerTask
 
 /**
@@ -27,7 +28,16 @@ object Scheduler {
 
     val Array(xmlFile, startExecutorTask, endExecutorTask, offSet) = args
 
+   /* val  xmlFile = "E:\\jsdxftpdown.xml"
+    val startExecutorTask = "0"
+    val endExecutorTask = "5"
+    val offSet = "-39"*/
+
     XMLConfig.apply(xmlFile)
+
+    val conf = XMLConfig.ftpConfig
+
+    UserLogger.info("xml config:"  +  conf.IP + "," +  conf.DATA_DIR + "," +  conf.REMOTE_DIR + ","+ conf.FILE_PREFIX_NAME + "," +  conf.FILE_SUFFIX_NAME)
 
     val task = MyTimerTask.apply(offSet.toInt, startExecutorTask.toInt, endExecutorTask.toInt)
 

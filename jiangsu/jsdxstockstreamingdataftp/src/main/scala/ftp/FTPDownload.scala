@@ -49,7 +49,6 @@ object FTPDownload {
 
       val remoteFileName = XMLConfig.ftpConfig.REMOTE_DIR + "/" + fileName
 
-
       val dir = XMLConfig.ftpConfig.DATA_DIR + "/" + fileTime.substring(0,8)
 
       val file = dir + "/" + fileName

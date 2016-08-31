@@ -35,7 +35,7 @@ class MyTimerTask(offSet: Int,startExecutorTask: Int, endExecutorTask: Int) exte
     val file = taskIdDir + "/" + timeKey._2  + "_" + endExecutorTask
 
 
-    println("current time: " + TimeUtil.getTimeKey(0)._1+",timer runner start at:" + timeKey._1)
+    UserLogger.info("current time: " + TimeUtil.getTimeKey(0)._1+",timer runner start at:" + timeKey._1)
     FileUtil.writeString(file, "current time: " + TimeUtil.getTimeKey(0)._1+",timer runner start at:" + timeKey._1 )
 
     for(sec <- startExecutorTask to endExecutorTask) {
@@ -89,7 +89,12 @@ class MyTimerTask(offSet: Int,startExecutorTask: Int, endExecutorTask: Int) exte
     }
 
     // reget after 30 s
-    Thread.sleep(30000)
+    if(failedFileList.nonEmpty) {
+
+      UserLogger.info("sleep 30s now for request data.........")
+      Thread.sleep(30000)
+
+    }
 
     for(item <- failedFileList) {
 
@@ -138,7 +143,7 @@ class MyTimerTask(offSet: Int,startExecutorTask: Int, endExecutorTask: Int) exte
 
     // 保存定时进程日志信息
     FileUtil.writeString(file, "current time: "+ TimeUtil.getTimeKey(0)._1 + ", last request is over at: " + timeKey._1 )
-    println("current time: "+ TimeUtil.getTimeKey(0)._1 + ", last request is over at: " + timeKey._1)
+    UserLogger.info("current time: "+ TimeUtil.getTimeKey(0)._1 + ", last request is over at: " + timeKey._1)
 
   }
 
