@@ -213,8 +213,4 @@
      ((num1 / num2) * size).toInt
    }
 
-   def main(args: Array[String]) {
-     createTopic("61.147.114.85:2181", 10000, 10000, "search_heat", 1, 1)
-   }
-
  }
