@@ -69,6 +69,10 @@
      "delete from " + table
    }
 
+   def deleteTime(table: String): String = {
+     "delete from " + "update_" + table.slice(6, table.length)
+   }
+
    def insertOldCount(
      table: String,
      code: String,
@@ -116,6 +120,26 @@
 
    def rowNum: Int = {
      Thread.currentThread.getStackTrace()(2).getLineNumber
+   }
+
+   def stockSearch(stockString: String): String = {
+
+     val elem = stockString.split("\t")
+     if(elem.size != 3) {
+       "0"
+     } else {
+       val tp = elem(2).toInt
+
+       val mappedType = {
+         if(tp >= 0 && tp <= 42) {
+           "1"
+         } else {
+           "0"
+         }
+       }
+
+       mappedType
+     }
    }
 
    /**
@@ -187,6 +211,10 @@
 
    def division(num1: Double, num2: Double, size: Int): Int = {
      ((num1 / num2) * size).toInt
+   }
+
+   def main(args: Array[String]) {
+     createTopic("61.147.114.85:2181", 10000, 10000, "search_heat", 1, 1)
    }
 
  }

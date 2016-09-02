@@ -21,12 +21,14 @@ import java.util.concurrent.TimeUnit
   */
 class ConsumerContext(val pool: MysqlPool, val consumer: KafkaConsumer) {
 
+  var i = 0
   val executor = Executors.newFixedThreadPool(consumer.partitionTotal)
 
   def doWork {
     consumer.getStreams.foreach( x => {
       x._2.foreach( y => {
-        executor.submit(HeatThread(y, pool))
+        executor.submit(HeatThread(y, pool, i))
+        i = i + 1
       })
     })
   }

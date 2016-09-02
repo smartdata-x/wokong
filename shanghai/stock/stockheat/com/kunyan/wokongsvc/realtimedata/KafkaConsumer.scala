@@ -33,7 +33,8 @@ class KafkaConsumer extends CustomLogger {
   type ListStream = List[KafkaStream[Array[Byte],Array[Byte]]]
 
   private val topicMap = Map(
-    KafkaConsumer.CONFIG("topic") -> KafkaConsumer.CONFIG("partition").toInt
+    KafkaConsumer.CONFIG("visittopic") -> KafkaConsumer.CONFIG("visitpart").toInt,
+    KafkaConsumer.CONFIG("searchtopic")-> KafkaConsumer.CONFIG("searchpart").toInt
   )
   private val config = initConfig
   private val connector = createConnector
@@ -98,6 +99,8 @@ class KafkaConsumer extends CustomLogger {
   */
 object KafkaConsumer extends CustomLogger {
 
+  var consumer: KafkaConsumer = _
+
   val CONFIG = {
 
     val xmlHandle = XmlHandle.getInstance
@@ -105,10 +108,27 @@ object KafkaConsumer extends CustomLogger {
     Map(
       "zkConnect"   -> xmlHandle.getElem("kafkaconsumer", "zookeeper"),
       "sockTimeout" -> xmlHandle.getElem("kafkaconsumer", "sockTimeout"),
-      "topic"       -> xmlHandle.getElem("kafkaconsumer", "topic"),
+      "visittopic"  -> xmlHandle.getElem("kafkaconsumer", "visittopic"),
+      "visitpart"   -> xmlHandle.getElem("kafkaconsumer", "visitpart"),
+      "searchpart"  -> xmlHandle.getElem("kafkaconsumer", "searchpart"),
+      "searchtopic" -> xmlHandle.getElem("kafkaconsumer", "searchtopic"),
       "partition"   -> xmlHandle.getElem("kafkaconsumer", "partition"),
       "group"       -> xmlHandle.getElem("kafkaconsumer", "group")
     )
   }
+  
+  def apply: KafkaConsumer = {
+    
+    if(consumer == null) {
+      consumer = new KafkaConsumer
+    }
+
+    consumer
+  }
+
+  def getInstance: KafkaConsumer = {
+    apply
+  }
+
 }
 

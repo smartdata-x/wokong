@@ -55,7 +55,7 @@ class FileHandle(val path: String) extends CustomLogger {
     */
   def initWriter(): FileWriter = {
 
-    val writer = Try(new FileWriter(path, false)) match {
+    val writer = Try(new FileWriter(path, true)) match {
       case Success(writer) => writer
       case Failure(e) => {
 
@@ -112,8 +112,4 @@ object FileHandle {
   }
 
 }
-
-
-
-
 

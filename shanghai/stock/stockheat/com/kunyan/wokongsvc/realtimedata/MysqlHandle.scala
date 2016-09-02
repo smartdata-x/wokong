@@ -32,12 +32,12 @@ import scala.collection.mutable.ListBuffer
 class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
 
   type TryHashMap = Try[HashMap[String, (String, String)]]
-  type TryTuple3HashMap = Try[(HashSet[String], (HashMap[String, String], HashMap[String, String], HashMap[String, String]))]
   type TupleHashMap = (HashMap[String, ListBuffer[String]], HashMap[String, ListBuffer[String]])
+  type TryTuple3HashMap = Try[(HashSet[String], (HashMap[String, String], HashMap[String, String], HashMap[String, String]))]
 
   private var dbConn = conn
 
-  private var stateMent: Statement = dbConn.createStatement
+  private val stateMent: Statement = dbConn.createStatement
 
   def close {
 
@@ -58,8 +58,10 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
 
     try {
 
-      val sqlInfo = (xml.getElem("mySql", "user"), xml.getElem("mySql", "password"))
-      Class.forName(xml.getElem("mySql", "driver"))
+      val sqlInfo = (xml.getElem("mySql", "userstock"), xml.getElem("mySql", "passwordstock"))
+      // 这个方法可以不必显示调用，判断标准为jar包的META-INF/services/目录的java.sql.Driver文件里是否包含
+      // com.mysql.jdbc.Driver这行，在DriverManager被加载时的静态块中会遍历这个文件里的内容进行主动加载
+      // Class.forName(xml.getElem("mySql", "driver"))
       dbConn = DriverManager.getConnection(url, sqlInfo._1, sqlInfo._2)
 
     } catch {
@@ -336,5 +338,17 @@ object MysqlHandle {
     new MysqlHandle(url, xml)
   }
 
+  def main(args: Array[String]) {
+
+    val xml = XmlHandle("./config.xml")
+    val url = xml.getElem("mySql", "totalurl")
+    val sqlHandle = MysqlHandle(url, xml)
+
+    val ret = sqlHandle.execProc("{call query_stock_info(?)}")
+    ret match {
+      case Success(e) => println(e)
+      case Failure(e) => println(e)
+    }
+  }
 }
 

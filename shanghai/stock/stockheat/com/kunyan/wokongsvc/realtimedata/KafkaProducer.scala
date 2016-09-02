@@ -29,7 +29,8 @@ import scala.collection.mutable.ListBuffer
   * Created by wukun on 2016/08/19
   * kafka生产者操作句柄
   */
-class KafkaProducer(val xmlHandle: XmlHandle) extends CustomLogger with Serializable {
+class KafkaProducer(val xmlHandle: XmlHandle) 
+extends CustomLogger with Serializable {
 
   private lazy val topic = KafkaProducer.CONFIG("topic")
   private lazy val config = initConfig
@@ -118,7 +119,6 @@ class KafkaProducer(val xmlHandle: XmlHandle) extends CustomLogger with Serializ
           * 另一方面也是为了防止程序轻易的退出
           */
         case e: Exception => {
-          warnLog(fileInfo, "Producer excption[" + e + "]")
           warnLog(fileInfo, "Producer excption[" + e.getMessage + "]")
         }
       }
@@ -170,8 +170,10 @@ object KafkaProducer extends CustomLogger {
   def packMessageParam(
     topic: String,
     key: String,
+    stamp: Long,
     month: Int,
     day: Int,
+    hour: Int,
     stockInfo: List[StockInfo],
     deno: Int,
     mole: Int
@@ -179,11 +181,10 @@ object KafkaProducer extends CustomLogger {
 
     val size = stockInfo.length
     val value = JsonHandle.toString(
-      MixData(0, month, day, stockInfo.slice(division(deno - 1, mole, size), division(deno, mole, size)))
+      MixData("", stamp, month, day, hour, stockInfo.slice(division(deno - 1, mole, size), division(deno, mole, size)))
     )
 
     (topic, key, value)
 
   }
-
 }
