@@ -126,16 +126,4 @@
      date
    }
 
-   def main(args: Array[String]) {
-     val cal: Calendar = Calendar.getInstance
-
-     val year = getYear(cal)
-     val day = getDay(cal)
-     val month = getMonth(cal, 1)
-     val hour = getNowHour(cal)
-
-     val second = getStamp(cal)
-
-     println(second)
-   }
  }
