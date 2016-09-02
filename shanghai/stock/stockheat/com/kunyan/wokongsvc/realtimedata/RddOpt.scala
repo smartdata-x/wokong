@@ -133,6 +133,7 @@ object RddOpt extends CustomLogger {
     mysqlHandle: MysqlHandle,
     rdd: Iterator[((String, String), Int)],
     accum: Accumulator[(String, Int)],
+    heatInfo: Accumulator[List[StockInfo]],
     table: String,
     tamp: Long,
     month: Int,
@@ -165,6 +166,7 @@ object RddOpt extends CustomLogger {
         } 
 
         accum += (y._1._1, y._2)
+        heatInfo += List(StockInfo(y._1._1, y._2)) 
       })
 
   }
@@ -362,6 +364,12 @@ object RddOpt extends CustomLogger {
             MixTool.deleteData(table + "_count")
           ) recover {
             case e: Exception => warnLog(fileInfo, e.getMessage + "[delete count failure]")
+          }
+
+          mysqlHandle.execInsertInto(
+            MixTool.deleteTime(table)
+          ) recover {
+            case e: Exception => warnLog(fileInfo, e.getMessage + "[delete time failure]")
           }
 
           mysqlHandle.close

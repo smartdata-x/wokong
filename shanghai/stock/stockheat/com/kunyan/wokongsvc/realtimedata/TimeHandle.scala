@@ -61,6 +61,16 @@
      day
    }
 
+   def getMonthDayHour: (Int, Int, Int) = {
+     val cal = Calendar.getInstance
+
+     (
+       cal.get(Calendar.MONTH) + 1,
+       cal.get(Calendar.DAY_OF_MONTH),
+       cal.get(Calendar.HOUR_OF_DAY)
+     )
+   }
+
    def getZeHour(cal: Calendar): String = {
 
      val hour = cal.get(Calendar.HOUR_OF_DAY)
@@ -116,4 +126,16 @@
      date
    }
 
+   def main(args: Array[String]) {
+     val cal: Calendar = Calendar.getInstance
+
+     val year = getYear(cal)
+     val day = getDay(cal)
+     val month = getMonth(cal, 1)
+     val hour = getNowHour(cal)
+
+     val second = getStamp(cal)
+
+     println(second)
+   }
  }

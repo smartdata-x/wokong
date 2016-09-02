@@ -32,13 +32,13 @@ class JsonHandle {
 object JsonHandle {
 
   /** 把要发送的json格式定义成伴生类，这样要发送数据只要初始化类就好 */
-  case class MixData(stamp: Long = 0, month: Int, day: Int, stock: List[StockInfo])
+  case class MixData(stock_type: String, stamp: Long = 0, month: Int, day: Int, hour: Int, stock: List[StockInfo])
   case class StockInfo(code: String, value: Int)
 
   object MyJsonProtocol extends DefaultJsonProtocol {
     /** 当定义好类格式后，要对类进行json协议转化 ,这个地方很重要*/
     implicit val stockInfo = jsonFormat2(StockInfo)
-    implicit val mixData = jsonFormat4(MixData)
+    implicit val mixData = jsonFormat6(MixData)
   }
 
   /** 在使用上面得转化格式时，要显示调用下面的语句，进行导入 */
