@@ -9,6 +9,7 @@ import config.XMLConfig
   */
 object XMLConfigTest {
 
+
   def main(args: Array[String]) {
 
     val  xml = XMLConfig.apply("")
