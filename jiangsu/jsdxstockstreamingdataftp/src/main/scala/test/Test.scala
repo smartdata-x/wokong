@@ -14,7 +14,7 @@ object Test {
 
   def main(args: Array[String]) {
 
-    val  xml = XMLConfig.apply("E:\\jsdxftpdown.xml")
+    val  xml = XMLConfig.apply("")
 
     val task = MyTimerTask.apply(-3, 0, 5)
     task.run()

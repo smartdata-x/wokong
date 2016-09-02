@@ -11,11 +11,11 @@ object XMLConfigTest {
 
   def main(args: Array[String]) {
 
-    val  xml = XMLConfig.apply("E:\\jsdxftpdown.xml")
+    val  xml = XMLConfig.apply("")
 
     println("ip:" + XMLConfig.ftpConfig.IP)
 
-    println(new File("F:\\jsdx\\streaming\\kunyanstream20160826112105.DAT").length() / 1024)
+    println(new File("").length() / 1024)
 
   }
 

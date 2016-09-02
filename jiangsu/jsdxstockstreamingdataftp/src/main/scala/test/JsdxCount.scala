@@ -183,12 +183,11 @@ object JsdxCount {
     .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     .set("spark.kryoserializer.buffer.max", "2000")
     .set("spark.driver.allowMultipleContexts", "true")
-  //  .setMaster("local")
 
   val sc = new SparkContext(sparkConf)
   val sqlContext = new SQLContext(sc)
 
-  val url = "jdbc:mysql://61.147.114.67:3306/stock?user=root&password=dataservice2015&useUnicode=true&characterEncoding=utf8"
+  val url = "jdbc:mysql://xxxx:3306/stock?user=root&password=dataservice2015&useUnicode=true&characterEncoding=utf8"
 
   val  properties = new Properties()
   properties.setProperty("driver","com.mysql.jdbc.Driver")
