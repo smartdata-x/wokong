@@ -1,22 +1,21 @@
-name := "offlinestockfromkv"
+name := "jsdxstockstreamingdataftp"
 
-version := "1.6"
+version := "1.1"
 
 scalaVersion := "2.10.4"
 
-libraryDependencies += "org.apache.spark" % "spark-streaming_2.10" % "1.5.2"
+// https://mvnrepository.com/artifact/commons-net/commons-net
+libraryDependencies += "commons-net" % "commons-net" % "3.3"
+
+// https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
+libraryDependencies += "org.apache.logging.log4j" % "log4j-core" % "2.6.1"
 
 libraryDependencies += "org.apache.spark" % "spark-core_2.10" % "1.5.2"
 
-libraryDependencies += "org.apache.spark" % "spark-sql_2.10" % "1.5.2"
+libraryDependencies += "mysql" % "mysql-connector-java" % "5.1.6" excludeAll ExclusionRule(organization = "javax.servlet")
 
-libraryDependencies += "mysql" % "mysql-connector-java" % "5.1.8"
+libraryDependencies += "org.apache.spark" % "spark-sql_2.10" % "1.5.2" excludeAll ExclusionRule(organization = "javax.servlet")
 
-libraryDependencies += "org.json" % "json" % "20140107"
-
-libraryDependencies += "org.apache.spark" % "spark-streaming-kafka_2.10" % "1.5.2"
-
-libraryDependencies += "org.jsoup" % "jsoup" % "1.8.3"
 
 assemblyMergeStrategy in assembly := {
   case PathList("javax", "servlet", xs @ _*) => MergeStrategy.last
