@@ -9,7 +9,7 @@ object FileConfig {
 
   var LOG_DIR = "F:/jsdx/log"
 
-  var DATA_DIR = "F:/jsdx"
+  var DATA_DIR = "F:/jsdx/streaming"
 
   var PROGRESS_DIR = "F:/jsdx/progress"
 
