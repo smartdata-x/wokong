@@ -54,7 +54,6 @@ object Scheduler {
       nameUrls.+=(row(2).toString)
       jianPins.+=(row(3).toString.toLowerCase)
       quanPins.+=(row(4).toString.toLowerCase)
-
     })
 
   }
