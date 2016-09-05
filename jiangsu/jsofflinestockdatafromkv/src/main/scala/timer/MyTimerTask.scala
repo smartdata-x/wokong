@@ -11,8 +11,9 @@ import util.{FileUtil, TimeUtil}
   * Created by C.J.YOU on 2016/8/13.
   * 定时开始请求的Task类，定时一分钟
   */
-class MyTimerTask(offSet: Int) extends TimerTask {
+class MyTimerTask(offSet: Int, startExecutorTask: Int, endExecutorTask: Int) extends TimerTask {
 
+  val totalThread = 6 * (endExecutorTask - startExecutorTask + 1) * 2 - 1
 
   override def run(): Unit = {
 
@@ -20,14 +21,25 @@ class MyTimerTask(offSet: Int) extends TimerTask {
 
     val MAX_REQUEST = 3000
 
-    FileUtil.writeString(FileConfig.PROGRESS_DIR +"/" + timeKey._2, "current time: " + TimeUtil.getTimeKey(0)._1+",timer runner start at:" + timeKey._1 )
+    val dir = FileConfig.PROGRESS_DIR + "/" + timeKey._2.substring(0,8)
+    FileUtil.mkDir(dir)
+
+    val taskIdDir = dir + "/" + endExecutorTask
+
+    FileUtil.mkDir(taskIdDir)
+
+    val file = taskIdDir + "/" + timeKey._2  + "_" + endExecutorTask
+
+
+    println("current time: " + TimeUtil.getTimeKey(0)._1+",timer runner start at:" + timeKey._1)
+    FileUtil.writeString(file, "current time: " + TimeUtil.getTimeKey(0)._1+",timer runner start at:" + timeKey._1 )
 
     for(sec <- 0 to 5) {
 
-      for(num <- 0 to 9) {
+      for(num <- startExecutorTask to endExecutorTask) {
 
-        val taskBeforeIn = new Task(timeKey._1, sec, num * MAX_REQUEST, (num + 1) * MAX_REQUEST, 0)
-        val taskAfterIn = new Task(timeKey._1, sec, num * MAX_REQUEST, (num + 1) * MAX_REQUEST, 5)
+        val taskBeforeIn = new Task(timeKey._1, sec, num * MAX_REQUEST, (num + 1) * MAX_REQUEST, 0, endExecutorTask)
+        val taskAfterIn = new Task(timeKey._1, sec, num * MAX_REQUEST, (num + 1) * MAX_REQUEST, 5, endExecutorTask)
         ThreadPool.COMPLETION_SERVICE.submit(taskBeforeIn)
         ThreadPool.COMPLETION_SERVICE.submit(taskAfterIn)
 
@@ -35,14 +47,34 @@ class MyTimerTask(offSet: Int) extends TimerTask {
 
     }
 
-    for(sec <- 0 to 119) {
+    println("total:" + totalThread)
 
-      val tempResult = ThreadPool.COMPLETION_SERVICE.take().get()
-      FileUtil.write(FileConfig.DATA_DIR + "/" + timeKey._2, tempResult.toArray)
+    var count = 0
+    var countArraySize =0
+
+    for(sec <- 0 to totalThread) {
+
+      // println("sec:" + sec)
+
+      val future = ThreadPool.COMPLETION_SERVICE.take().get()
+
+      val tempResult = future._1
+
+      val size = future._2
+
+      count += size
+
+      countArraySize += tempResult.length
+
+      FileUtil.write(FileConfig.DATA_DIR + "/" + timeKey._2 + "_" + endExecutorTask, tempResult.toArray)
+
+      // println("tempResult:" + tempResult.size)
 
     }
 
-    FileUtil.writeString(FileConfig.PROGRESS_DIR +"/" + timeKey._2, "current time: "+ TimeUtil.getTimeKey(0)._1 + ", last request is over at: " + timeKey._1)
+    FileUtil.writeString(file, "current time: "+ TimeUtil.getTimeKey(0)._1 + ", last request is over at: " + timeKey._1)
+    FileUtil.writeString(file, "data count last request in :"+ timeKey._1 + ",size : " + count +",arraysize:" + countArraySize)
+    println("current time: "+ TimeUtil.getTimeKey(0)._1 + ", last request is over at: " + timeKey._1)
 
   }
 }
@@ -53,6 +85,6 @@ class MyTimerTask(offSet: Int) extends TimerTask {
   */
 object MyTimerTask {
 
-  def apply(offSet: Int): MyTimerTask = new MyTimerTask(offSet)
+  def apply(offSet: Int, startExecutorTask: Int, endExecutorTask: Int): MyTimerTask = new MyTimerTask(offSet, startExecutorTask, endExecutorTask)
 
 }

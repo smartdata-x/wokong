@@ -2,8 +2,6 @@ package scheduler
 
 import java.util.{Calendar, Date, Timer}
 
-import config.FileConfig
-import log.UserLogger
 import timer.MyTimerTask
 
 /**
@@ -17,12 +15,12 @@ object Scheduler {
 
   def main(args: Array[String]) {
 
-    FileConfig.DATA_DIR = args(0)
+   /* FileConfig.DATA_DIR = args(0)
     FileConfig.LOG_DIR = args(1)
     FileConfig.PROGRESS_DIR = args(2)
-    UserLogger.logConfigureFile(args(3))
+    UserLogger.logConfigureFile(args(3))*/
 
-    val task = new MyTimerTask(args(4).toInt)
+    val task = new MyTimerTask( -10,0,1)
 
     task.run()
     val timer = new Timer()
