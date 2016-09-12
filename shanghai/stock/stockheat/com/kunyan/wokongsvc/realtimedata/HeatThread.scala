@@ -1,14 +1,19 @@
 /*=============================================================================
 # Copyright (c) 2015
 # ShanghaiKunyan.  All rights reserved
-# Filename     : /home/wukun/work/Wokong/src/main/scala/com/kunyan/wokongsvc/realtimedata/HeatThread.scala
-# Author       : Sunsolo
-# Email        : wukun@kunyan-inc.com
-# Date         : 2016-08-25 07:44
+# Filename : /home/wukun/work/Wokong/src/main/scala/com/kunyan/wokongsvc/realtimedata/HeatThread.scala
+# Author   : Sunsolo
+# Email    : wukun@kunyan-inc.com
+# Date     : 2016-08-25 07:44
 =============================================================================*/
 
 package com.kunyan.wokongsvc.realtimedata
 
+import com.codahale.metrics.ConsoleReporter
+import com.codahale.metrics.MetricRegistry
+import com.codahale.metrics.Timer
+import com.codahale.metrics.Timer.Context
+import java.util.concurrent.TimeUnit
 import JsonHandle._
 import JsonHandle.MyJsonProtocol._
 
@@ -28,6 +33,10 @@ class HeatThread(
   val rank: Int
 ) extends Runnable with CustomLogger {
 
+  val metrics = new MetricRegistry
+  val report = ConsoleReporter.forRegistry(metrics).build()
+  val costTime = metrics.timer(MetricRegistry.name(classOf[HeatThread], "costTime"))
+
   var stock_type: String = _
   var (month: Int, day: Int, hour: Int) = TimeHandle.getMonthDayHour
   val codeCount = mutable.HashMap[String, Int]()
@@ -39,10 +48,12 @@ class HeatThread(
   }
 
   def doWork(stockInfos: List[StockInfo]) {
+    val context = costTime.time
     stockInfos.foreach( x => {
       val initialVal = codeCount.applyOrElse(x.code, (y: String) => 0)
       codeCount += ((x.code, x.value + initialVal))
     })
+    context.stop
   }
 
   /**
@@ -85,6 +96,8 @@ class HeatThread(
     */
   override def run {
 
+    report.start(10, TimeUnit.SECONDS)
+
     val iter = stream.iterator
 
     while(iter.hasNext) {
@@ -94,10 +107,9 @@ class HeatThread(
       val stamp = json.stamp
       val nowMonth = json.month
       val nowDay = json.day
-      val nowHour = json.hour
       val stockInfos = json.stock
 
-      if(nowHour == 0 && nowDay != day) {
+      if(nowDay != day) {
         timeCompute(mysqlOpt)
         codeCount.clear
         month = nowMonth
