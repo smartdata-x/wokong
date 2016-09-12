@@ -70,7 +70,7 @@
    }
 
    def deleteTime(table: String): String = {
-     "delete from " + "update_" + table.slice(6, table.length)
+     "delete from " + "update_" + table.slice(6, table.length) + " where update_time <= " + TimeHandle.getPrevTime
    }
 
    def insertOldCount(
@@ -211,6 +211,10 @@
 
    def division(num1: Double, num2: Double, size: Int): Int = {
      ((num1 / num2) * size).toInt
+   }
+
+   def main(args: Array[String]) {
+     createTopic("61.147.114.74:2181", 1000, 1000, "search_heat", 1, 1)
    }
 
  }
