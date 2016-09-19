@@ -12,5 +12,7 @@ jar版本说明
 
  1.1 ：增加xmlConfig, 短信通知,jsdx search 和 visit 的统计功能 , 间隔一段时间从新获取功能,(目前稳定运行中)
 
- 1.1.1： jsdx search 和 visit 的统计有效股票功能
+ 1.2 ：短信通知去除，丢失文件采用日志输出方式
+
+ 1.1.1：jsdx search 和 visit 的统计有效股票功能
  
