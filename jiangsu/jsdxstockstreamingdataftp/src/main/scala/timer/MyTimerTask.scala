@@ -4,7 +4,6 @@ import java.util.TimerTask
 
 import config.XMLConfig
 import log.UserLogger
-import message.TextSender
 import task.{RegetTask, Task}
 import thread.ThreadPool
 import util.{FileUtil, TimeUtil}
@@ -132,8 +131,10 @@ class MyTimerTask(offSet: Int,startExecutorTask: Int, endExecutorTask: Int) exte
     // 短信提醒
     if(failedFileList.nonEmpty) {
 
-      val res = TextSender.send(XMLConfig.ftpConfig.KEY, XMLConfig.ftpConfig.MESSAGE_CONTEXT + ":" + failedFileList.mkString(",") , XMLConfig.ftpConfig.RECEIVER)
-      if(res) UserLogger.error("[SUE] MESSAGE SEND SUCCESSFULLY")
+      // val res = TextSender.send(XMLConfig.ftpConfig.KEY, XMLConfig.ftpConfig.MESSAGE_CONTEXT + ":" + failedFileList.mkString(",") , XMLConfig.ftpConfig.RECEIVER)
+      // if(res) UserLogger.error("[SUE] MESSAGE SEND SUCCESSFULLY")
+
+      UserLogger.info("[WARNING] MESSAGE: "+ TimeUtil.getTimeKey(0)._1 + ", LOSS FILE: " + failedFileList.mkString(","))
 
     }
 
