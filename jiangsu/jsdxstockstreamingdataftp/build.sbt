@@ -4,10 +4,8 @@ version := "1.2"
 
 scalaVersion := "2.10.4"
 
-// https://mvnrepository.com/artifact/commons-net/commons-net
 libraryDependencies += "commons-net" % "commons-net" % "3.3"
 
-// https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
 libraryDependencies += "org.apache.logging.log4j" % "log4j-core" % "2.6.1"
 
 libraryDependencies += "org.apache.spark" % "spark-core_2.10" % "1.5.2"
@@ -15,6 +13,8 @@ libraryDependencies += "org.apache.spark" % "spark-core_2.10" % "1.5.2"
 libraryDependencies += "mysql" % "mysql-connector-java" % "5.1.6" excludeAll ExclusionRule(organization = "javax.servlet")
 
 libraryDependencies += "org.apache.spark" % "spark-sql_2.10" % "1.5.2" excludeAll ExclusionRule(organization = "javax.servlet")
+
+libraryDependencies += "org.scalatest" % "scalatest_2.10" % "3.0.0"
 
 
 assemblyMergeStrategy in assembly := {
