@@ -18,7 +18,10 @@ class Task (key: String, second: Int, start:Int, end: Int, last:Int, taskId: Int
 
   override def call(): (ListBuffer[String],Int) = {
 
-    val sec = second * 10 + last
+    val requestParamete = Tuple6(key, second, start, end, last, taskId)
+
+    val sec =  if(second == 0)  "0" + last  else second * 10 + last
+
     val requestKey = key +  sec
 
     val listBuffer = new ListBuffer[String]
@@ -49,7 +52,7 @@ class Task (key: String, second: Int, start:Int, end: Int, last:Int, taskId: Int
 
         val subTask = new SubTask(requestKey + "_ky_" + index)
 
-        val value = ThreadPool.THREAD_EXECUTOR_SERVICE.submit(subTask).get()
+        val value = ThreadPool.THREAD_EXECUTOR_SERVICE.submit(subTask).get().toString
 
         if(value.isEmpty) {
 
