@@ -1,12 +1,11 @@
 /*=============================================================================
-#    Copyright (c) 2015
-#    ShanghaiKunyan.  All rights reserved
+# Copyright (c) 2015
+# ShanghaiKunyan.  All rights reserved
 #
-#    Filename     : /home/wukun/work/Wokong/src/main/scala/com/kunyan/wokongsvc/realtimedata/SparkFile.scala
-#    Author       : Sunsolo
-#    Email        : wukun@kunyan-inc.com
-#    Date         : 2016-06-01 20:51
-#    Description  : 
+# Filename : /home/wukun/work/Wokong/src/main/scala/com/kunyan/wokongsvc/realtimedata/SparkFile.scala
+# Author   : Sunsolo
+# Email    : wukun@kunyan-inc.com
+# Date     : 2016-06-01 20:51
 =============================================================================*/
 
 package com.kunyan.wokongsvc.realtimedata
