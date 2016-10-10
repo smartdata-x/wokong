@@ -117,10 +117,9 @@ class MyTimerTask(offSet: Int,startExecutorTask: Int, endExecutorTask: Int) exte
       date = time.substring(0,8)
 
       // 添加failed文件提醒
-      if(!result.contains("failed"))
-        failedFileList.-=(fileName)
-      else
+      if(!result.contains("failed")) {
         list.+=((fileName,date))
+      }
 
     }
 
