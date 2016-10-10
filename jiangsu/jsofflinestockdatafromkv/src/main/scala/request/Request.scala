@@ -31,10 +31,9 @@ object Request {
 
     try {
       val result = new JSONObject(Jsoup.connect(url).timeout(5000).execute().body()).get("result").toString
-      // println("url:" + url + ", value:" + value)
+
       if (result != "null") {
         value = new JSONObject(result).get("value").toString
-         // println("url:" + url + ", value:" + value)
       }
     } catch {
       case e:Exception =>
