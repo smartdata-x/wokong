@@ -28,7 +28,6 @@ object SparkFollow extends CustomLogger {
 
   def main(args: Array[String]) {
 
-    args foreach println
     if(args.length != 5) {
       errorLog(fileInfo, "args too little")
       System.exit(-1)

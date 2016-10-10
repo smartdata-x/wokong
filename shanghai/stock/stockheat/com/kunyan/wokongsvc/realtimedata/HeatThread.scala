@@ -33,10 +33,6 @@ class HeatThread(
   val rank: Int
 ) extends Runnable with CustomLogger {
 
-  val metrics = new MetricRegistry
-  val report = ConsoleReporter.forRegistry(metrics).build()
-  val costTime = metrics.timer(MetricRegistry.name(classOf[HeatThread], "costTime"))
-
   var stock_type: String = _
   var (month: Int, day: Int, hour: Int) = TimeHandle.getMonthDayHour
   val codeCount = mutable.HashMap[String, Int]()
@@ -48,12 +44,10 @@ class HeatThread(
   }
 
   def doWork(stockInfos: List[StockInfo]) {
-    val context = costTime.time
     stockInfos.foreach( x => {
       val initialVal = codeCount.applyOrElse(x.code, (y: String) => 0)
       codeCount += ((x.code, x.value + initialVal))
     })
-    context.stop
   }
 
   /**
@@ -96,8 +90,6 @@ class HeatThread(
     */
   override def run {
 
-    report.start(10, TimeUnit.SECONDS)
-
     val iter = stream.iterator
 
     while(iter.hasNext) {
@@ -107,6 +99,7 @@ class HeatThread(
       val stamp = json.stamp
       val nowMonth = json.month
       val nowDay = json.day
+      val nowHour = json.hour
       val stockInfos = json.stock
 
       if(nowDay != day) {
