@@ -22,7 +22,7 @@ object Test {
     val startExecutorTask = args(4).toInt
     val endExecutorTask = args(5).toInt
 
-    // XMLConfig.apply("E:\\jsdxkvdown.xml")
+    // XMLConfig.apply("jsdxkvdown.xml")
 
     val task = new MyTimerTask(args(6).toInt, startExecutorTask, endExecutorTask)*/
 
