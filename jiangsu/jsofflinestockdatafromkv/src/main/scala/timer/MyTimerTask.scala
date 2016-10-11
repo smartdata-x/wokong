@@ -9,7 +9,10 @@ import util.{FileUtil, TimeUtil}
 
 /**
   * Created by C.J.YOU on 2016/8/13.
-  * 定时开始请求的Task类，定时一分钟
+  * 定时开始请求的Task类
+  * @param offSet 延迟的时间（MIN）
+  * @param startExecutorTask  start 决定请求index的范围区间 一个区间长度为 MAX_REQUEST = 3000
+  * @param endExecutorTask end
   */
 class MyTimerTask(offSet: Int, startExecutorTask: Int, endExecutorTask: Int) extends TimerTask {
 
@@ -54,8 +57,6 @@ class MyTimerTask(offSet: Int, startExecutorTask: Int, endExecutorTask: Int) ext
 
     for(sec <- 0 to totalThread) {
 
-      // println("sec:" + sec)
-
       val future = ThreadPool.COMPLETION_SERVICE.take().get()
 
       val tempResult = future._1
@@ -68,7 +69,6 @@ class MyTimerTask(offSet: Int, startExecutorTask: Int, endExecutorTask: Int) ext
 
       FileUtil.write(FileConfig.DATA_DIR + "/" + timeKey._2 + "_" + endExecutorTask, tempResult.toArray)
 
-      // println("tempResult:" + tempResult.size)
 
     }
 

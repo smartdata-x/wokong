@@ -37,7 +37,7 @@ class Task (key: String, second: Int, start:Int, end: Int, last:Int, taskId: Int
 
     val taskIdDir = dir + "/" + taskId
 
-    val file = taskIdDir + "/" + requestKey.substring(0,10) + "__" + taskId + "__" + sec
+    val file = taskIdDir + "/" + requestKey.substring(0,10) + "__" + taskId  // + "__" + sec
 
     FileUtil.mkDir(dir)
     FileUtil.mkDir(taskIdDir)
