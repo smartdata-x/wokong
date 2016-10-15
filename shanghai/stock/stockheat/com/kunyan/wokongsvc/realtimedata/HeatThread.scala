@@ -1,14 +1,19 @@
 /*=============================================================================
 # Copyright (c) 2015
 # ShanghaiKunyan.  All rights reserved
-# Filename     : /home/wukun/work/Wokong/src/main/scala/com/kunyan/wokongsvc/realtimedata/HeatThread.scala
-# Author       : Sunsolo
-# Email        : wukun@kunyan-inc.com
-# Date         : 2016-08-25 07:44
+# Filename : /home/wukun/work/Wokong/src/main/scala/com/kunyan/wokongsvc/realtimedata/HeatThread.scala
+# Author   : Sunsolo
+# Email    : wukun@kunyan-inc.com
+# Date     : 2016-08-25 07:44
 =============================================================================*/
 
 package com.kunyan.wokongsvc.realtimedata
 
+import com.codahale.metrics.ConsoleReporter
+import com.codahale.metrics.MetricRegistry
+import com.codahale.metrics.Timer
+import com.codahale.metrics.Timer.Context
+import java.util.concurrent.TimeUnit
 import JsonHandle._
 import JsonHandle.MyJsonProtocol._
 
@@ -97,7 +102,7 @@ class HeatThread(
       val nowHour = json.hour
       val stockInfos = json.stock
 
-      if(nowHour == 0 && nowDay != day) {
+      if(nowDay != day) {
         timeCompute(mysqlOpt)
         codeCount.clear
         month = nowMonth

@@ -70,7 +70,7 @@
    }
 
    def deleteTime(table: String): String = {
-     "delete from " + "update_" + table.slice(6, table.length)
+     "delete from " + "update_" + table.slice(6, table.length) + " where update_time <= " + TimeHandle.getPrevTime
    }
 
    def insertOldCount(

@@ -8,7 +8,7 @@ import java.util.concurrent.{ExecutorCompletionService, Executors}
   */
 object ThreadPool {
 
-  val THREAD_NUMBER = 150
+  val THREAD_NUMBER = 22
 
   val THREAD_EXECUTOR_SERVICE = Executors.newFixedThreadPool(THREAD_NUMBER)
 

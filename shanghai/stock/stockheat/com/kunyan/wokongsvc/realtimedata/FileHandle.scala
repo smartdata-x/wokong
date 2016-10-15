@@ -34,7 +34,6 @@ class FileHandle(val path: String) extends CustomLogger {
     val sourceFile = Try(new File(path)) match {
 
       case Success(source) => {
-        println("success")
         source
       }
       case Failure(e) => {
@@ -92,8 +91,6 @@ class FileHandle(val path: String) extends CustomLogger {
     * @author wukun
     */
   def initBuff(): BufferedReader = {
-
-    println("path: " + path)
 
     val bufferedReader = new BufferedReader(new FileReader(path))
 

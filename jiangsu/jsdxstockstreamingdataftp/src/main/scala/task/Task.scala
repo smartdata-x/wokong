@@ -34,12 +34,14 @@ class Task (key: String, second: Int, last:Int, taskId: Int) extends Callable[St
 
     }
 
-    val fileSize = new File(XMLConfig.ftpConfig.DATA_DIR + "/" + fileTime.substring(0,8) + "/" + fileName).length() / 1024
+    val fileSize = new File(XMLConfig.ftpConfig.DATA_DIR + "/" + fileTime.substring(0,8) + "/" + fileName).length()
+
+    val fileSizeFormat = if(fileSize > 1024 )  fileSize / 1024 + " KB"  else fileSize % 1024 + " B"
 
     // 文件下载正常与否处理逻辑
     if(res && fileSize > 0 ) {
 
-      taskId + "," + fileName + ",successed, file size: " + fileSize + "!!!"
+      taskId + "," + fileName + ",successed, file size: " + fileSizeFormat + "!!!"
 
     } else {
 

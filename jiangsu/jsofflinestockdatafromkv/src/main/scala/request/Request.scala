@@ -34,7 +34,6 @@ object Request {
 
       if (result != "null") {
         value = new JSONObject(result).get("value").toString
-        // println("url:" + url + ", value:" + value)
       }
     } catch {
       case e:Exception =>

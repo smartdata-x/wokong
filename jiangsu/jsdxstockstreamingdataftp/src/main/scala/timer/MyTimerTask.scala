@@ -4,7 +4,6 @@ import java.util.TimerTask
 
 import config.XMLConfig
 import log.UserLogger
-import message.TextSender
 import task.{RegetTask, Task}
 import thread.ThreadPool
 import util.{FileUtil, TimeUtil}
@@ -104,8 +103,9 @@ class MyTimerTask(offSet: Int,startExecutorTask: Int, endExecutorTask: Int) exte
 
     }
 
+    val size = failedFileList.size
 
-    for(index <- failedFileList.indices ) {
+    for(index <- 0 until size ) {
 
       val result = ThreadPool.COMPLETION_SERVICE.take().get()
 
@@ -118,10 +118,11 @@ class MyTimerTask(offSet: Int,startExecutorTask: Int, endExecutorTask: Int) exte
       date = time.substring(0,8)
 
       // 添加failed文件提醒
-      if(!result.contains("failed"))
-        failedFileList.-=(fileName)
-      else
+      if(!result.contains("failed")) {
         list.+=((fileName,date))
+      } else {
+        failedFileList.-=(fileName)
+      }
 
     }
 
@@ -132,8 +133,9 @@ class MyTimerTask(offSet: Int,startExecutorTask: Int, endExecutorTask: Int) exte
     // 短信提醒
     if(failedFileList.nonEmpty) {
 
-      val res = TextSender.send(XMLConfig.ftpConfig.KEY, XMLConfig.ftpConfig.MESSAGE_CONTEXT + ":" + failedFileList.mkString(",") , XMLConfig.ftpConfig.RECEIVER)
-      if(res) UserLogger.error("[SUE] MESSAGE SEND SUCCESSFULLY")
+      /*val res = TextSender.send(XMLConfig.ftpConfig.KEY, XMLConfig.ftpConfig.MESSAGE_CONTEXT + ":" + failedFileList.mkString(",") , XMLConfig.ftpConfig.RECEIVER)
+      if(res) UserLogger.error("[SUE] MESSAGE SEND SUCCESSFULLY")*/
+      UserLogger.info("[warning] MESSAGE: "+ TimeUtil.getTimeKey(0)._1 + ", loss files: " + failedFileList.mkString(","))
 
     }
 
