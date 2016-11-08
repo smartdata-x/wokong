@@ -118,6 +118,7 @@ object Scheduler {
 
     if (lineSplits.length < 3) {
       lineList +="not right"
+      return lineList
     }
 
     val stockCode = lineSplits(0)
