@@ -18,17 +18,15 @@ import java.sql.SQLException
   * Created by wukun on 2016/5/18
   * mysql句柄池
   */
-class MysqlPool private(val xmlHandle:XmlHandle) extends Serializable with CustomLogger {
+class MysqlPool private(val xmlHandle: XmlHandle, val isStock: Boolean = true) extends Serializable with CustomLogger {
 
   try {
-    Class.forName(xmlHandle.getElem("mySql", "driver"))
+    //Class.forName(xmlHandle.getElem("mySql", "driver"))
   } catch {
-
     case e: Exception => {
       errorLog(fileInfo, e.getMessage + "[The JDBC driver exception]")
       System.exit(-1)
     }
-
   }
 
   lazy val config = createConfig
@@ -43,9 +41,16 @@ class MysqlPool private(val xmlHandle:XmlHandle) extends Serializable with Custo
 
     val initConfig = new BoneCPConfig
 
-    initConfig.setJdbcUrl(xmlHandle.getElem("mySql", "url"))
-    initConfig.setUsername(xmlHandle.getElem("mySql", "user"))
-    initConfig.setPassword(xmlHandle.getElem("mySql", "password"))
+    if(isStock == true) {
+      initConfig.setJdbcUrl(xmlHandle.getElem("mySql", "urlstock"))
+      initConfig.setUsername(xmlHandle.getElem("mySql", "userstock"))
+      initConfig.setPassword(xmlHandle.getElem("mySql", "passwordstock"))
+    } else {
+      initConfig.setJdbcUrl(xmlHandle.getElem("mySql", "urltest"))
+      initConfig.setUsername(xmlHandle.getElem("mySql", "usertest"))
+      initConfig.setPassword(xmlHandle.getElem("mySql", "passwordtest"))
+    }
+
     initConfig.setMinConnectionsPerPartition(Integer.parseInt(xmlHandle.getElem("mySql", "minconn")))
     initConfig.setMaxConnectionsPerPartition(Integer.parseInt(xmlHandle.getElem("mySql", "maxconn")))
     initConfig.setPartitionCount(Integer.parseInt(xmlHandle.getElem("mySql", "partition")))
@@ -56,10 +61,12 @@ class MysqlPool private(val xmlHandle:XmlHandle) extends Serializable with Custo
     initConfig
   }
 
-  def setConfig(mix: Int, max: Int) {
-    config.setMinConnectionsPerPartition(mix)
-    config.setMinConnectionsPerPartition(max)
+  def setConfig(mix: Int, max: Int, testPeriod: Long) {
     config.setPartitionCount(1)
+    config.setMinConnectionsPerPartition(mix)
+    config.setMaxConnectionsPerPartition(max)
+    config.setIdleConnectionTestPeriodInMinutes(3)
+    config.setIdleMaxAgeInMinutes(3)
   }
 
   /**
@@ -96,8 +103,8 @@ class MysqlPool private(val xmlHandle:XmlHandle) extends Serializable with Custo
   * MysqlPool伴生对象
   */
 object MysqlPool extends Serializable {
-  def apply(xmlHandle:XmlHandle):MysqlPool = {
-    new MysqlPool(xmlHandle)
+  def apply(xmlHandle: XmlHandle, isStock: Boolean = true): MysqlPool = {
+    new MysqlPool(xmlHandle, isStock)
   }
 }
 

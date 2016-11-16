@@ -103,8 +103,9 @@ class MyTimerTask(offSet: Int,startExecutorTask: Int, endExecutorTask: Int) exte
 
     }
 
+    val size = failedFileList.size
 
-    for(index <- failedFileList.indices ) {
+    for(index <- 0 until size ) {
 
       val result = ThreadPool.COMPLETION_SERVICE.take().get()
 
@@ -117,10 +118,11 @@ class MyTimerTask(offSet: Int,startExecutorTask: Int, endExecutorTask: Int) exte
       date = time.substring(0,8)
 
       // 添加failed文件提醒
-      if(!result.contains("failed"))
-        failedFileList.-=(fileName)
-      else
+      if(!result.contains("failed")) {
         list.+=((fileName,date))
+      } else {
+        failedFileList.-=(fileName)
+      }
 
     }
 

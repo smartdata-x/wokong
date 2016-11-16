@@ -33,15 +33,9 @@
      cal.get(Calendar.YEAR).toString
    }
 
-   /**
-     * 得到指定时间所属的月份(从0开始)
-     * @param cal 要操作的时间类
-     * @auhtor wukun
-     */
    def getMonth(cal: Calendar): String = {
 
      val month = cal.get(Calendar.MONTH) + 1
-
      if(month <= 9) {
        "0" + month
      } else {
@@ -49,37 +43,37 @@
      }
    }
 
-   def getMonth(cal: Calendar, add: Int): Int = {
+   def getMonth(cal: Calendar, tmp: Int): Int = {
 
-     val month = cal.get(Calendar.MONTH) + add
-
+     val month = cal.get(Calendar.MONTH) + tmp
      month
    }
 
    def getDay(cal: Calendar): Int = {
 
      val day = cal.get(Calendar.DAY_OF_MONTH)
-
      day
    }
 
    def getDay: Int = {
-
      val cal = Calendar.getInstance
      val day = cal.get(Calendar.DAY_OF_MONTH)
-
      day
    }
 
-   /**
-     * 得到指定时间所属的小时
-     * @param cal 要操作的时间类
-     * @auhtor wukun
-     */
+   def getMonthDayHour: (Int, Int, Int) = {
+     val cal = Calendar.getInstance
+
+     (
+       cal.get(Calendar.MONTH) + 1,
+       cal.get(Calendar.DAY_OF_MONTH),
+       cal.get(Calendar.HOUR_OF_DAY)
+     )
+   }
+
    def getZeHour(cal: Calendar): String = {
 
      val hour = cal.get(Calendar.HOUR_OF_DAY)
-
      if(hour <= 9) {
        "0" + hour
      } else {
@@ -89,6 +83,10 @@
 
    def getHour(cal: Calendar): Int = {
      cal.get(Calendar.HOUR_OF_DAY) 
+   }
+
+   def getStamp(cal: Calendar): Long = {
+     cal.getTimeInMillis / 1000
    }
 
    def getNowHour(cal: Calendar): Int = {
@@ -103,11 +101,9 @@
      * @auhtor wukun
      */
    def setTime(cal:Calendar, minute:Int, second:Int, milliSecond:Int) {
-
      cal.add(Calendar.MINUTE, minute)
      cal.set(Calendar.SECOND, second)
      cal.set(Calendar.MILLISECOND, milliSecond)
-
    }
 
    /**
@@ -117,12 +113,10 @@
      * @auhtor wukun
      */
    def setTime(cal:Calendar, hour:Int, minute:Int, second:Int, milliSecond:Int) {
-
      cal.set(Calendar.HOUR_OF_DAY, hour)
      cal.set(Calendar.MINUTE, minute)
      cal.set(Calendar.SECOND, second)
      cal.set(Calendar.MILLISECOND, milliSecond)
-
    }
 
    def getTamp(str: String): Date = {
@@ -131,4 +125,16 @@
 
      date
    }
+
+   def getPrevTime: Long = {
+     val cal = Calendar.getInstance
+     cal.add(Calendar.DAY_OF_MONTH, -1)
+     cal.set(Calendar.HOUR_OF_DAY, 22)
+     cal.set(Calendar.MINUTE, 0)
+     cal.set(Calendar.SECOND, 0)
+     cal.set(Calendar.MILLISECOND, 0)
+
+     cal.getTimeInMillis / 1000
+   }
+
  }

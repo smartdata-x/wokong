@@ -11,8 +11,6 @@
 
 package com.kunyan.wokongsvc.realtimedata
 
-import MixTool.TupleHashMapSet
-
 import org.apache.log4j.PropertyConfigurator
 
 import java.io.FileWriter
@@ -26,11 +24,11 @@ import scala.util.Failure
   * Created by wukun on 2016/5/23
   * Hbase操作主程序入口
   */
-object SparkHbase extends CustomLogger {
+object SparkFollow extends CustomLogger {
 
   def main(args: Array[String]) {
 
-    if(args.length != 4) {
+    if(args.length != 5) {
       errorLog(fileInfo, "args too little")
       System.exit(-1)
     }
@@ -43,37 +41,23 @@ object SparkHbase extends CustomLogger {
 
     /* 初始化mysql连接池 */
     val mysqlPool = MysqlPool(xml)
-    mysqlPool.setConfig(1, 2)
+    mysqlPool.setConfig(1, 2, 3)
 
     /* 初始化A股下公司用到的股票代码 */
-    val stockInfo = mysqlPool.getConnect match {
-
+    val stockCode = mysqlPool.getConnect match {
       case Some(connect) => {
-
         val sqlHandle = MysqlHandle(connect)
 
         val stock = sqlHandle.execQueryStock(MixTool.STOCK_SQL) match {
-
           case Success(z) => z
           case Failure(e) => {
             errorLog(fileInfo, e.getMessage + "[Query stock exception]")
             System.exit(-1)
           }
-
         }
-
-        val stockHyGn = sqlHandle.execQueryHyGn(MixTool.STOCK_HY_GN) recover {
-
-          case e: Exception => {
-            errorLog(fileInfo, e.getMessage + "[initial stock_hy_gn exception]")
-            System.exit(-1)
-          }
-
-        }
-
         sqlHandle.close
 
-        (stock, stockHyGn)
+        stock
       }
 
       case None => {
@@ -82,9 +66,14 @@ object SparkHbase extends CustomLogger {
       }
     }
 
-    val molt = stockInfo.asInstanceOf[(HashSet[String], Try[TupleHashMapSet])]
+    /*val stockWriter = Try(new FileWriter(args(3), true)) match {
+      case Success(write) => write
+      case Failure(e) => System.exit(-1)
+    } */
+
     val hbaseContext = HbaseContext(xml)
 
-    TimerHandle.work(hbaseContext, mysqlPool, molt._1, molt._2.get, args(2))
+    TimerHandle.work(hbaseContext, mysqlPool, 
+      stockCode.asInstanceOf[HashSet[String]], args(2), args(4).toLong)
   }
 }
