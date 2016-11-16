@@ -28,7 +28,7 @@ class RegetTask(fileName:String, fileTime:String) extends Callable[String] {
 
     }
 
-    val fileSize = new File(XMLConfig.ftpConfig.DATA_DIR + "/" + fileTime.substring(0,8) + "/" + fileName).length() / 1024
+    val fileSize = new File(XMLConfig.ftpConfig.DATA_DIR + "/" + fileTime.substring(0,8) + "/" + fileName).length()
 
     // 文件下载正常与否处理逻辑
     if(res && fileSize > 0 ) {

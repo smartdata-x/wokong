@@ -20,20 +20,20 @@ import org.slf4j.LoggerFactory
   */
 trait CustomLogger extends Serializable {
 
-  val LOGGER = LoggerFactory.getLogger(classOf[CustomLogger])
+  val logger = LoggerFactory.getLogger(classOf[CustomLogger])
 
   def warnLog(
     info: (String, String), 
     msg: String) {
 
-    LOGGER.warn("{}[{}]：{}", info._1, info._2, msg)
+    logger.warn("{}[{}]：{}", info._1, info._2, msg)
   }
 
   def errorLog(
     info: (String, String), 
     msg: String) {
 
-    LOGGER.error("{}[{}]：{}", info._1, info._2, msg)
+    logger.error("{}[{}]：{}", info._1, info._2, msg)
   }
 
   /**

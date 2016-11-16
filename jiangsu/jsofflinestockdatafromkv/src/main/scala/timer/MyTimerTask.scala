@@ -57,8 +57,6 @@ class MyTimerTask(offSet: Int, startExecutorTask: Int, endExecutorTask: Int) ext
 
     for(sec <- 0 to totalThread) {
 
-      // println("sec:" + sec)
-
       val future = ThreadPool.COMPLETION_SERVICE.take().get()
 
       val tempResult = future._1
@@ -71,7 +69,6 @@ class MyTimerTask(offSet: Int, startExecutorTask: Int, endExecutorTask: Int) ext
 
       FileUtil.write(FileConfig.DATA_DIR + "/" + timeKey._2 + "_" + endExecutorTask, tempResult.toArray)
 
-      println("tempResult:" + tempResult.size)
 
     }
 

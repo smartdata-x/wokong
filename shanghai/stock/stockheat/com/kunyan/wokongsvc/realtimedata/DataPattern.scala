@@ -1,12 +1,11 @@
 /*=============================================================================
-#    Copyright (c) 2015
-#    ShanghaiKunyan.  All rights reserved
+# Copyright (c) 2015
+# ShanghaiKunyan.  All rights reserved
 #
-#    Filename     : /home/wukun/work/Wokong/src/main/scala/com/kunyan/wokongsvc/realtimedata/DataPattern.scala
-#    Author       : Sunsolo
-#    Email        : wukun@kunyan-inc.com
-#    Date         : 2016-05-19 07:57
-#    Description  : 
+# Filename : /home/wukun/work/Wokong/src/main/scala/com/kunyan/wokongsvc/realtimedata/DataPattern.scala
+# Author   : Sunsolo
+# Email    : wukun@kunyan-inc.com
+# Date     : 2016-05-19 07:57
 =============================================================================*/
 
 package com.kunyan.wokongsvc.realtimedata
@@ -24,8 +23,8 @@ object DataPattern {
   type Tuple2Map = (HashSet[String], (Map[String, String], Map[String, String], Map[String, String]))
 
   val DIGITPATTERN = "([0-9]{6})".r
-  val ENCODEPATTERN = "((%.*){8})".r
-  val ALPHAPATTERN = "([a-zA-Z]*)".r
+  val ENCODEPATTERN = "([\\*A-Za-z0-9_]*%.*)".r
+  val ALPHAPATTERN = "([\\*a-zA-Z]*)".r
 
   /**
     * 根据正则模式解析出不同格式的股票字符串
@@ -35,7 +34,6 @@ object DataPattern {
   def stockCodeMatch(stockStr: String, alias: Tuple2Map): String = {
 
     stockStr match {
-
       case DIGITPATTERN(first) => if(alias._1(first)) first else "0"
       case ENCODEPATTERN(_*) => alias._2._1.getOrElse(stockStr, "0")
       case ALPHAPATTERN(first) => {
@@ -43,7 +41,7 @@ object DataPattern {
         alias._2._2.getOrElse(stock, alias._2._3.getOrElse(stock, "0"))
       }
       case _ => "0"
-
     }
   }
+
 }
