@@ -2,16 +2,18 @@
 ## 结构说明
 ---
 ## shanghai
-- shanghairealtime (跑在上海电信服务器上的过滤实时原始数据和热度数据的程序)
+- shrealtimerawandstock (跑在上海电信服务器上的过滤实时原始数据和热度数据的程序)
+- shrealtimerawandstockmaven (电信spark集群升级后，新工程使用maven打包程序，sbt打包有问题没有fix)
 
 ### raw
-- shrealtimerawandstock (跑在公司服务器上的从公司的 kafka 中获取 kv 表里的实时原始数据)
+- shanghairealtime(跑在公司服务器上的从公司的 kafka 中获取 kv 表里的实时原始数据)
 
 ### stock
-- sh_spark (旧的上海电信离线热度数据匹配规则)
+- oldmatchrules (旧的上海电信离线热度数据匹配规则)
 - SHOffLineStock.java (跑在上海电信服务器上的过滤离线热度数据的程序)
 - shofflinestock (测试中跑在上海电信服务器上的过滤离线热度数据的程序)
-- shdx_kv_down (跑在公司服务器上的接离线热度数据的程序)
+- shanghaisearchspark (测试中跑在上海电信服务器上的过滤离线热度数据的程序)
+- shkvmrdatadown (跑在公司服务器上的接离线热度数据的程序)
 - stockheat （新版悟空离线热度数据分析程序）
 - sholdofflinestock （旧版悟空离线热度数据分析程序，杨阁在用，用途不明）
 

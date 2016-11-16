@@ -130,11 +130,10 @@ class MyTimerTask(offSet: Int,startExecutorTask: Int, endExecutorTask: Int) exte
 
     // 短信提醒
     if(failedFileList.nonEmpty) {
-
-      // val res = TextSender.send(XMLConfig.ftpConfig.KEY, XMLConfig.ftpConfig.MESSAGE_CONTEXT + ":" + failedFileList.mkString(",") , XMLConfig.ftpConfig.RECEIVER)
-      // if(res) UserLogger.error("[SUE] MESSAGE SEND SUCCESSFULLY")
-
-      UserLogger.info("[WARNING] MESSAGE: "+ TimeUtil.getTimeKey(0)._1 + ", LOSS FILE: " + failedFileList.mkString(","))
+	
+      /*val res = TextSender.send(XMLConfig.ftpConfig.KEY, XMLConfig.ftpConfig.MESSAGE_CONTEXT + ":" + failedFileList.mkString(",") , XMLConfig.ftpConfig.RECEIVER)
+      if(res) UserLogger.error("[SUE] MESSAGE SEND SUCCESSFULLY")*/
+      UserLogger.info("[warning] MESSAGE: "+ TimeUtil.getTimeKey(0)._1 + ", loss files: " + failedFileList.mkString(","))
 
     }
 
