@@ -12,7 +12,7 @@ class XMLConfig(xmlFilePath:String) {
 
   val XML_CONFIG  = XML.loadFile(xmlFilePath)
 
-  val IP = ( XML_CONFIG  \ "KV" \ "APIKEY").text
+  val API_KEY = ( XML_CONFIG  \ "KV" \ "APIKEY").text
 
   val DATABASE = ( XML_CONFIG  \ "KV" \ "DATABASE").text
 
@@ -22,11 +22,11 @@ class XMLConfig(xmlFilePath:String) {
 
   val TABLE = (XML_CONFIG  \ "KV" \ "TABLE").text
 
-  val LOG_DIR = (XML_CONFIG  \ "FILE" \ "TLOG" ).text
+  val LOG_DIR = (XML_CONFIG  \ "FILE" \ "LOG" ).text
 
-  var DATA_DIR = (XML_CONFIG  \ "FILE" \ "TDATA").text
+  var DATA_DIR = (XML_CONFIG  \ "FILE" \ "DATA").text
 
-  var PROGRESS_DIR =( XML_CONFIG  \ "FILE" \ "TPROCESS" ).text
+  var PROGRESS_DIR =( XML_CONFIG  \ "FILE" \ "PROCESS" ).text
 
   val LOG_CONFIG = (XML_CONFIG  \ "LOGGER" \ "CONF").text
 
@@ -45,10 +45,12 @@ object XMLConfig {
 
   var ftpConfig: XMLConfig =  null
 
-  def apply(xmlFilePath: String):Unit = {
+  def apply(xmlFilePath: String) = {
 
     if(ftpConfig == null)
       ftpConfig = new XMLConfig(xmlFilePath)
+
+    ftpConfig
 
   }
 

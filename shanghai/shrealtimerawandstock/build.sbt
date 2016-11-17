@@ -1,14 +1,19 @@
 name := "telecomOptimizer"
 
-version := "1.9"
+version := "2.0"
 
-scalaVersion := "2.10.4"
+scalaVersion := "2.11.8"
 
-libraryDependencies += "org.apache.spark" % "spark-core_2.10" % "1.5.2"
+// libraryDependencies += "org.apache.spark" % "spark-core_2.10" % "1.5.2"
+libraryDependencies += "org.apache.spark" % "spark-core_2.11" % "2.0.1"
 
-libraryDependencies += "org.apache.spark" % "spark-streaming_2.10" % "1.5.2"
 
-libraryDependencies += "org.apache.spark" % "spark-streaming-kafka_2.10" % "1.5.2"
+// libraryDependencies += "org.apache.spark" % "spark-streaming_2.10" % "1.5.2"
+libraryDependencies += "org.apache.spark" % "spark-streaming_2.11" % "2.0.1"
+
+
+// libraryDependencies += "org.apache.spark" % "spark-streaming-kafka_2.10" % "1.5.2"
+libraryDependencies += "org.apache.spark" % "spark-streaming-kafka_2.11" % "1.6.2"
 
 libraryDependencies += "log4j" % "log4j" % "1.2.17"
 

@@ -1,6 +1,6 @@
 name := "offlinestockfromkv"
 
-version := "1.6"
+version := "1.7"
 
 scalaVersion := "2.10.4"
 
@@ -17,6 +17,8 @@ libraryDependencies += "org.json" % "json" % "20140107"
 libraryDependencies += "org.apache.spark" % "spark-streaming-kafka_2.10" % "1.5.2"
 
 libraryDependencies += "org.jsoup" % "jsoup" % "1.8.3"
+
+libraryDependencies +=  "org.scalatest" %% "scalatest" % "3.0.0" % "test"
 
 assemblyMergeStrategy in assembly := {
   case PathList("javax", "servlet", xs @ _*) => MergeStrategy.last

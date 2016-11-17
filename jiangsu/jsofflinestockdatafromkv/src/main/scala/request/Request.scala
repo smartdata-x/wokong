@@ -30,11 +30,13 @@ object Request {
     val url = "http://180.96.28.74:58279/kv/get?token=" + token + "&database="+TelecomConfig.DATABASE + "&table="+TelecomConfig.TABLE  + "&key=" + key
 
     try {
+
       val result = new JSONObject(Jsoup.connect(url).timeout(5000).execute().body()).get("result").toString
 
       if (result != "null") {
         value = new JSONObject(result).get("value").toString
       }
+
     } catch {
       case e:Exception =>
         UserLogger.exception(e)

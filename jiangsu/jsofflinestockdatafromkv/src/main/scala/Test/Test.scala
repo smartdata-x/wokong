@@ -2,6 +2,8 @@ package Test
 
 import java.util.{Calendar, Date, Timer}
 
+import config.{FileConfig, TelecomConfig, XMLConfig}
+import log.UserLogger
 import timer.MyTimerTask
 
 /**
@@ -14,19 +16,27 @@ object Test {
 
   def main(args: Array[String]) {
 
-    /*FileConfig.DATA_DIR = args(0)
-    FileConfig.LOG_DIR = args(1)
-    FileConfig.PROGRESS_DIR = args(2)
-    UserLogger.logConfigureFile(args(3))
+    if (args.length < 4) {
+      sys.error("Usage args :<xmlFile> <startExecutorTask> <endExecutorTask> <delayTime>")
+      sys.exit(-1)
+    }
 
-    val startExecutorTask = args(4).toInt
-    val endExecutorTask = args(5).toInt
+    val Array(xmlFile, startExecutorTask, endExecutorTask, delayTime) = args
 
-    // XMLConfig.apply("jsdxkvdown.xml")
+    val xmlConfig = XMLConfig.apply(xmlFile)
 
-    val task = new MyTimerTask(args(6).toInt, startExecutorTask, endExecutorTask)*/
+    FileConfig.DATA_DIR = xmlConfig.DATA_DIR
+    FileConfig.LOG_DIR = xmlConfig.LOG_DIR
+    FileConfig.PROGRESS_DIR = xmlConfig.PROGRESS_DIR
+    UserLogger.logConfigureFile(xmlConfig.LOG_CONFIG)
 
-    val task = new MyTimerTask( -10,0,1)
+    TelecomConfig.API_KEY = xmlConfig.API_KEY
+    TelecomConfig.USER_NAME = xmlConfig.USER_NAME
+    TelecomConfig.PASSWORD = xmlConfig.PASSWORD
+    TelecomConfig.TABLE = xmlConfig.TABLE
+    TelecomConfig.DATABASE = xmlConfig.DATABASE
+
+    val task = new MyTimerTask(delayTime.toInt, startExecutorTask.toInt, endExecutorTask.toInt)
 
     task.run()
     val timer = new Timer()
