@@ -5,7 +5,7 @@ import org.scalatest.{FlatSpec, Matchers}
 /**
   * Created by C.J.YOU on 2016/9/21.
   */
-class TestToken extends FlatSpec with Matchers {
+class TokenTest extends FlatSpec with Matchers {
 
   it should "get none empty token " in  {
 

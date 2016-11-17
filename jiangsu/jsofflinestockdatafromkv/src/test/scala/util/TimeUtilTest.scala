@@ -7,7 +7,7 @@ import org.scalatest.{FlatSpec, Matchers}
 /**
   * Created by C.J.YOU on 2016/9/21.
   */
-class TestTimeUtil extends FlatSpec with Matchers {
+class TimeUtilTest extends FlatSpec with Matchers {
 
   it should "get right time delay in minutes" in {
 
