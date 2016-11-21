@@ -16,9 +16,10 @@ import com.codahale.metrics.Timer.Context
 import java.util.concurrent.TimeUnit
 import JsonHandle._
 import JsonHandle.MyJsonProtocol._
+import logger.HeatLogger
 
 import spray.json._
-import DefaultJsonProtocol._ 
+import DefaultJsonProtocol._
 
 import kafka.consumer.KafkaStream
 import scala.collection.mutable
@@ -28,10 +29,10 @@ import scala.collection.mutable
   * 热度线程类
   */
 class HeatThread(
-  val stream: KafkaStream[Array[Byte], Array[Byte]], 
-  val pool: MysqlPool,
-  val rank: Int
-) extends Runnable with CustomLogger {
+                  val stream: KafkaStream[Array[Byte], Array[Byte]],
+                  val pool: MysqlPool,
+                  val rank: Int
+                ) extends Runnable {
 
   var stock_type: String = _
   var (month: Int, day: Int, hour: Int) = TimeHandle.getMonthDayHour
@@ -40,11 +41,11 @@ class HeatThread(
   def timeCompute(body: => Unit) {
     val start = System.currentTimeMillis
     body
-    val end   = System.currentTimeMillis
+    val end = System.currentTimeMillis
   }
 
   def doWork(stockInfos: List[StockInfo]) {
-    stockInfos.foreach( x => {
+    stockInfos.foreach(x => {
       val initialVal = codeCount.applyOrElse(x.code, (y: String) => 0)
       codeCount += ((x.code, x.value + initialVal))
     })
@@ -52,9 +53,6 @@ class HeatThread(
 
   /**
     * 用统计的股票热度数据来更新查看月份表
-    * @param month  当前的月份
-    * @param day    当前的天
-    * @param stocks 要更新的股票集合
     */
   def mysqlOpt {
 
@@ -64,23 +62,23 @@ class HeatThread(
 
         val sqlHandle = MysqlHandle(connect)
 
-        codeCount.foreach( x => {
+        codeCount.foreach(x => {
           sqlHandle.addCommand(
             MixTool.updateMonthAccum("stock_" + stock_type + "_month_", x._1, month, day, x._2)
           ) recover {
-            case e: Exception => warnLog(fileInfo, e.getMessage)
-          } 
+            case e: Exception => HeatLogger.exception(e)
+          }
         })
 
         sqlHandle.batchExec recover {
           case e: Exception => {
-            warnLog(fileInfo, "[exec updateAdd failure]" + e.getMessage)
+            HeatLogger.exception(e)
           }
         }
         sqlHandle.close
       }
       case None => {
-        warnLog(fileInfo, "[Get mysql connect failure]")
+        HeatLogger.error("[Get mysql connect failure]")
       }
     }
   }
@@ -92,7 +90,7 @@ class HeatThread(
 
     val iter = stream.iterator
 
-    while(iter.hasNext) {
+    while (iter.hasNext) {
 
       val json = (new String(iter.next.message)).parseJson.convertTo[MixData]
       stock_type = json.stock_type
@@ -102,7 +100,7 @@ class HeatThread(
       val nowHour = json.hour
       val stockInfos = json.stock
 
-      if(nowDay != day) {
+      if (nowDay != day) {
         timeCompute(mysqlOpt)
         codeCount.clear
         month = nowMonth
@@ -113,6 +111,7 @@ class HeatThread(
     }
   }
 }
+
 /**
   * Created by wukun on 2016/08/25
   * 热度线程类伴生对象
@@ -120,10 +119,10 @@ class HeatThread(
 object HeatThread {
 
   def apply(
-    stream: KafkaStream[Array[Byte], Array[Byte]], 
-    pool: MysqlPool,
-    rank: Int
-  ): HeatThread = {
+             stream: KafkaStream[Array[Byte], Array[Byte]],
+             pool: MysqlPool,
+             rank: Int
+           ): HeatThread = {
     new HeatThread(stream, pool, rank)
   }
 }

@@ -33,7 +33,7 @@ import scala.reflect.ClassTag
   * Created by wukun on 2016/5/20
   * 自定义hbase相关的上下文类
   */
-class HbaseContext(xml:XmlHandle) extends CustomLogger { self =>
+class HbaseContext(xml:XmlHandle) { self =>
 
   type Writable = ImmutableBytesWritable
 

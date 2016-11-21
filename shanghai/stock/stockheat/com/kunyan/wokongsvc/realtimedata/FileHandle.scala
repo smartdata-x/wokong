@@ -12,11 +12,13 @@
 package com.kunyan.wokongsvc.realtimedata
 
 import java.io.BufferedReader
-import java.io.File 
+import java.io.File
 import java.io.FileInputStream
 import java.io.FileReader
 import java.io.FileWriter
 import java.io.InputStreamReader
+import logger.HeatLogger
+
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -25,7 +27,7 @@ import scala.util.Try
   * Created by wukun on 2016/07/18
   * 操作文件句柄
   */
-class FileHandle(val path: String) extends CustomLogger {
+class FileHandle(val path: String) {
 
   lazy val file: File = initFile
 
@@ -37,8 +39,7 @@ class FileHandle(val path: String) extends CustomLogger {
         source
       }
       case Failure(e) => {
-
-        errorLog(fileInfo, "Initial File Object Failure, errorkey: " + e.getMessage)
+        HeatLogger.exception(e)
         System.exit(-1)
 
       }
@@ -50,15 +51,15 @@ class FileHandle(val path: String) extends CustomLogger {
 
   /**
     * 获取写句柄
+    *
     * @author wukun
     */
   def initWriter(): FileWriter = {
 
-    val writer = Try(new FileWriter(path, true)) match {
+    val writer = Try(new FileWriter(path, false)) match {
       case Success(writer) => writer
       case Failure(e) => {
-
-        errorLog(fileInfo, "Initial Writer Object Failure, errorkey: " + e.getMessage)
+        HeatLogger.exception(e)
         System.exit(-1)
 
       }
@@ -69,6 +70,7 @@ class FileHandle(val path: String) extends CustomLogger {
 
   /**
     * 获取读句柄
+    *
     * @author wukun
     */
   def initReader(): FileReader = {
@@ -76,8 +78,7 @@ class FileHandle(val path: String) extends CustomLogger {
     val reader = Try(new FileReader(path)) match {
       case Success(reader) => reader
       case Failure(e) => {
-
-        errorLog(fileInfo, "Initial Writer Object Failure, errorkey: " + e.getMessage)
+        HeatLogger.exception(e)
         System.exit(-1)
 
       }
@@ -88,6 +89,7 @@ class FileHandle(val path: String) extends CustomLogger {
 
   /**
     * 获取读缓存句柄
+    *
     * @author wukun
     */
   def initBuff(): BufferedReader = {

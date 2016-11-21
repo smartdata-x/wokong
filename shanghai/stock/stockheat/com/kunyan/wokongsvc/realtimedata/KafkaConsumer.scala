@@ -28,13 +28,13 @@ import scala.Option
   * Created by wukun on 2016/08/19
   * kafka消费者操作句柄
   */
-class KafkaConsumer extends CustomLogger {
+class KafkaConsumer {
 
-  type ListStream = List[KafkaStream[Array[Byte],Array[Byte]]]
+  type ListStream = List[KafkaStream[Array[Byte], Array[Byte]]]
 
   private val topicMap = Map(
     KafkaConsumer.CONFIG("visittopic") -> KafkaConsumer.CONFIG("visitpart").toInt,
-    KafkaConsumer.CONFIG("searchtopic")-> KafkaConsumer.CONFIG("searchpart").toInt
+    KafkaConsumer.CONFIG("searchtopic") -> KafkaConsumer.CONFIG("searchpart").toInt
   )
   private val config = initConfig
   private val connector = createConnector
@@ -42,7 +42,7 @@ class KafkaConsumer extends CustomLogger {
 
   def initConfig: ConsumerConfig = {
 
-    val props = new Properties 
+    val props = new Properties
 
     props.put("zookeeper.connect", KafkaConsumer.CONFIG("zkConnect"))
     props.put("socket.timeout.ms", KafkaConsumer.CONFIG("sockTimeout"))
@@ -77,7 +77,7 @@ class KafkaConsumer extends CustomLogger {
   def partitionTotal: Int = {
 
     var num = 0
-    topicMap.foreach( x => {
+    topicMap.foreach(x => {
       num += x._2
     })
 
@@ -97,7 +97,7 @@ class KafkaConsumer extends CustomLogger {
   * Created by wukun on 2016/08/19
   * kafka消费者操作句柄伴生对象
   */
-object KafkaConsumer extends CustomLogger {
+object KafkaConsumer {
 
   var consumer: KafkaConsumer = _
 
@@ -106,20 +106,20 @@ object KafkaConsumer extends CustomLogger {
     val xmlHandle = XmlHandle.getInstance
 
     Map(
-      "zkConnect"   -> xmlHandle.getElem("kafkaconsumer", "zookeeper"),
+      "zkConnect" -> xmlHandle.getElem("kafkaconsumer", "zookeeper"),
       "sockTimeout" -> xmlHandle.getElem("kafkaconsumer", "sockTimeout"),
-      "visittopic"  -> xmlHandle.getElem("kafkaconsumer", "visittopic"),
-      "visitpart"   -> xmlHandle.getElem("kafkaconsumer", "visitpart"),
-      "searchpart"  -> xmlHandle.getElem("kafkaconsumer", "searchpart"),
+      "visittopic" -> xmlHandle.getElem("kafkaconsumer", "visittopic"),
+      "visitpart" -> xmlHandle.getElem("kafkaconsumer", "visitpart"),
+      "searchpart" -> xmlHandle.getElem("kafkaconsumer", "searchpart"),
       "searchtopic" -> xmlHandle.getElem("kafkaconsumer", "searchtopic"),
-      "partition"   -> xmlHandle.getElem("kafkaconsumer", "partition"),
-      "group"       -> xmlHandle.getElem("kafkaconsumer", "group")
+      "partition" -> xmlHandle.getElem("kafkaconsumer", "partition"),
+      "group" -> xmlHandle.getElem("kafkaconsumer", "group")
     )
   }
-  
+
   def apply: KafkaConsumer = {
-    
-    if(consumer == null) {
+
+    if (consumer == null) {
       consumer = new KafkaConsumer
     }
 

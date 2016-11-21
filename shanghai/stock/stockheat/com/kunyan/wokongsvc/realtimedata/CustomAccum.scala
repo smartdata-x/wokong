@@ -11,10 +11,8 @@
 
 package com.kunyan.wokongsvc.realtimedata
 
-import JsonHandle.StockInfo
-
+import com.kunyan.wokongsvc.realtimedata.JsonHandle.StockInfo
 import org.apache.spark.AccumulatorParam
-import org.apache.spark.Accumulator
 
 import scala.collection.mutable.HashMap
 
@@ -28,6 +26,7 @@ object CustomAccum {
 
     /**
       * 实现字符串类型相加
+ *
       * @param t1 被加字符串
       * @param t2 加字符串
       * @author wukun
@@ -38,6 +37,7 @@ object CustomAccum {
 
     /**
       * 第一个字符串赋初值
+ *
       * @param initialValue 初始字符串值
       * @author wukun
       */
@@ -48,6 +48,7 @@ object CustomAccum {
 
     /**
       * 实现HashMap类型相加
+ *
       * @param t1 被加HashMap
       * @param t2 加HashMap
       * @author wukun
@@ -72,6 +73,7 @@ object CustomAccum {
 
     /**
       * 第一个HashMap赋初值
+ *
       * @param initialValue 初始HashMap值
       * @author wukun
       */
@@ -82,6 +84,7 @@ object CustomAccum {
 
     /**
       * 实现元组类型相加
+ *
       * @param t1 被加元组
       * @param t2 加元组
       * @author wukun
@@ -100,6 +103,7 @@ object CustomAccum {
 
     /**
       * 第一个元组赋初值
+ *
       * @param initialValue 初始元组值
       * @author wukun
       */
@@ -110,6 +114,7 @@ object CustomAccum {
 
     /**
       * 实现List类型相加
+ *
       * @param t1 被加List
       * @param t2 加List
       * @author wukun
@@ -123,6 +128,7 @@ object CustomAccum {
 
     /**
       * 第一个元组赋初值
+ *
       * @param initialValue 初始元组值
       * @author wukun
       */

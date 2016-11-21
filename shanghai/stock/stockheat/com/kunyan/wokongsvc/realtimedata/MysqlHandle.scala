@@ -11,33 +11,23 @@
 
 package com.kunyan.wokongsvc.realtimedata
 
-import java.sql.CallableStatement
-import java.sql.Connection
-import java.sql.PreparedStatement
-import java.sql.ResultSet
-import java.sql.SQLException
-import java.sql.Statement
-import java.sql.DriverManager
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.HashSet
-import scala.util.Failure
-import scala.util.Success
+import java.sql.{Connection, DriverManager, SQLException, Statement}
+
+import kunyan.wokongsvc.realtimedata.{TupleHashMap, TryHashMap, TryTuple3HashMap}
+import logger.HeatLogger
+
+import scala.collection.mutable.{HashMap, HashSet, ListBuffer}
 import scala.util.Try
-import scala.collection.mutable.ListBuffer
 
 /**
   * Created by wukun on 2016/5/19
   * Mysql操作句柄类
   */
-class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
-
-  type TryHashMap = Try[HashMap[String, (String, String)]]
-  type TupleHashMap = (HashMap[String, ListBuffer[String]], HashMap[String, ListBuffer[String]])
-  type TryTuple3HashMap = Try[(HashSet[String], (HashMap[String, String], HashMap[String, String], HashMap[String, String]))]
+class MysqlHandle(conn: Connection) extends Serializable {
 
   private var dbConn = conn
 
-  private val stateMent: Statement = dbConn.createStatement
+  private lazy val stateMent: Statement = dbConn.createStatement
 
   def close {
 
@@ -48,6 +38,7 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
 
   /**
     * 另一种初始化方法
+    *
     * @param url mysql配置的url地址
     * @param xml 全局XML句柄
     * @author wukun
@@ -58,26 +49,26 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
 
     try {
 
-      val sqlInfo = (xml.getElem("mySql", "userstock"), xml.getElem("mySql", "passwordstock"))
+      val sqlInfo = (xml.getElem("mysql_stock", "user"), xml.getElem("mysql_stock", "password"))
       // 这个方法可以不必显示调用，判断标准为jar包的META-INF/services/目录的java.sql.Driver文件里是否包含
       // com.mysql.jdbc.Driver这行，在DriverManager被加载时的静态块中会遍历这个文件里的内容进行主动加载
-      // Class.forName(xml.getElem("mySql", "driver"))
+      // Class.forName(xml.getElem("mysql", "driver"))
       dbConn = DriverManager.getConnection(url, sqlInfo._1, sqlInfo._2)
 
     } catch {
 
       case e: SQLException => {
-        errorLog(fileInfo, e.getMessage + "[SQLException]")
+        HeatLogger.exception(e)
         System.exit(-1)
       }
 
       case e: ClassNotFoundException => {
-        errorLog(fileInfo, e.getMessage + "[ClassNotFoundException]")
+        HeatLogger.exception(e)
         System.exit(-1)
       }
 
       case e: Exception => {
-        errorLog(fileInfo, e.getMessage)
+        HeatLogger.exception(e)
         System.exit(-1)
       }
     }
@@ -99,6 +90,7 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
 
   /**
     * 执行插入操作
+    *
     * @param  sql sql语句
     * @author wukun
     */
@@ -117,6 +109,7 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
 
   /**
     * 执行更新操作
+    *
     * @param  sql sql语句
     * @author wukun
     */
@@ -135,11 +128,12 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
 
   /**
     * 执行查询操作
+    *
     * @param  sql sql语句
     * @author wukun
     */
   def execQuerySyn(sql: String): TryHashMap = {
-    
+
     val ret = Try({
 
       val stmt = dbConn.createStatement
@@ -148,7 +142,7 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
       val stockToHyOrGn = new HashMap[String, (String, String)]
 
       while (allInfo.next && col == 3) {
-        stockToHyOrGn += (allInfo.getString(1) -> (allInfo.getString(2), allInfo.getString(3)))
+        stockToHyOrGn += (allInfo.getString(1) ->(allInfo.getString(2), allInfo.getString(3)))
       }
 
       stmt.close
@@ -160,6 +154,7 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
 
   /**
     * 执行股票别名查询操作
+    *
     * @param  sql sql语句
     * @author wukun
     */
@@ -189,7 +184,7 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
       stockChina -= "000001"
       stockJian -= "000001"
       stockQuan -= "000001"
-      (stockCode, stockChina.filter( x => x._2.compareTo("000001") != 0))
+      (stockCode, stockChina.filter(x => x._2.compareTo("000001") != 0))
       (stockCode, (stockChina, stockJian, stockQuan))
     })
 
@@ -198,6 +193,7 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
 
   /**
     * 执行股票代码查询操作
+    *
     * @param  sql sql语句
     * @author wukun
     */
@@ -225,6 +221,7 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
 
   /**
     * 执行股票代码到中文名映射的查询操作
+    *
     * @param  sql sql语句
     * @author wukun
     */
@@ -251,6 +248,7 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
 
   /**
     * 存储过程调用接口，以后会用到
+    *
     * @param  sql sql语句
     * @author wukun
     */
@@ -279,6 +277,7 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
 
   /**
     * 执行行业和概念查询操作
+    *
     * @param  sql sql语句
     * @author wukun
     */
@@ -297,17 +296,17 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
 
         val code = allInfo.getString(1)
         val hyInfos = allInfo.getString(2).split(",")
-        if(hyInfos.size > 0) {
+        if (hyInfos.size > 0) {
           stockHy += ((code, new ListBuffer[String]))
-          for(hyInfo <- hyInfos) {
+          for (hyInfo <- hyInfos) {
             stockHy(code) += (hyInfo)
           }
         }
 
         val gnInfos = allInfo.getString(3).split(",")
-        if(gnInfos.size > 0) {
+        if (gnInfos.size > 0) {
           stockGn += ((code, new ListBuffer[String]))
-          for(gnInfo <- gnInfos) {
+          for (gnInfo <- gnInfos) {
             stockGn(code) += (gnInfo)
           }
         }
@@ -321,7 +320,7 @@ class MysqlHandle(conn: Connection) extends Serializable with CustomLogger {
   }
 }
 
-/** 
+/**
   * Created by wukun on 2016/5/19
   * MysqlHandle伴生对象
   */
@@ -332,9 +331,9 @@ object MysqlHandle {
   }
 
   def apply(
-    url: String, 
-    xml: XmlHandle
-  ): MysqlHandle = {
+             url: String,
+             xml: XmlHandle
+           ): MysqlHandle = {
     new MysqlHandle(url, xml)
   }
 }

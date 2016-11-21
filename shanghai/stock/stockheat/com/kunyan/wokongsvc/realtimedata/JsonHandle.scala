@@ -11,12 +11,7 @@
 
 package com.kunyan.wokongsvc.realtimedata
 
-import scala.collection.mutable.ArrayBuffer
-
 import spray.json._
-import DefaultJsonProtocol._ 
-import scala.collection.immutable
-import scala.reflect.ClassTag
 
 /**
   * Created by wukun on 2016/08/18
@@ -36,12 +31,13 @@ object JsonHandle {
   case class StockInfo(code: String, value: Int)
 
   object MyJsonProtocol extends DefaultJsonProtocol {
-    /** 当定义好类格式后，要对类进行json协议转化 ,这个地方很重要*/
+    /** 当定义好类格式后，要对类进行json协议转化 ,这个地方很重要 */
     implicit val stockInfo = jsonFormat2(StockInfo)
     implicit val mixData = jsonFormat6(MixData)
   }
 
   /** 在使用上面得转化格式时，要显示调用下面的语句，进行导入 */
+
   import JsonHandle.MyJsonProtocol._
 
   def toString(value: MixData): String = {

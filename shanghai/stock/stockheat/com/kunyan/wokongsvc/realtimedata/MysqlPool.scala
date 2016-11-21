@@ -1,30 +1,29 @@
 /**
-* Copyright @ 2015 ShanghaiKunyan. All rights reserved
-* @author     : Sunsolo
-* Email       : wukun@kunyan-inc.com
-* Date        : 2016-05-19 16:52
-* Description : 
-*/
-package com.kunyan.wokongsvc.realtimedata 
-
-import com.jolbox.bonecp.BoneCP
-import com.jolbox.bonecp.BoneCPConfig
-import com.mysql.jdbc.exceptions.jdbc4.MySQLNonTransientConnectionException
+  * Copyright @ 2015 ShanghaiKunyan. All rights reserved
+  *
+  * @author : Sunsolo
+  *         Email       : wukun@kunyan-inc.com
+  *         Date        : 2016-05-19 16:52
+  *         Description :
+  */
+package com.kunyan.wokongsvc.realtimedata
 
 import java.sql.Connection
-import java.sql.SQLException
+
+import com.jolbox.bonecp.{BoneCP, BoneCPConfig}
+import logger.HeatLogger
 
 /**
   * Created by wukun on 2016/5/18
   * mysql句柄池
   */
-class MysqlPool private(val xmlHandle: XmlHandle, val isStock: Boolean = true) extends Serializable with CustomLogger {
+class MysqlPool private(val xmlHandle: XmlHandle, val mysqlSign: String = "stock") extends Serializable {
 
   try {
-    //Class.forName(xmlHandle.getElem("mySql", "driver"))
+    Class.forName(xmlHandle.getElem("mysql", "driver"))
   } catch {
     case e: Exception => {
-      errorLog(fileInfo, e.getMessage + "[The JDBC driver exception]")
+      HeatLogger.exception(e)
       System.exit(-1)
     }
   }
@@ -35,28 +34,27 @@ class MysqlPool private(val xmlHandle: XmlHandle, val isStock: Boolean = true) e
 
   /**
     * 初始化连接池配置
+    *
     * @author wukun
     */
   def createConfig: BoneCPConfig = {
 
     val initConfig = new BoneCPConfig
 
-    if(isStock == true) {
-      initConfig.setJdbcUrl(xmlHandle.getElem("mySql", "urlstock"))
-      initConfig.setUsername(xmlHandle.getElem("mySql", "userstock"))
-      initConfig.setPassword(xmlHandle.getElem("mySql", "passwordstock"))
+    if (!(mysqlSign == "stock" || mysqlSign == "test" || mysqlSign == "other_stock")) {
+      HeatLogger.warn("couldn't obtain mysql conn by mysql sign")
     } else {
-      initConfig.setJdbcUrl(xmlHandle.getElem("mySql", "urltest"))
-      initConfig.setUsername(xmlHandle.getElem("mySql", "usertest"))
-      initConfig.setPassword(xmlHandle.getElem("mySql", "passwordtest"))
+      initConfig.setJdbcUrl(xmlHandle.getElem("mysql_" + mysqlSign, "url"))
+      initConfig.setUsername(xmlHandle.getElem("mysql_" + mysqlSign, "user"))
+      initConfig.setPassword(xmlHandle.getElem("mysql_" + mysqlSign, "password"))
     }
 
-    initConfig.setMinConnectionsPerPartition(Integer.parseInt(xmlHandle.getElem("mySql", "minconn")))
-    initConfig.setMaxConnectionsPerPartition(Integer.parseInt(xmlHandle.getElem("mySql", "maxconn")))
-    initConfig.setPartitionCount(Integer.parseInt(xmlHandle.getElem("mySql", "partition")))
-    initConfig.setConnectionTimeoutInMs(Integer.parseInt(xmlHandle.getElem("mySql", "timeout")))
+    initConfig.setMinConnectionsPerPartition(Integer.parseInt(xmlHandle.getElem("mysql", "minconn")))
+    initConfig.setMaxConnectionsPerPartition(Integer.parseInt(xmlHandle.getElem("mysql", "maxconn")))
+    initConfig.setPartitionCount(Integer.parseInt(xmlHandle.getElem("mysql", "partition")))
+    initConfig.setConnectionTimeoutInMs(Integer.parseInt(xmlHandle.getElem("mysql", "timeout")))
     initConfig.setConnectionTestStatement("select 1")
-    initConfig.setIdleConnectionTestPeriodInMinutes(Integer.parseInt(xmlHandle.getElem("mySql", "connecttest")))
+    initConfig.setIdleConnectionTestPeriodInMinutes(Integer.parseInt(xmlHandle.getElem("mysql", "connecttest")))
 
     initConfig
   }
@@ -71,6 +69,7 @@ class MysqlPool private(val xmlHandle: XmlHandle, val isStock: Boolean = true) e
 
   /**
     * 获取连接
+    *
     * @author wukun
     */
   def getConnect: Option[Connection] = {
@@ -83,7 +82,7 @@ class MysqlPool private(val xmlHandle: XmlHandle, val isStock: Boolean = true) e
 
       case e: Exception => {
 
-        if(connect != null) {
+        if (connect != null) {
           connect.get.close
         }
         connect = None
@@ -103,8 +102,10 @@ class MysqlPool private(val xmlHandle: XmlHandle, val isStock: Boolean = true) e
   * MysqlPool伴生对象
   */
 object MysqlPool extends Serializable {
-  def apply(xmlHandle: XmlHandle, isStock: Boolean = true): MysqlPool = {
-    new MysqlPool(xmlHandle, isStock)
+
+  def apply(xmlHandle: XmlHandle, mysqlSign: String = "stock"): MysqlPool = {
+    new MysqlPool(xmlHandle, mysqlSign)
   }
+
 }
 
