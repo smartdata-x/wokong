@@ -10,9 +10,7 @@
 
 package com.kunyan.wokongsvc.realtimedata
 
-import scala.util.matching.Regex
-import scala.collection.mutable.Map
-import scala.collection.mutable.HashSet
+import scala.collection.mutable.{HashSet, Map}
 
 /**
   * Created by wukun on 2016/5/19
