@@ -2,7 +2,7 @@ import java.text.SimpleDateFormat
 import java.util.regex.{Matcher, Pattern}
 import java.util.{Calendar, Date}
 
-import com.kunyan.telecom.{DataAnalysis, XMLConfig}
+import com.kunyan.telecom.DataAnalysis
 import org.apache.spark.SparkConf
 import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
@@ -157,17 +157,22 @@ object SparkDriver {
     System.setProperty("spark.network.timeout", "1000")
     System.setProperty("spark.driver.allowMultipleContexts","true")
 
-    if (args.length < 1){
-      sys.error("args: xmlFile")
+    if (args.length < 4){
+      sys.error("args: topics, sendTopic, indexUrl, groupId, tableUp, tableSk")
       sys.exit(-1)
     }
 
-    val Array(xmlFile) = args
+    val Array(topics, sendTopic, indexUrl, groupId, tableUp_p, tableSk_p) = args
+
+    tableUp = tableUp_p
+    tableSk = tableSk_p
+    KafkaConf.topics = topics
+    KafkaProducer.sendTopic = sendTopic
 
     val conf  = new SparkConf()
 
+    /*val Array(xmlFile) = args   // v2.5
     XMLConfig.apply(xmlFile)
-
     val parameterConf = XMLConfig.ftpConfig
 
     expireDay = parameterConf.expireDay
@@ -177,7 +182,7 @@ object SparkDriver {
     KafkaConf.topics = parameterConf.topics
     KafkaProducer.sendTopic = parameterConf.sendTopic
     val indexUrl = parameterConf.indexUrl
-    val groupId = parameterConf.groupId
+    val groupId = parameterConf.groupId*/
 
     val ssc = new StreamingContext(conf, Seconds(60))
     val sc = ssc.sparkContext
