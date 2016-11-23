@@ -157,7 +157,7 @@ object SparkDriver {
     System.setProperty("spark.network.timeout", "1000")
     System.setProperty("spark.driver.allowMultipleContexts","true")
 
-    if (args.length < 4){
+    if (args.length < 4) {
       sys.error("args: topics, sendTopic, indexUrl, groupId, tableUp, tableSk")
       sys.exit(-1)
     }
