@@ -8,7 +8,7 @@ import org.apache.hadoop.fs.Path
 import org.apache.spark.SparkConf
 import org.apache.spark.streaming.kafka.KafkaUtils
 import org.apache.spark.streaming.{Seconds, StreamingContext}
-import util.{FileUtil, HDFSUtil, TimeUtil}
+import util.{FileUtil, HDFSUtil, StringUtil, TimeUtil}
 
 import scala.collection.mutable
 
@@ -97,6 +97,8 @@ object Scheduler {
 
   }
 
+  def reformatData(str: String) = str.replaceAll("\n","").replaceAll("\r","")
+
   def main(args: Array[String]) {
 
     showWarning(args)
@@ -127,7 +129,7 @@ object Scheduler {
     def createStreamingContext = {
       val ssc = new StreamingContext(sparkConf, Seconds(60))
       ssc.checkpoint(checkpoint_dir)
-
+      ssc
     }
     val ssc = StreamingContext.getOrCreate(checkpoint_dir, createStreamingContext _)
 
@@ -143,12 +145,13 @@ object Scheduler {
     /** write data to local file */
     try {
 
-      result.foreachRDD(rdd => {
+      result.foreachRDD(org => {
 
         val rdd = org.filter(x => x != "" || !x.isEmpty).map(reformatData)
 
         val minCount = rdd.count()
         val time = TimeUtil.getMinute
+
         // data number per minute count
         val logData = Array(time + "\t" + minCount)
         FileUtil.saveLog(FileConfig.LOG_DIR, logData)
