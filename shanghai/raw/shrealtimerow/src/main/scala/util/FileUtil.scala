@@ -2,11 +2,6 @@ package util
 
 import java.io._
 
-import config.FileConfig
-
-import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
-
 /**
   * Created by C.J.YOU on 2016/1/14.
   * HDFS操作的工具类
@@ -47,6 +42,19 @@ object FileUtil {
     writer.append(str + "\n")
     writer.flush()
     writer.close()
+  }
+
+  /**
+    * log file
+    * @param rootDir 保存目录
+    * @param data log 数据
+    */
+  def saveLog(rootDir: String, data: Array[String]): Unit = {
+    val logDir = rootDir + "/" + TimeUtil.getDay
+    val logFile = rootDir + "/" + TimeUtil.getDay +"/"+TimeUtil.getCurrentHour
+    FileUtil.mkDir(logDir)
+    FileUtil.createFile(logFile)
+    FileUtil.writeToFile(logFile,data)
   }
 
   def saveData(rootDir:String,data:Array[String]):Unit ={

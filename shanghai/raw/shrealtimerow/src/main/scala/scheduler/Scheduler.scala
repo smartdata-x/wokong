@@ -8,7 +8,7 @@ import org.apache.hadoop.fs.Path
 import org.apache.spark.SparkConf
 import org.apache.spark.streaming.kafka.KafkaUtils
 import org.apache.spark.streaming.{Seconds, StreamingContext}
-import util.{FileUtil, HDFSUtil, StringUtil, TimeUtil}
+import util.{FileUtil, HDFSUtil, TimeUtil}
 
 import scala.collection.mutable
 
@@ -59,17 +59,23 @@ object Scheduler {
     */
   def showWarning(args: Array[String]): Unit = {
 
-    if (args.length < 7) {
+    if (args.length < 11) {
 
       System.err.println(
         """
-          |Usage: LoadData <brokers> <topics> <zkhosts> <dataDir> <searchEngineDataDir> <errorDataDir> <nameNode> <xmlFile>
+          |Usage: LoadData <brokers> <topics> <zkhosts> <dataDir> <searchEngineDataDir> <errorDataDir>
+          |<logConfDir> <logDir> <dataerrorlogdir> <messageXmlFile> <checkpoint_dir>
           |<brokers> is a list of one or more Kafka brokers
           |<topics> is a list of one or more kafka topics to consume from
           |<zkhosts> is a list of zookeeper to consume from
-          |<nameNode> the cluster ip
           |<dataDir> is the data saving path
           |<searchEngineDataDir> is the search engine data saving path
+          |<errorDataDir>  exception data saving path
+          |<logConfDir> log conf path
+          |<logDir> data mumber count dir
+          |<dataerrorlogdir> saving data length is not 8
+          |<messageXmlFile> message notification conf file
+          |<checkpoint_dir> data check point dir for exception
         """.stripMargin)
 
       System.exit(1)
@@ -101,7 +107,7 @@ object Scheduler {
       .set("spark.driver.allowMultipleContexts","true")
       .set("spark.cleaner.ttl", "10000")
 
-    val Array(brokers, topics, zks, dataDir, searchEngineDataDir, errorDataDir, nameNode, xmlFile) = args
+    val Array(brokers, topics, zks, dataDir, searchEngineDataDir, errorDataDir, logConfigDir, logDir, dataLog,, xmlFile, checkpoint_dir) = args
 
     /* HDFSConfig.nameNode(nameNode)
     HDFSConfig.rootDir(dataDir)
@@ -111,9 +117,19 @@ object Scheduler {
     FileConfig.rootDir(dataDir)
     FileConfig.searchEngineDir(searchEngineDataDir)
     FileConfig.errorDataDir(errorDataDir)
+    FileConfig.logDir(logDir)
+    FileConfig.dataLog(dataLog)
+    SUELogger.logConfigureFile(logConfigDir)
     val messageConfig = XMLConfig.apply(xmlFile)
 
-    val ssc = new StreamingContext(sparkConf,Seconds(2))
+    // val ssc = new StreamingContext(sparkConf,Seconds(2))
+    // checkout point
+    def createStreamingContext = {
+      val ssc = new StreamingContext(sparkConf, Seconds(60))
+      ssc.checkpoint(checkpoint_dir)
+
+    }
+    val ssc = StreamingContext.getOrCreate(checkpoint_dir, createStreamingContext _)
 
     val text = KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder] (
       ssc,
@@ -124,9 +140,21 @@ object Scheduler {
     SUELogger.warn("write data")
     val result = text.flatMap(x =>flatMapFun(x._2))
 
+    /** write data to local file */
     try {
 
       result.foreachRDD(rdd => {
+
+        val rdd = org.filter(x => x != "" || !x.isEmpty).map(reformatData)
+
+        val minCount = rdd.count()
+        val time = TimeUtil.getMinute
+        // data number per minute count
+        val logData = Array(time + "\t" + minCount)
+        FileUtil.saveLog(FileConfig.LOG_DIR, logData)
+        // length error data count log
+        val dataLog = Array(time + "\t" + rdd.filter(_.split("\t").length != 8).count())
+        FileUtil.saveLog(FileConfig.DATA_LENGTH_LOG, dataLog)
 
         // search data
         val searchEngineData = rdd.filter(isSearchEngineURL).collect()
