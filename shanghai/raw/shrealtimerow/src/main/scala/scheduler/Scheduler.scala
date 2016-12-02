@@ -109,7 +109,7 @@ object Scheduler {
       .set("spark.driver.allowMultipleContexts","true")
       .set("spark.cleaner.ttl", "10000")
 
-    val Array(brokers, topics, zks, dataDir, searchEngineDataDir, errorDataDir, logConfigDir, logDir, dataLog,, xmlFile, checkpoint_dir) = args
+    val Array(brokers, topics, zks, dataDir, searchEngineDataDir, errorDataDir, logConfigDir, logDir, dataLog, xmlFile, checkpoint_dir) = args
 
     /* HDFSConfig.nameNode(nameNode)
     HDFSConfig.rootDir(dataDir)
