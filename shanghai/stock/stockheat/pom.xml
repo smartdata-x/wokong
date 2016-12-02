@@ -123,7 +123,7 @@
   </dependencies>
 
   <build>
-    <sourceDirectory>com/kunyan/wokongsvc/realtimedata</sourceDirectory>
+    <sourceDirectory>scala/</sourceDirectory>
     <plugins>
       <!-- 用来创建超级JAR包的maven shade插件 -->
       <plugin>
