@@ -106,8 +106,10 @@ object Scheduler {
     val sparkConf = new SparkConf()
       .setAppName("Data_Analysis")
       .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+      .set("spark.kryoserializer.buffer.max", "2000")
       .set("spark.driver.allowMultipleContexts","true")
       .set("spark.cleaner.ttl", "10000")
+      .set("spark.akka.frameSize","256")
 
     val Array(brokers, topics, zks, dataDir, searchEngineDataDir, errorDataDir, logConfigDir, logDir, dataLog, xmlFile, checkpoint_dir) = args
 
@@ -124,14 +126,14 @@ object Scheduler {
     SUELogger.logConfigureFile(logConfigDir)
     val messageConfig = XMLConfig.apply(xmlFile)
 
-    // val ssc = new StreamingContext(sparkConf,Seconds(2))
     // checkout point
-    def createStreamingContext = {
+    def createStreamingContext: () => StreamingContext = {
       val ssc = new StreamingContext(sparkConf, Seconds(60))
       ssc.checkpoint(checkpoint_dir)
-      ssc
+      () => ssc
     }
-    val ssc = StreamingContext.getOrCreate(checkpoint_dir, createStreamingContext _)
+
+    val ssc = StreamingContext.getOrCreate(checkpoint_dir, creatingFunc = createStreamingContext)
 
     val text = KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder] (
       ssc,

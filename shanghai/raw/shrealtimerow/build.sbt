@@ -1,6 +1,6 @@
 name := "TelecomDataAnalysisWithKafka"
 
-version := "1.0"
+version := "2.3"
 
 scalaVersion := "2.10.4"
 
