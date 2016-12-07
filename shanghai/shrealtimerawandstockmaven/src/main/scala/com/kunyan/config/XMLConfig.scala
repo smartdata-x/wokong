@@ -1,4 +1,4 @@
-package com.kunyan.telecom
+package com.kunyan.config
 
 import scala.xml.XML
 

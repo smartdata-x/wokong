@@ -57,6 +57,12 @@ object SparkDriver {
 
   }
 
+  // 按天
+  def getDay: String = {
+    val format = new SimpleDateFormat("yyyy-MM-dd_HHmm")
+    format.format(new Date())
+  }
+
   /**
     * 搜索数据的匹配
     * @param input 源数据
@@ -204,11 +210,14 @@ object SparkDriver {
     val broadCastValue = sc.broadcast(fileData)
     val linesRePartition = linesData.persist(StorageLevel.MEMORY_AND_DISK).repartition(30)
 
-
     try {
       // 搜索数据处理
       linesRePartition.map(VisitAndSearch).filter(_ != null).foreachRDD { rdd =>
         val ts = getCurrentTime
+
+        val day = getDay
+        rdd.saveAsTextFile("hdfs://ns1/user/hadoop/kunyan/"+ day)
+
         rdd.zipWithIndex().foreach(record => sendToKafka(tableSk, ts + "_kunyan_" + record._2, record._1))
 
       }
