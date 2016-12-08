@@ -2,6 +2,7 @@ import java.text.SimpleDateFormat
 import java.util.regex.{Matcher, Pattern}
 import java.util.{Calendar, Date}
 
+import com.kunyan.kafka.{KafkaConf, KafkaProducer}
 import com.kunyan.telecom.DataAnalysis
 import org.apache.spark.SparkConf
 import org.apache.spark.rdd.RDD

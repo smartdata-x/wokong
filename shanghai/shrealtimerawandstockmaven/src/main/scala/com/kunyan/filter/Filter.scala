@@ -99,11 +99,12 @@ object Filter {
   def filterStockCode(sc:SparkContext, dataDir: String, stockCode: String) = {
 
     val data = sc.textFile(dataDir).map(_.split("\t")).filter(_.length == 8)
-      .map(x => (x, VisitAndSearch(x))).filter(x => x._2 != null)
-      .filter(x => x._2.split("\t").contains(stockCode)).keyBy(_._1(0)).sortByKey(ascending = true)
+      .map(x => (x, VisitAndSearch(x))).filter(x => x._2 != null).map(x => (x._1, x._2.split("\t")))
+      .filter(x => x._2(0).contains(stockCode)).map(x => (x._1, x._2(0) + "\t" + x._2(2))).keyBy(_._1(0)).sortByKey(ascending = true)
       .map(_._2).collect()
 
     data
+
   }
 
 }

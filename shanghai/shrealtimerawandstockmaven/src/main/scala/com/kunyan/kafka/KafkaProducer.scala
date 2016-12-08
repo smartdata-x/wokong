@@ -1,3 +1,5 @@
+package com.kunyan.kafka
+
 import java.util.Properties
 
 import kafka.producer.{KeyedMessage, Producer, ProducerConfig}

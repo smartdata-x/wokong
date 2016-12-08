@@ -2,8 +2,6 @@ package com.kunyan.util
 
 import java.io._
 
-import scala.collection.mutable.ListBuffer
-
 
 /**
   * Created by C.J.YOU on 2016/1/14.
@@ -44,7 +42,7 @@ object FileUtil {
     * @param isAppend 文件追加与否  if true, then bytes will be written
     *                   to the end of the file rather than the beginning
     */
-  def writeToFile(path: String, array:Array[(Array[String],String)],isAppend:Boolean=false): Unit = {
+  def filterStockCodeWriter(path: String, array:Array[(Array[String],String)],isAppend:Boolean=false): Unit = {
 
     val file = new File(path)
     if(file.exists()) {
@@ -60,9 +58,9 @@ object FileUtil {
     writer.close()
   }
 
-  def writeToFile(path: String, array:ListBuffer[String],isAppend:Boolean=false): Unit = {
+  def normalWriter(path: String, array:Array[String], isAppend:Boolean = false): Unit = {
 
-    val out = new FileOutputStream(new File(path),true)
+    val out = new FileOutputStream(new File(path),isAppend)
     val writer = new PrintWriter(out, false)
     for (item <- array) {
       writer.append(item + "\n")
