@@ -1,6 +1,6 @@
 package com.kunyan.test
 
-import com.kunyan.util.{FileUtil, TimeUtil}
+import com.kunyan.util.FileUtil
 
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
@@ -14,19 +14,17 @@ object TestDataFilter {
 
     val resultLB = new ListBuffer[String]
 
-    val data = Source.fromFile("").getLines().foreach{ line =>
+    val path = "F:\\datatest\\telecom\\WOKONG\\上海数据统计文件\\"
 
-      val dataSplit = line.split("\t")
-      val timeStamp = dataSplit(0)
-      val transTime = TimeUtil.formatTimeStamp(timeStamp)
-      // println(ctime)
-      val result = transTime + "\t" + dataSplit.slice(1,dataSplit.length).mkString("\t")
+    val data = Source.fromFile(path + "all_stock.csv").getLines().foreach{ line =>
 
-      resultLB.+=(result)
+      val stock = line.split(",")(0).replace("\"","")
+
+      resultLB.+=(stock)
 
     }
 
-    FileUtil.normalWriter("", resultLB.toArray, isAppend = true)
+    FileUtil.normalWriter(path + "stock", resultLB.toArray, isAppend = true)
 
   }
 

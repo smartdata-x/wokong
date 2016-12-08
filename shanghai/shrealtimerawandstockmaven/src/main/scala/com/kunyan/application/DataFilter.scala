@@ -27,11 +27,25 @@ object DataFilter {
 
     showWarnings(args, 4)
 
-    val Array(dataDir, saveDir, fileName, stockCode) = args
+    val Array(dataDir, saveDir, fileName, stockCodeListDir) = args
 
-    val data = Filter.filterStockCode(sc, dataDir, stockCode = stockCode)
 
-    FileUtil.filterStockCodeWriter(saveDir + "/" + fileName, data, isAppend = true )
+    val stockCodes = sc.textFile(stockCodeListDir).collect()
+
+    val data = Filter.filterStockCode(sc, dataDir, stockCodes = stockCodes)
+
+    data.foreachPartition { p =>
+
+      for (item <- p) {
+
+        FileUtil.filterStockCodeWriter(saveDir + "/" + fileName + "_" + item._1, item._2.toArray, isAppend = true )
+
+      }
+
+
+    }
+
+
 
   }
 
