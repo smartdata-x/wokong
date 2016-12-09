@@ -57,7 +57,7 @@ class Dom4jParser(xmlFilePath:String)  {
 
     val root = parser.getRootElement
 
-    if (! paremeters.nonEmpty)
+    if (paremeters.isEmpty)
       elements(root)
 
     paremeters
