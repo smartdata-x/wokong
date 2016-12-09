@@ -33,7 +33,7 @@ object UserLogger extends Serializable {
   }
 
   def exception(e: Exception): Unit = {
-    LOGGER.error(e.getStackTrace)
+    LOGGER.error(e.getMessage)
   }
 
 }

@@ -1,7 +1,5 @@
 package config
-
 import scala.xml.XML
-
 /**
   * Created by C.J.YOU on 2016/8/26.
   * 配置文件的加载
