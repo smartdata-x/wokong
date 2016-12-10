@@ -1,6 +1,5 @@
 package util
 
-import java.math.BigInteger
 import java.text.SimpleDateFormat
 import java.util.{Calendar, Date}
 
@@ -23,5 +22,11 @@ object TimeUtil {
 
   def getTimeStamp:Long = {
     System.currentTimeMillis()
+  }
+
+  def getMinute: String = {
+    val sdf: SimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd-HH_mm")
+    val date: String = sdf.format(new Date)
+    date
   }
 }

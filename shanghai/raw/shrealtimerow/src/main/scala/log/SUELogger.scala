@@ -12,6 +12,12 @@ object SUELogger {
 
   private  val logger = Logger.getLogger("SUELogger")
 
+  def logConfigureFile(string: String): Unit = {
+
+    PropertyConfigurator.configure(string)
+
+  }
+
   def debug(msg: String): Unit = {
     logger.debug(msg)
   }

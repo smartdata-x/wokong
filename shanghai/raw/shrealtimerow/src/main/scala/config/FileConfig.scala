@@ -9,7 +9,8 @@ object FileConfig {
   var ROOT_DIR = "/home/telecom/data"
   var SEARCH_ENGINE_DATA ="/home/telecom/SearchEngineData"
   var TOO_BIG_VALUE="/home/telecom/ErrorData"
-  val test_dir = "F:\\datatest\\telecom"
+  var LOG_DIR = "/home/telecom/log"
+  var DATA_LENGTH_LOG = "/home/telecom/datalog"
 
   def  rootDir(dir:String): Unit = {
     ROOT_DIR = dir
@@ -21,5 +22,13 @@ object FileConfig {
 
   def errorDataDir(dir:String):Unit = {
     TOO_BIG_VALUE = dir
+  }
+
+  def logDir(dir: String): Unit = {
+    LOG_DIR = dir
+  }
+
+  def dataLog(dir: String): Unit = {
+    DATA_LENGTH_LOG = dir
   }
 }

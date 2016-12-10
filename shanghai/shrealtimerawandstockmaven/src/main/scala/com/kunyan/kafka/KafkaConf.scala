@@ -1,3 +1,5 @@
+package com.kunyan.kafka
+
 import kafka.serializer.StringDecoder
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.StreamingContext

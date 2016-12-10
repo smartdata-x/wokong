@@ -14,12 +14,6 @@ libraryDependencies += "org.apache.hadoop" % "hadoop-client" % "2.7.1"
 
 libraryDependencies += "org.apache.kafka" % "kafka_2.10" % "0.8.2.1"
 
-libraryDependencies += "org.apache.hbase" % "hbase-server" % "1.1.2"
-
-libraryDependencies += "org.apache.hbase" % "hbase-client" % "1.1.2"
-
-libraryDependencies += "org.apache.hbase" % "hbase-common" % "1.1.2"
-
 libraryDependencies += "org.apache.spark" % "spark-core_2.10" % "1.5.2"
 
 libraryDependencies += "org.apache.spark" % "spark-streaming_2.10" % "1.5.2"
