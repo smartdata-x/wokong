@@ -1,16 +1,13 @@
-package com.kunyan.wokongsvc.person
+package com.kunyan.wokongsvc.realtimedata.task
 
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.hbase.{TableName, HBaseConfiguration}
 import org.apache.hadoop.hbase.client.{ConnectionFactory, Scan}
-import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil
 import org.apache.hadoop.hbase.util.{Base64, Bytes}
-import org.apache.spark.{SparkContext, SparkConf}
+import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.xml.XML
 
 /**
   * Created by sijiansheng on 2016/10/20.
