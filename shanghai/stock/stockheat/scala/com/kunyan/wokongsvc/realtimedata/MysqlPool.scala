@@ -11,7 +11,6 @@ package com.kunyan.wokongsvc.realtimedata
 import java.sql.Connection
 
 import com.jolbox.bonecp.{BoneCP, BoneCPConfig}
-import logger.HeatLogger
 
 /**
   * Created by wukun on 2016/5/18
@@ -23,7 +22,7 @@ class MysqlPool private(val xmlHandle: XmlHandle, val mysqlSign: String = "stock
     Class.forName(xmlHandle.getElem("mysql", "driver"))
   } catch {
     case e: Exception => {
-      HeatLogger.exception(e)
+      exception(e)
       System.exit(-1)
     }
   }
@@ -42,7 +41,7 @@ class MysqlPool private(val xmlHandle: XmlHandle, val mysqlSign: String = "stock
     val initConfig = new BoneCPConfig
 
     if (!(mysqlSign == "stock" || mysqlSign == "test" || mysqlSign == "other_stock")) {
-      HeatLogger.warn("couldn't obtain mysql conn by mysql sign")
+      logger.warn("couldn't obtain mysql conn by mysql sign")
     } else {
       initConfig.setJdbcUrl(xmlHandle.getElem("mysql_" + mysqlSign, "url"))
       initConfig.setUsername(xmlHandle.getElem("mysql_" + mysqlSign, "user"))

@@ -14,7 +14,6 @@ import java.io.FileWriter
 import java.util.{Calendar, Timer, TimerTask}
 
 import com.kunyan.wokongsvc.realtimedata.CustomAccum._
-import com.kunyan.wokongsvc.realtimedata.logger.HeatLogger
 import org.apache.hadoop.hbase.TableNotFoundException
 import org.apache.hadoop.hbase.client.RetriesExhaustedException
 import org.apache.hadoop.hbase.util.Bytes
@@ -75,14 +74,14 @@ class TimerHandle(
     } catch {
 
       case e: RetriesExhaustedException =>
-        HeatLogger.exception(e)
+        exception(e)
 
       case e: TableNotFoundException =>
-        HeatLogger.exception(e)
+        exception(e)
         System.exit(-1)
 
       case e: Exception =>
-        HeatLogger.exception(e)
+        exception(e)
 
     }
 
@@ -163,19 +162,19 @@ class TimerHandle(
             mysqlHandle.execInsertInto(
               MixTool.insertCount("stock_follow", y._1, timeTamp, y._2)
             ) recover {
-              case e: Exception => HeatLogger.exception(e)
+              case e: Exception => exception(e)
             }
 
             mysqlHandle.execInsertInto(
               MixTool.insertOldCount("stock_follow_old", y._1, timeTamp, y._2)
             ) recover {
-              case e: Exception => HeatLogger.exception(e)
+              case e: Exception => exception(e)
             }
 
             mysqlHandle.execInsertInto(
               MixTool.updateAccum("stock_follow_accum", y._1, y._2)
             ) recover {
-              case e: Exception => HeatLogger.exception(e)
+              case e: Exception => exception(e)
             }
 
             accum += y
@@ -183,7 +182,7 @@ class TimerHandle(
 
           mysqlHandle.close()
 
-        case None => HeatLogger.warn("[Get connect failure]")
+        case None => logger.warn("[Get connect failure]")
       }
     })
 
@@ -205,7 +204,7 @@ class TimerHandle(
                   MixTool.insertCount("stock_follow_add", y._1, timeTamp, y._2)
                 }
               ) recover {
-                case e: Exception => HeatLogger.exception(e)
+                case e: Exception => exception(e)
               }
 
               mysqlHandle.execInsertInto(
@@ -213,13 +212,13 @@ class TimerHandle(
                   MixTool.updateMonthAccum("stock_follow_month_", y._1, month, day, y._2)
                 }
               ) recover {
-                case e: Exception => HeatLogger.exception(e)
+                case e: Exception => exception(e)
               }
             })
 
             mysqlHandle.close()
 
-          case None => HeatLogger.warn("[Get connect failure]")
+          case None => logger.warn("[Get connect failure]")
         }
       })
     } else {
@@ -244,19 +243,19 @@ class TimerHandle(
               mysqlHandle.execInsertInto(
                 MixTool.insertCount("stock_follow_add", y._1, timeTamp, now - prev)
               ) recover {
-                case e: Exception => HeatLogger.exception(e)
+                case e: Exception => exception(e)
               }
 
               mysqlHandle.execInsertInto(
                 MixTool.updateMonthAccum("stock_follow_month_", y._1, month, day, now - prev)
               ) recover {
-                case e: Exception => HeatLogger.exception(e)
+                case e: Exception => exception(e)
               }
             })
 
             mysqlHandle.close()
 
-          case None => HeatLogger.error("get connection failure")
+          case None => logger.error("get connection failure")
         }
       })
     }
@@ -276,18 +275,18 @@ class TimerHandle(
           mysqlHandle.execInsertInto(
             MixTool.insertTotal("stock_follow_count", timeTamp, allCount)
           ) recover {
-            case e: Exception => HeatLogger.exception(e)
+            case e: Exception => exception(e)
           }
 
           mysqlHandle.execInsertInto(
             MixTool.insertTime("update_follow", timeTamp)
           ) recover {
-            case e: Exception => HeatLogger.exception(e)
+            case e: Exception => exception(e)
           }
 
           mysqlHandle.close()
 
-        case None => HeatLogger.warn("[Get connect failure]")
+        case None => logger.warn("[Get connect failure]")
       }
     }
 

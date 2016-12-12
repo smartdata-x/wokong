@@ -2,7 +2,6 @@ package com.kunyan.wokongsvc.realtimedata.task
 
 import com.kunyan.wokongsvc.realtimedata.DataPattern._
 import com.kunyan.wokongsvc.realtimedata._
-import com.kunyan.wokongsvc.realtimedata.logger.HeatLogger
 import org.apache.spark.{SparkConf, SparkContext}
 
 import scala.util.{Failure, Success}
@@ -77,19 +76,19 @@ object ReplenshVisit {
         s"replace into $TABLE_PREFIX values(\'" + y._1._2 + "\'," + y._1._1.toLong + "," + y._2 + ");"
       ) recover {
         case e: Exception =>
-          HeatLogger.exception(e)
+          exception(e)
       }
 
       handle.addCommand(
         s"replace into ${TABLE_PREFIX}_old values(\'" + y._1._2 + "\'," + y._1._1.toLong + "," + y._2 + ");"
       ) recover {
         case e: Exception =>
-          HeatLogger.exception(e)
+          exception(e)
       }
 
       handle.batchExec recover {
         case e: Exception =>
-          HeatLogger.exception(e)
+          exception(e)
       }
 
     })

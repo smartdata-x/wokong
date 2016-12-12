@@ -11,17 +11,9 @@
 
 package com.kunyan.wokongsvc.realtimedata
 
-import java.io.BufferedReader
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileReader
-import java.io.FileWriter
-import java.io.InputStreamReader
-import logger.HeatLogger
+import java.io.{BufferedReader, File, FileReader, FileWriter}
 
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 /**
   * Created by wukun on 2016/07/18
@@ -38,7 +30,7 @@ class FileHandle(val path: String) {
       case Success(source) =>
         source
       case Failure(e) =>
-        HeatLogger.exception(e)
+        exception(e)
         System.exit(-1)
 
     }
@@ -56,7 +48,7 @@ class FileHandle(val path: String) {
     val writer = Try(new FileWriter(path, false)) match {
       case Success(writer) => writer
       case Failure(e) =>
-        HeatLogger.exception(e)
+        exception(e)
         System.exit(-1)
     }
 
@@ -73,7 +65,7 @@ class FileHandle(val path: String) {
     val reader = Try(new FileReader(path)) match {
       case Success(reader) => reader
       case Failure(e) =>
-        HeatLogger.exception(e)
+        exception(e)
         System.exit(-1)
     }
 

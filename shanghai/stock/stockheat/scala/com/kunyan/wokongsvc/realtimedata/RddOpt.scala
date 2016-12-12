@@ -14,7 +14,6 @@ package com.kunyan.wokongsvc.realtimedata
 import java.sql.Connection
 
 import com.kunyan.wokongsvc.realtimedata.JsonHandle.StockInfo
-import logger.HeatLogger
 import org.apache.spark.Accumulator
 
 import scala.collection.Iterator
@@ -50,31 +49,31 @@ object RddOpt {
       stockHandle.addCommand(
         MixTool.insertCount(table, y._1._1, tamp, y._2)
       ) recover {
-        case e: Exception => HeatLogger.exception(e)
+        case e: Exception => exception(e)
       }
 
       stockHandle.addCommand(
         MixTool.insertOldCount(table + "_old", y._1._1, tamp, y._2)
       ) recover {
-        case e: Exception => HeatLogger.exception(e)
+        case e: Exception => exception(e)
       }
 
       stockHandle.addCommand(
         MixTool.updateAccum(table + "_accum", y._1._1, y._2)
       ) recover {
-        case e: Exception => HeatLogger.exception(e)
+        case e: Exception => exception(e)
       }
 
       stockHandle.addCommand(
         MixTool.updateMonthAccum(table + "_month_", y._1._1, month, day, y._2)
       ) recover {
-        case e: Exception => HeatLogger.exception(e)
+        case e: Exception => exception(e)
       }
 
       stockHandle.addCommand(
         MixTool.updateMonthAccumCopy(table + "_month_", y._1._1, month, day, y._2)
       ) recover {
-        case e: Exception => HeatLogger.exception(e)
+        case e: Exception => exception(e)
       }
 
       accum +=(y._1._1, y._2)
@@ -91,7 +90,7 @@ object RddOpt {
       stockHandle.addCommand(
         MixTool.insertCount(table + "_old", y._1._1, tamp, y._2)
       ) recover {
-        case e: Exception => HeatLogger.exception(e)
+        case e: Exception => exception(e)
       })
   }
 
@@ -118,13 +117,13 @@ object RddOpt {
         mysqlHandle.execInsertInto(
           MixTool.insertTotal(table, tamp, count)
         ) recover {
-          case e: Exception => HeatLogger.exception(e)
+          case e: Exception => exception(e)
         }
 
         mysqlHandle.close()
       }
 
-      case None => HeatLogger.warn("Get connect exception")
+      case None => logger.warn("Get connect exception")
     }
   }
 
@@ -152,26 +151,26 @@ object RddOpt {
       mysqlHandle.addCommand(
         MixTool.insertCount(table, y._1._1, tamp, y._2)
       ) recover {
-        case e: Exception => HeatLogger.exception(e)
+        case e: Exception => exception(e)
       }
 
       mysqlHandle.addCommand(
         MixTool.insertOldCount(table + "_old", y._1._1, tamp, y._2)
       ) recover {
-        case e: Exception => HeatLogger.exception(e)
+        case e: Exception => exception(e)
       }
 
       mysqlHandle.addCommand(
         MixTool.updateAccum(table + "_accum", y._1._1, y._2)
       ) recover {
-        case e: Exception => HeatLogger.exception(e)
+        case e: Exception => exception(e)
       }
 
 
       mysqlHandle.addCommand(
         MixTool.updateMonthAccum(table + "_month_", y._1._1, month, day, y._2)
       ) recover {
-        case e: Exception => HeatLogger.exception(e)
+        case e: Exception => exception(e)
       }
 
       accum +=(y._1._1, y._2)
@@ -203,13 +202,13 @@ object RddOpt {
       mysqlHandle.addCommand(
         MixTool.insertOldCount(table + "_old", y._1._1, tamp, y._2)
       ) recover {
-        case e: Exception => HeatLogger.exception(e)
+        case e: Exception => exception(e)
       }
 
       mysqlHandle.addCommand(
         MixTool.updateMonthAccum(table + "_month_", y._1._1, month, day, y._2)
       ) recover {
-        case e: Exception => HeatLogger.exception(e)
+        case e: Exception => exception(e)
       }
 
     })
@@ -235,13 +234,13 @@ object RddOpt {
         val mysqlHandle = MysqlHandle(connect)
 
         mysqlHandle.execInsertInto(MixTool.insertTime(table, tamp)) recover {
-          case e: Exception => HeatLogger.exception(e)
+          case e: Exception => exception(e)
         }
 
         mysqlHandle.close
       }
 
-      case None => HeatLogger.error("get connection failure")
+      case None => logger.error("get connection failure")
     }
   }
 
@@ -267,13 +266,13 @@ object RddOpt {
         val mysqlHandle = MysqlHandle(connect)
 
         mysqlHandle.execUpdate(MixTool.updateMax(table, recode, max)) recover {
-          case e: Exception => HeatLogger.exception(e)
+          case e: Exception => exception(e)
         }
 
         mysqlHandle.close
       }
 
-      case None => HeatLogger.error("get connection failure")
+      case None => logger.error("get connection failure")
     }
   }
 
@@ -295,7 +294,7 @@ object RddOpt {
       mysqlHandle.addCommand(
         MixTool.insertCount(table, y._1, tamp, y._2)
       ) recover {
-        case e: Exception => HeatLogger.exception(e)
+        case e: Exception => exception(e)
       }
     })
   }
@@ -329,7 +328,7 @@ object RddOpt {
       mysqlHandle.addCommand(
         MixTool.insertCount(table, y._1, tamp, now - prev)
       ) recover {
-        case e: Exception => HeatLogger.exception(e)
+        case e: Exception => exception(e)
       }
     })
   }
@@ -356,36 +355,36 @@ object RddOpt {
         mysqlHandle.execInsertInto(
           MixTool.updateAccum(table + "_accum", accum)
         ) recover {
-          case e: Exception => HeatLogger.exception(e)
+          case e: Exception => exception(e)
         }
 
         mysqlHandle.execInsertInto(
           MixTool.deleteData(table)
         ) recover {
-          case e: Exception => HeatLogger.exception(e)
+          case e: Exception => exception(e)
         }
 
         mysqlHandle.execInsertInto(
           MixTool.deleteData(table + "_add")
         ) recover {
-          case e: Exception => HeatLogger.exception(e)
+          case e: Exception => exception(e)
         }
 
         mysqlHandle.execInsertInto(
           MixTool.deleteData(table + "_count")
         ) recover {
-          case e: Exception => HeatLogger.exception(e)
+          case e: Exception => exception(e)
         }
         mysqlHandle.execInsertInto(
           MixTool.deleteTime(table)
         ) recover {
-          case e: Exception => HeatLogger.exception(e)
+          case e: Exception => exception(e)
         }
 
         mysqlHandle.close
       }
 
-      case None => HeatLogger.error("[Get connect failure]")
+      case None => logger.error("[Get connect failure]")
     }
 
   }

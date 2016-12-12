@@ -10,7 +10,6 @@
 package com.kunyan.wokongsvc.realtimedata
 
 import com.kunyan.wokongsvc.realtimedata.JsonHandle.{MixData, StockInfo}
-import com.kunyan.wokongsvc.realtimedata.logger.HeatLogger
 import kafka.consumer.KafkaStream
 import spray.json._
 
@@ -29,6 +28,7 @@ class HeatThread(
   var stock_type: String = _
   var (month: Int, day: Int, hour: Int) = TimeHandle.getMonthDayHour
   val codeCount = mutable.HashMap[String, Int]()
+
 
   def timeCompute(body: => Unit) {
     val start = System.currentTimeMillis
@@ -58,19 +58,19 @@ class HeatThread(
           sqlHandle.addCommand(
             MixTool.updateMonthAccum("stock_" + stock_type + "_month_", x._1, month, day, x._2)
           ) recover {
-            case e: Exception => HeatLogger.exception(e)
+            case e: Exception => exception(e)
           }
         })
 
         sqlHandle.batchExec recover {
           case e: Exception => {
-            HeatLogger.exception(e)
+            exception(e)
           }
         }
         sqlHandle.close
       }
       case None => {
-        HeatLogger.error("[Get mysql connect failure]")
+        logger.error("[Get mysql connect failure]")
       }
     }
   }

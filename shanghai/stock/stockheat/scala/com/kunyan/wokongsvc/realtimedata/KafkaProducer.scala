@@ -12,7 +12,6 @@ package com.kunyan.wokongsvc.realtimedata
 import java.util.Properties
 
 import com.kunyan.wokongsvc.realtimedata.JsonHandle.{MixData, StockInfo}
-import com.kunyan.wokongsvc.realtimedata.logger.HeatLogger
 import kafka.common.FailedToSendMessageException
 import kafka.producer.{KeyedMessage, Producer, ProducerClosedException, ProducerConfig}
 
@@ -97,7 +96,7 @@ class KafkaProducer(val xmlHandle: XmlHandle)
         /** 这个地方代表producer的shutdown标志位被置为true */
         case e: ProducerClosedException => {
 
-          HeatLogger.exception(e)
+         exception(e)
           reconncount = reconncount + 1
           if (reconncount <= 1) {
             Thread.sleep(1000)
@@ -107,14 +106,14 @@ class KafkaProducer(val xmlHandle: XmlHandle)
 
         /** 这个异常是底层重试设置的次数以后才报的异常 */
         case e: FailedToSendMessageException => {
-          HeatLogger.exception(e)
+         exception(e)
         }
 
         /** 这个异常底层并没抛出，但为了严谨以及查找错误，所以进行捕获,
           * 另一方面也是为了防止程序轻易的退出
           */
         case e: Exception => {
-          HeatLogger.exception(e)
+         exception(e)
         }
       }
 

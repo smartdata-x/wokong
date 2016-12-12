@@ -2,8 +2,6 @@ package com.kunyan.wokongsvc.realtimedata
 
 import java.sql.{Connection, DriverManager, SQLException, Statement}
 
-import com.kunyan.wokongsvc.realtimedata.logger.HeatLogger
-
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.Try
@@ -47,15 +45,15 @@ class MysqlHandle(conn: Connection) extends Serializable {
     } catch {
 
       case e: SQLException =>
-        HeatLogger.exception(e)
+        exception(e)
         System.exit(-1)
 
       case e: ClassNotFoundException =>
-        HeatLogger.exception(e)
+        exception(e)
         System.exit(-1)
 
       case e: Exception =>
-        HeatLogger.exception(e)
+        exception(e)
         System.exit(-1)
     }
   }

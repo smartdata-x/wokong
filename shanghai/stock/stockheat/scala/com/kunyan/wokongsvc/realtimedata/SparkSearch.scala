@@ -14,8 +14,6 @@ import java.util.Calendar
 
 import com.kunyan.wokongsvc.realtimedata.CustomAccum._
 import com.kunyan.wokongsvc.realtimedata.JsonHandle._
-import com.kunyan.wokongsvc.realtimedata._
-import com.kunyan.wokongsvc.realtimedata.logger.HeatLogger
 import kafka.serializer.StringDecoder
 import org.apache.log4j.PropertyConfigurator
 import org.apache.spark.rdd.RDD
@@ -33,13 +31,13 @@ object SparkSearch {
 
   def main(args: Array[String]) {
 
+    logger.info("start execute")
+    PropertyConfigurator.configure(args(0))
+    
     if (args.length != 2) {
-      HeatLogger.error("args too little")
+      logger.error("args too little")
       System.exit(-1)
     }
-
-    HeatLogger.info("start execute")
-    PropertyConfigurator.configure(args(0))
 
     val xmlHandle = XmlHandle(args(1))
 
@@ -116,12 +114,12 @@ object SparkSearch {
 
               stockHandle.batchExec recover {
                 case e: Exception =>
-                  HeatLogger.exception(e)
+                  exception(e)
               }
 
               stockHandle close()
 
-            case None => HeatLogger.warn("Get connect exception")
+            case None => logger.warn("Get connect exception")
           }
         })
 
@@ -140,12 +138,12 @@ object SparkSearch {
 
                 mysqlHandle.batchExec recover {
                   case e: Exception =>
-                    HeatLogger.exception(e)
+                    exception(e)
                 }
 
                 mysqlHandle.close()
 
-              case None => HeatLogger.warn("Get connect exception")
+              case None => logger.warn("Get connect exception")
             }
           })
 
@@ -163,12 +161,12 @@ object SparkSearch {
 
                 mysqlHandle.batchExec recover {
                   case e: Exception =>
-                    HeatLogger.exception(e)
+                    exception(e)
                 }
 
                 mysqlHandle.close()
 
-              case None => HeatLogger.warn("Get connect exception")
+              case None => logger.warn("Get connect exception")
             }
           })
         }

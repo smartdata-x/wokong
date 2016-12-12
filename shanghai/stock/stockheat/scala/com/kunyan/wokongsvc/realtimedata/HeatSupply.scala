@@ -1,7 +1,6 @@
 package com.kunyan.wokongsvc.realtimedata
 
 import com.kunyan.wokongsvc.realtimedata.DataPattern.Tuple2Map
-import com.kunyan.wokongsvc.realtimedata.logger.HeatLogger
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 
@@ -78,12 +77,12 @@ object HeatSupply {
               MixTool.insertOldCount("stock_visit" + "_month_10", y._1._2, tamp, y._2)
             ) recover {
               case e: Exception =>
-                HeatLogger.exception(e)
+                exception(e)
             }
 
             handle.batchExec recover {
               case e: Exception =>
-                HeatLogger.exception(e)
+                exception(e)
             }
           })
         })

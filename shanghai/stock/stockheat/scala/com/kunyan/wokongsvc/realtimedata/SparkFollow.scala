@@ -11,7 +11,6 @@
 
 package com.kunyan.wokongsvc.realtimedata
 
-import com.kunyan.wokongsvc.realtimedata.logger.HeatLogger
 import org.apache.log4j.PropertyConfigurator
 
 /**
@@ -22,13 +21,14 @@ object SparkFollow {
 
   def main(args: Array[String]) {
 
-    if (args.length != 5) {
-      HeatLogger.error("args too little")
-      System.exit(-1)
-    }
-
+    logger.info("开始执行")
     /* 加载日志配置 */
     PropertyConfigurator.configure(args(0))
+    
+    if (args.length != 5) {
+      logger.error("args too little")
+      System.exit(-1)
+    }
 
     /* 初始化xml配置 */
     val xml = XmlHandle(args(1))
