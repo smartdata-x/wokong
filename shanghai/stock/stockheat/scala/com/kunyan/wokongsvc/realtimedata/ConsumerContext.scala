@@ -47,6 +47,7 @@ class ConsumerContext(val pool: MysqlPool, val consumer: KafkaConsumer) {
       case e: InterruptedException =>
         System.exit(-1)
     }
+
   }
 
 }

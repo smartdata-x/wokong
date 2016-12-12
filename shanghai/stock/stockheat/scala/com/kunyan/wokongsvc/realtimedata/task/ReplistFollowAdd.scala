@@ -9,7 +9,6 @@ import scala.xml.XML
   */
 object ReplistFollowAdd {
 
-
   val confFile = XML.loadFile("E://heat/config.xml")
   val conn = DriverManager.getConnection((confFile \ "mysql_stock" \ "url").text, (confFile \ "mysql_stock" \ "user").text, (confFile \ "mysql_stock" \ "password").text)
 
@@ -44,6 +43,7 @@ object ReplistFollowAdd {
     val resultMap = collection.mutable.Map[(String, Long), Int]()
 
     while (result.next()) {
+      
       val stockCode = result.getString(1)
       val timeTamp = result.getLong(2)
       val count = result.getInt(3)

@@ -3,7 +3,6 @@ package com.kunyan.wokongsvc.realtimedata.task
 import com.kunyan.wokongsvc.realtimedata.DataPattern._
 import com.kunyan.wokongsvc.realtimedata._
 import com.kunyan.wokongsvc.realtimedata.logger.HeatLogger
-import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 
 import scala.util.{Failure, Success}
@@ -20,7 +19,13 @@ object ReplenshVisit {
   val TABLE_PREFIX = TABLE_PREFIX_VISIT
   val DATA_TYPE = VISIT_TYPE
 
+  // "E://heat/2016.txt"
+  // "hdfs://61.147.114.85:9000/telecom/shdx/search"
+  // "E://heat/config.xml"
+  // "E://heat/order.csv"
+
   def main(args: Array[String]) {
+
 
     /* 初始化xml配置 */
     val xml = XmlHandle(args(2))
@@ -28,16 +33,17 @@ object ReplenshVisit {
     val sqlHandle = MysqlHandle(xml.getElem("mysql_stock", "url"), xml)
     /* 初始化股票的各种别名 */
     val stockalias = getStockAlias(sqlHandle)
+    val sparkConf = new SparkConf().setAppName("HeatStatstic").setMaster("local")
 
-    val sc = new SparkConf().setAppName("HeatStatstic")
-    val stc = new SparkContext(sc)
+    //    val sc = new SparkConf().setAppName("HeatStatstic").setMaster("local")
+    val stc = new SparkContext(sparkConf)
 
     val alias = stc.broadcast(stockalias)
+    val orderPath = args(3)
 
     var fileName: String = null
     val fileNamePath = args(0)
     val dataPath = args(1)
-    var prevRDD: RDD[(String, Int)] = null
 
     while ( {
       fileName = MixTool.obtainFileContent(fileNamePath)
@@ -48,65 +54,46 @@ object ReplenshVisit {
         .map(x => MixTool.replenish(x, alias.value, DATA_TYPE)).filter(_._2 != 0)
         .reduceByKey(_ + _).cache()
 
-      staticData.coalesce(16).foreachPartition(x => {
-
-        val handle = MysqlHandle(xml.getElem("mysql_stock", "url"), xml)
-
-        x.foreach(y => {
-
-          handle.addCommand(
-            s"replace into $TABLE_PREFIX values(\'" + y._1._2 + "\'," + y._1._1.toLong + "," + y._2 + ");"
-          ) recover {
-            case e: Exception =>
-              HeatLogger.exception(e)
-          }
-
-          handle.addCommand(
-            s"replace into ${TABLE_PREFIX}_old values(\'" + y._1._2 + "\'," + y._1._1.toLong + "," + y._2 + ");"
-          ) recover {
-            case e: Exception =>
-              HeatLogger.exception(e)
-          }
-
-          handle.batchExec recover {
-            case e: Exception =>
-              HeatLogger.exception(e)
-          }
-
-        })
-
-
-      }
-
-      )
-
-      //      staticData.map(z => (z._1._2, z._2)).reduceByKey(_ + _).coalesce(16).foreachPartition(x => {
+      staticData.map(x => (x._1._2, x._2)).reduceByKey(_ + _).saveAsTextFile(orderPath + fileName)
+      //      staticData.coalesce(16).foreachPartition(x => {
       //
-      //        val handle = MysqlHandle(xml.getElem("mysql_stock", "url"), xml)
-      //
-      //        x.foreach(y => {
-      //
-      //          handle.addCommand(
-      //            s"update ${TABLE_PREFIX}_month_11 set day_" + fileName.substring(8, 10) + " = " + y._2 + " where stock_code = " + y._1
-      //          ) recover {
-      //            case e: Exception => {
-      //              exceptionLog(e)
-      //            }
-      //          }
-      //
-      //          handle.batchExec recover {
-      //            case e: Exception => {
-      //              exceptionLog(e)
-      //            }
-      //          }
-      //
-      //        })
-      //
-      //      })
+      //      }
+
+      //      )
 
     }
-
     stc.stop()
+
+  }
+
+
+  def saveToMysql(xml: XmlHandle, x: (Iterator[((String, String), Int)])): Unit = {
+
+    val handle = MysqlHandle(xml.getElem("mysql_stock", "url"), xml)
+
+    x.foreach(y => {
+
+      handle.addCommand(
+        s"replace into $TABLE_PREFIX values(\'" + y._1._2 + "\'," + y._1._1.toLong + "," + y._2 + ");"
+      ) recover {
+        case e: Exception =>
+          HeatLogger.exception(e)
+      }
+
+      handle.addCommand(
+        s"replace into ${TABLE_PREFIX}_old values(\'" + y._1._2 + "\'," + y._1._1.toLong + "," + y._2 + ");"
+      ) recover {
+        case e: Exception =>
+          HeatLogger.exception(e)
+      }
+
+      handle.batchExec recover {
+        case e: Exception =>
+          HeatLogger.exception(e)
+      }
+
+    })
+
   }
 
   def getStockAlias(sqlHandle: MysqlHandle): Tuple2Map = {
@@ -120,5 +107,30 @@ object ReplenshVisit {
 
     temp.asInstanceOf[Tuple2Map]
   }
+
+  //      staticData.map(z => (z._1._2, z._2)).reduceByKey(_ + _).coalesce(16).foreachPartition(x => {
+  //
+  //        val handle = MysqlHandle(xml.getElem("mysql_stock", "url"), xml)
+  //
+  //        x.foreach(y => {
+  //
+  //          handle.addCommand(
+  //            s"update ${TABLE_PREFIX}_month_11 set day_" + fileName.substring(8, 10) + " = " + y._2 + " where stock_code = " + y._1
+  //          ) recover {
+  //            case e: Exception => {
+  //              exceptionLog(e)
+  //            }
+  //          }
+  //
+  //          handle.batchExec recover {
+  //            case e: Exception => {
+  //              exceptionLog(e)
+  //            }
+  //          }
+  //
+  //        })
+  //
+  //      })
+
 
 }

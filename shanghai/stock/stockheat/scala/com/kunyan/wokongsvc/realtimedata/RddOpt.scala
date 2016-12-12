@@ -71,6 +71,12 @@ object RddOpt {
         case e: Exception => HeatLogger.exception(e)
       }
 
+      stockHandle.addCommand(
+        MixTool.updateMonthAccumCopy(table + "_month_", y._1._1, month, day, y._2)
+      ) recover {
+        case e: Exception => HeatLogger.exception(e)
+      }
+
       accum +=(y._1._1, y._2)
       heatInfo += List(StockInfo(y._1._1, y._2))
     })
@@ -115,7 +121,7 @@ object RddOpt {
           case e: Exception => HeatLogger.exception(e)
         }
 
-        mysqlHandle.close
+        mysqlHandle.close()
       }
 
       case None => HeatLogger.warn("Get connect exception")
@@ -160,6 +166,7 @@ object RddOpt {
       ) recover {
         case e: Exception => HeatLogger.exception(e)
       }
+
 
       mysqlHandle.addCommand(
         MixTool.updateMonthAccum(table + "_month_", y._1._1, month, day, y._2)

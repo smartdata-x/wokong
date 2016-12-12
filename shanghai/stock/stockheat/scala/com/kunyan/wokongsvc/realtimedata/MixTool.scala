@@ -19,10 +19,6 @@ object MixTool {
   val FOLLOW = "stock_follow"
   val ALL_FOLLOW = "stock_follow_count"
 
-  //  val STOCK_SQL = "select v_code from stock_info"
-  //  val SYN_SQL = "select v_code, v_name_url, v_jian_pin, v_quan_pin from stock_info"
-  //  val STOCK_INFO = "select v_code, v_name from stock_info"
-
   val STOCK_SQL = "select SYMBOL from SH_SZ_CODE"
   val SYN_SQL = "select SYMBOL, SENAMEURL, SESPELL, SEENGNAME from SH_SZ_CODE"
   val STOCK_INFO = "select SYMBOL, SENAME from SH_SZ_CODE"
@@ -91,8 +87,16 @@ object MixTool {
                         month: Int,
                         day: Int,
                         accum: Int): String = {
-    //    "update " + table + month + " set " + "day_" + day + " = " + "day_" + day + "+" + accum + " where stock_code = " + code
     "insert into " + table + month + " (stock_code,day_" + day + ") values(\"" + code + "\",day_" + day + "+" + accum + ") on duplicate key update day_" + day + " = (day_" + day + "+" + accum + ")"
+  }
+
+  def updateMonthAccumCopy(
+                        table: String,
+                        code: String,
+                        month: Int,
+                        day: Int,
+                        accum: Int): String = {
+    "insert into " + table + month + "_copy (stock_code,day_" + day + ") values(\"" + code + "\",day_" + day + "+" + accum + ") on duplicate key update day_" + day + " = (day_" + day + "+" + accum + ")"
   }
 
   def insertTime(table: String, stamp: Long): String = {

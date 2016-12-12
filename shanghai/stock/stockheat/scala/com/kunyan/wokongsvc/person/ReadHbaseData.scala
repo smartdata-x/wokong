@@ -29,6 +29,7 @@ object ReadHbaseData {
     val contents = new ListBuffer[String]()
 
     while (iteartor.hasNext) {
+
       val cell = iteartor.next()
       val url = cell.getValue(Bytes.toBytes("basic"), Bytes.toBytes("url"))
       val content = cell.getValue(Bytes.toBytes("basic"), Bytes.toBytes("content"))
@@ -38,33 +39,13 @@ object ReadHbaseData {
       urls += newUrl
       contents += newContent
       println(newUrl)
-      //      println(newContent)
+
     }
 
     reduceByKey1(contents.toList).foreach(result => {
       println(result._1.substring(0, 10))
       println(result._2)
-      println("#############################################")
     })
-
-    //    http://t.10jqka.com.cn/ucenter/user/selfstock
-    //    893
-
-    //    val sparkContext = new SparkContext(new SparkConf().setAppName("url11").setMaster("local"))
-    //    val urlRdd = sparkContext.parallelize(urls)
-    //    val contentRdd = sparkContext.parallelize(contents)
-    //
-    //    urlRdd.map((_, 1)).reduceByKey(_ + _).foreach(urlAndnum => {
-    //      println(urlAndnum._1)
-    //      println(urlAndnum._2)
-    //      println("###################################################################")
-    //    })
-
-    //    contentRdd.map((_, 1)).reduceByKey(_ + _).foreach(urlAndnum => {
-    //      println(urlAndnum._1)
-    //      println(urlAndnum._2)
-    //      println("###################################################################")
-    //    })
 
   }
 
@@ -73,12 +54,14 @@ object ReadHbaseData {
     val resultMap = mutable.Map[String, Int]()
 
     list.foreach(cell => {
+
       if (resultMap.contains(cell)) {
         val value = resultMap(cell) + 1
         resultMap.put(cell, value)
       } else {
         resultMap.put(cell, 1)
       }
+
     })
 
     resultMap

@@ -330,4 +330,5 @@ object TimerHandle {
     TimeHandle.setTime(computeTime, hour, 0, 0, 0)
     timerHandle.scheduleAtFixedRate(TimerHandle(hc, pool, stock, path, timeTamp), computeTime.getTime, 60 * 60 * 1000)
   }
+
 }

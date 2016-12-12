@@ -64,8 +64,8 @@ object SparkVisit {
     var prevRdd: RDD[((String, String), Int)] = null
 
     /* 广播连接池、股票和到行业及概念的映射 */
-    val stockPoolBr = stc.sparkContext.broadcast(execPool)
     val otherStockPoolBr = stc.sparkContext.broadcast(otherPool)
+    val stockPoolBr = stc.sparkContext.broadcast(execPool)
     val testPoolBr = stc.sparkContext.broadcast(testPool)
 
     /* 初始化计算最大股票访问量；累加器 */
@@ -133,7 +133,6 @@ object SparkVisit {
 
             case None => HeatLogger.warn("Get connect exception")
           }
-
 
           otherStockPoolBr.value.getConnect match {
 
@@ -239,7 +238,6 @@ object SparkVisit {
           }
 
           isToHour += 1
-
         }
 
         isAlarm.setValue(0)
