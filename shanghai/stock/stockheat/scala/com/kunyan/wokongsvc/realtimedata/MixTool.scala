@@ -91,11 +91,11 @@ object MixTool {
   }
 
   def updateMonthAccumCopy(
-                        table: String,
-                        code: String,
-                        month: Int,
-                        day: Int,
-                        accum: Int): String = {
+                            table: String,
+                            code: String,
+                            month: Int,
+                            day: Int,
+                            accum: Int): String = {
     "insert into " + table + month + "_copy (stock_code,day_" + day + ") values(\"" + code + "\",day_" + day + "+" + accum + ") on duplicate key update day_" + day + " = (day_" + day + "+" + accum + ")"
   }
 
@@ -238,6 +238,7 @@ object MixTool {
   def replenish(stockString: String,
                 alias: Tuple2Map, dataType: (Int, Int)): ((String, String), Int) = {
 
+//    println(s"数据是$stockString")
     val elem = stockString.split("\t")
 
     if (elem.size != 3) {
