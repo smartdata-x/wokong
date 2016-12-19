@@ -70,12 +70,6 @@ object RddOpt {
         case e: Exception => exception(e)
       }
 
-      stockHandle.addCommand(
-        MixTool.updateMonthAccumCopy(table + "_month_", y._1._1, month, day, y._2)
-      ) recover {
-        case e: Exception => exception(e)
-      }
-
       accum +=(y._1._1, y._2)
       heatInfo += List(StockInfo(y._1._1, y._2))
     })
