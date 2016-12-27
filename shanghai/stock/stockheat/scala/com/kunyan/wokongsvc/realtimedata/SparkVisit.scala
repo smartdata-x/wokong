@@ -90,7 +90,7 @@ object SparkVisit {
         val hour = TimeHandle.getNowHour(cal)
 
         if (nowUpdateTime != lastUpdateTime && hour == 0) {
-          RddOpt.updateAccum(masterPool.getConnect, "stock_visit", 0)
+          RddOpt.updateAccum(masterPool.getConnect, otherPool.getConnect,"stock_visit", 0)
           Stock.initStockAlias(masterPool)
           lastUpdateTime = nowUpdateTime
         }

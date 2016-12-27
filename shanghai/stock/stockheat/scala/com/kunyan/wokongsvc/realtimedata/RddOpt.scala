@@ -94,6 +94,13 @@ object RddOpt {
       ) recover {
         case e: Exception => exception(e)
       }
+
+      stockHandle.addCommand(
+        MixTool.insertCount(table, y._1._1, tamp, y._2)
+      ) recover {
+        case e: Exception => exception(e)
+      }
+
     }
   }
 
@@ -346,6 +353,7 @@ object RddOpt {
     */
   def updateAccum(
                    tryConnect: Option[Connection],
+                   otherConnect: Option[Connection],
                    table: String,
                    accum: Int) {
 
@@ -388,6 +396,21 @@ object RddOpt {
       }
 
       case None => logger.error("[Get connect failure]")
+    }
+
+    otherConnect match {
+
+      case Some(otherConnect_) => {
+
+        val otherMysqlHandle = MysqlHandle(otherConnect_)
+
+        otherMysqlHandle.execInsertInto(
+          MixTool.deleteData(table)
+        ) recover {
+          case e: Exception => exception(e)
+        }
+
+      }
     }
 
   }
