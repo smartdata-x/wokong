@@ -29,14 +29,22 @@ import spray.json._
   */
 object SparkSearch {
 
+  var NEEDFILTER = false
+  var LEVEL: Int = _
+
   def main(args: Array[String]) {
 
     logger.info("start execute")
     PropertyConfigurator.configure(args(0))
-    
-    if (args.length != 2) {
+
+    if (args.length < 2) {
       logger.error("args too little")
       System.exit(-1)
+    }
+
+    if (args.length == 3) {
+      NEEDFILTER = true
+      LEVEL = args(2).toInt
     }
 
     val xmlHandle = XmlHandle(args(1))
@@ -62,7 +70,6 @@ object SparkSearch {
     /* 初始化计算最大股票访问量；累加器 */
     val accum = stc.sparkContext.accumulator[(String, Int)](("0", 0))
     val heatInfo = stc.sparkContext.accumulator[List[StockInfo]](Nil)
-    var isToHour: Long = 0L
     var lastUpdateTime = 0
 
     /* 初始化kafka参数并创建Dstream对象 */
@@ -88,7 +95,7 @@ object SparkSearch {
 
         val eachCodeCount = rows
           .map(row => row._2) //接到的kafka数据
-          .map(x => MixTool.stockClassify(x, alias)) //搜索  x._1._2 =2  查看 x._1._2 =1 无用数据 = 0  返回的结果是（（股票代码，搜索查看类型），时间）
+          .map(x => MixTool.stockClassify(x, alias, NEEDFILTER, LEVEL)) //搜索  x._1._2 =2  查看 x._1._2 =1 无用数据 = 0  返回的结果是（（股票代码，搜索查看类型），时间）
           .filter(x => {
 
           if (x._1._2.compareTo("0") == 0 || x._1._2.compareTo("1") == 0) {

@@ -135,40 +135,61 @@ object MixTool {
     */
   def stockClassify(
                      stockString: String,
-                     alias: Tuple2Map): ((String, String), String) = {
+                     alias: Tuple2Map,
+                     needFilter: Boolean,
+                     levelStandard: Int): ((String, String), String) = {
 
-    val elem = stockString.split("\t")
+    val elems = stockString.split("\t")
 
-    if (elem.size < 3) {
+    if (elems.size < 3) {
       (("0", "0"), "0")
+    } else if (!needFilter) {
+      classifyFunctionByThreeElem(elems, alias)
+    } else if (needFilter) {
+      classifyFunctionByFourElem(elems, alias, levelStandard)
     } else {
+      (("0", "0"), "0")
+    }
 
-      val tp = elem(2).toInt
-      val mappedType = {
+  }
 
-        if (tp >= 0 && tp <= 42) {
+  def classifyFunctionByThreeElem(elem: Array[String], alias: Tuple2Map): ((String, String), String) = {
 
-          val stockCode = DataPattern.stockCodeMatch(elem(0), alias)
-          if (stockCode.compareTo("0") == 0) {
-            ((stockCode, "0"), elem(1))
-          } else {
-            ((stockCode, "2"), elem(1))
-          }
+    val tp = elem(2).toInt
 
-        } else if (tp >= 43 && tp <= 91) {
+    val mappedType = {
 
-          val stockCode = DataPattern.stockCodeMatch(elem(0), alias)
-          if (stockCode.compareTo("0") == 0) {
-            ((stockCode, "0"), elem(1))
-          } else {
-            ((stockCode, "1"), elem(1))
-          }
+      if (tp >= 0 && tp <= 42) {
 
-        } else
-          (("0", "0"), "0")
-      }
+        val stockCode = DataPattern.stockCodeMatch(elem(0), alias)
+        if (stockCode.compareTo("0") == 0) {
+          ((stockCode, "0"), elem(1))
+        } else {
+          ((stockCode, "2"), elem(1))
+        }
 
-      mappedType
+      } else if (tp >= 43 && tp <= 91) {
+
+        val stockCode = DataPattern.stockCodeMatch(elem(0), alias)
+        if (stockCode.compareTo("0") == 0) {
+          ((stockCode, "0"), elem(1))
+        } else {
+          ((stockCode, "1"), elem(1))
+        }
+
+      } else
+        (("0", "0"), "0")
+    }
+
+    mappedType
+  }
+
+  def classifyFunctionByFourElem(elems: Array[String], alias: Tuple2Map, levelStandard: Int): ((String, String), String) = {
+
+    if (elems(3).toInt <= levelStandard) {
+      classifyFunctionByThreeElem(elems, alias)
+    } else {
+      (("0", "0"), "0")
     }
   }
 

@@ -29,13 +29,17 @@ object SparkVisit {
 
   def main(args: Array[String]) {
 
-    logger.info("开始执行")
-    if (args.length != 2) {
-      logger.error("args too little")
+    var NEEDFILTER = false
+    var LEVEL: Int = 6
+
+    if (args.length < 2) {
       System.exit(-1)
     }
 
-    logger.warn("start execute")
+    if (args.length == 3) {
+      NEEDFILTER = true
+      LEVEL = args(2).toInt
+    }
 
     /* 加载日志配置文件 */
     PropertyConfigurator.configure(args(0))
@@ -91,13 +95,14 @@ object SparkVisit {
           lastUpdateTime = nowUpdateTime
         }
 
+        val year = TimeHandle.getYear(cal)
         val month = TimeHandle.getMonth(cal, 1)
         val day = TimeHandle.getDay(cal)
         val stamp = TimeHandle.getStamp(cal)
 
         val eachCodeCount = rows
           .map(row => row._2)
-          .map(x => MixTool.stockClassify(x, alias))
+          .map(x => MixTool.stockClassify(x, alias, NEEDFILTER, LEVEL))
           .filter(x => {
             isAlarm += 1
 
@@ -126,7 +131,7 @@ object SparkVisit {
 
               stockHandle.batchExec recover {
                 case e: Exception =>
-                 exception(e)
+                  exception(e)
               }
 
               stockHandle.close()
@@ -140,11 +145,11 @@ object SparkVisit {
 
               val otherStockHandle = MysqlHandle(conn)
 
-              RddOpt.updateOtherStockCount(otherStockHandle, x, MixTool.VISIT, stamp)
+              RddOpt.updateOtherStockCount(otherStockHandle, x, MixTool.VISIT, year, month, stamp)
 
               otherStockHandle.batchExec recover {
                 case e: Exception =>
-                 exception(e)
+                  exception(e)
               }
 
               otherStockHandle.close()
@@ -158,11 +163,11 @@ object SparkVisit {
 
               val testHandle = MysqlHandle(conn)
 
-              RddOpt.updateOtherStockCount(testHandle, x, MixTool.VISIT, stamp)
+              RddOpt.updateOtherStockCount(testHandle, x, MixTool.VISIT, year, month, stamp)
 
               testHandle.batchExec recover {
                 case e: Exception =>
-                 exception(e)
+                  exception(e)
               }
 
               testHandle.close()
@@ -186,7 +191,7 @@ object SparkVisit {
 
                 mysqlHandle.batchExec recover {
                   case e: Exception =>
-                   exception(e)
+                    exception(e)
                 }
 
                 mysqlHandle.close()
@@ -209,7 +214,7 @@ object SparkVisit {
 
                 mysqlHandle.batchExec recover {
                   case e: Exception =>
-                   exception(e)
+                    exception(e)
                 }
 
                 mysqlHandle.close()
