@@ -84,6 +84,8 @@ class MysqlPool private(val xmlHandle: XmlHandle, val mysqlSign: String = "stock
         if (connect != null) {
           connect.get.close
         }
+
+        exception(e)
         connect = None
       }
     }

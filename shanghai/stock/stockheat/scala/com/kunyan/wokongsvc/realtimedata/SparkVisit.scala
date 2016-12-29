@@ -50,7 +50,6 @@ object SparkVisit {
     /* 初始化mysql连接池 */
     val execPool = MysqlPool(xmlHandle)
     val otherPool = MysqlPool(xmlHandle, "other_stock")
-    val testPool = MysqlPool(xmlHandle, "test")
     /* 初始化mysql连接池 */
     val masterPool = MysqlPool(xmlHandle)
     masterPool.setConfig(1, 1, 3)
