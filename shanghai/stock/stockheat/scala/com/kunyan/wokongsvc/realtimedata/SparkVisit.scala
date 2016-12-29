@@ -8,6 +8,7 @@
 =============================================================================*/
 package com.kunyan.wokongsvc.realtimedata
 
+import java.sql.Connection
 import java.util.Calendar
 
 import com.kunyan.wokongsvc.realtimedata.CustomAccum._
@@ -91,6 +92,7 @@ object SparkVisit {
 
         if (nowUpdateTime != lastUpdateTime && hour == 0) {
           RddOpt.updateAccum(masterPool.getConnect, "stock_visit", 0)
+          RddOpt.updateOtherAccum(otherPool.getConnect, "stock_visit", 0)
           Stock.initStockAlias(masterPool)
           lastUpdateTime = nowUpdateTime
         }
