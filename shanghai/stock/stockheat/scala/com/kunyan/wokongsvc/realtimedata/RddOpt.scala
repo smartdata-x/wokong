@@ -114,12 +114,6 @@ object RddOpt {
       }
 
       stockHandle.addCommand(
-        MixTool.insertCount(s"${table}_old_month_${year}_${month}", y._1._1, tamp, y._2)
-      ) recover {
-        case e: Exception => exception(e)
-      }
-
-      stockHandle.addCommand(
         MixTool.insertCount(table, y._1._1, tamp, y._2)
       ) recover {
         case e: Exception => exception(e)

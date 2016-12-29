@@ -71,7 +71,6 @@ object SparkVisit {
     /* 广播连接池、股票和到行业及概念的映射 */
     val otherStockPoolBr = stc.sparkContext.broadcast(otherPool)
     val stockPoolBr = stc.sparkContext.broadcast(execPool)
-    val testPoolBr = stc.sparkContext.broadcast(testPool)
 
     /* 初始化计算最大股票访问量；累加器 */
     val accum = stc.sparkContext.accumulator[(String, Int)](("0", 0))
@@ -155,24 +154,6 @@ object SparkVisit {
               }
 
               otherStockHandle.close()
-
-            case None => logger.warn("Get connect exception")
-          }
-
-          testPoolBr.value.getConnect match {
-
-            case Some(conn) =>
-
-              val testHandle = MysqlHandle(conn)
-
-              RddOpt.updateOtherStockCount(testHandle, x, MixTool.VISIT, year, month, stamp)
-
-              testHandle.batchExec recover {
-                case e: Exception =>
-                  exception(e)
-              }
-
-              testHandle.close()
 
             case None => logger.warn("Get connect exception")
           }
