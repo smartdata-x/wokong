@@ -76,6 +76,30 @@ object RddOpt {
 
   }
 
+  def updateOtherAccum(otherConnect: Option[Connection],
+                       table: String,
+                       accum: Int): Unit = {
+
+    otherConnect match {
+
+      case Some(otherConnect_) => {
+
+        val otherMysqlHandle = MysqlHandle(otherConnect_)
+
+        otherMysqlHandle.execInsertInto(
+          MixTool.deleteData(table)
+        ) recover {
+          case e: Exception => exception(e)
+        }
+
+      }
+
+      case None => logger.warn("Get other connect exception")
+
+    }
+
+  }
+
   def updateOtherStockCount(stockHandle: MysqlHandle,
                             rdd: List[((String, String), Int)],
                             table: String,
@@ -353,7 +377,6 @@ object RddOpt {
     */
   def updateAccum(
                    tryConnect: Option[Connection],
-                   otherConnect: Option[Connection],
                    table: String,
                    accum: Int) {
 
@@ -398,20 +421,6 @@ object RddOpt {
       case None => logger.error("[Get connect failure]")
     }
 
-    otherConnect match {
-
-      case Some(otherConnect_) => {
-
-        val otherMysqlHandle = MysqlHandle(otherConnect_)
-
-        otherMysqlHandle.execInsertInto(
-          MixTool.deleteData(table)
-        ) recover {
-          case e: Exception => exception(e)
-        }
-
-      }
-    }
 
   }
 
