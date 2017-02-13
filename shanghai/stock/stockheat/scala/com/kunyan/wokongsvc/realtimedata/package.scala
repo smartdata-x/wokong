@@ -13,7 +13,9 @@ package object realtimedata {
 
   val logger = Logger.getLogger("LoggerTest")
   BasicConfigurator.configure()
-  PropertyConfigurator.configure("/home/stockheat/conf/log4j.properties")
+  //  PropertyConfigurator.configure("/home/stockheat/conf/log4j.properties")
+  PropertyConfigurator.configure("E://log4j.properties")
+
 
   type TryHashMap = Try[mutable.HashMap[String, (String, String)]]
   type TupleHashMap = (mutable.HashMap[String, ListBuffer[String]], mutable.HashMap[String, ListBuffer[String]])

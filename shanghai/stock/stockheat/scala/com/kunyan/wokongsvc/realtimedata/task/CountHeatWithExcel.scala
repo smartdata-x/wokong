@@ -4,7 +4,7 @@ import java.io.File
 import java.sql.DriverManager
 
 import jxl.Workbook
-import jxl.write.{Number, Label}
+import jxl.write.{WritableWorkbook, Number, Label}
 
 import scala.collection.mutable
 import scala.xml.XML
@@ -20,6 +20,16 @@ object CountHeatWithExcel {
   def main(args: Array[String]) {
     createXLS("e://test.xls")
   }
+
+  //  def createXLS(path: String): WritableWorkbook = {
+  //    Workbook.createWorkbook(new File(path))
+  //  }
+  //
+  //  def createSheet(sheetName: String, rank: Int, writableworkbook: WritableWorkbook): WritableWorkbook = {
+  //    writableworkbook.createSheet(sheetName, rank)
+  //    writableworkbook
+  //  }
+
 
   def createXLS(path: String): Unit = {
 

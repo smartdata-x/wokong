@@ -29,8 +29,8 @@ object Stock {
             exception(e)
             System.exit(-1)
         }
-        sqlHandle.close()
 
+        sqlHandle.close()
 
         alias
 

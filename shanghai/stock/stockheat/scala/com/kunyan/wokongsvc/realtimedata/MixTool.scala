@@ -28,7 +28,7 @@ object MixTool {
                    stamp: Long,
                    count: Int): String = {
 
-    "insert into " + table + " values(" + stamp + "," + count + ");"
+    s"insert into $table values($stamp,$count) on duplicate key update count = (count+ $count);"
   }
 
   def insertAdd(
@@ -37,7 +37,7 @@ object MixTool {
                  stamp: Long,
                  count: Int): String = {
 
-    "insert into " + table + " values(\'" + code + "\'," + stamp + "," + count + ");"
+    s"insert into $table(stock_code,timeTamp,count) values(\'$code\',$stamp,$count) on duplicate key update count = (count + $count);"
   }
 
   def insertCount(
@@ -46,15 +46,24 @@ object MixTool {
                    stamp: Long,
                    count: Int): String = {
 
-    "insert into " + table + " values(\'" + code + "\'," + stamp + "," + count + ");"
+    s"insert into $table(stock_code,timeTamp,count) values(\'$code\',$stamp,$count) on duplicate key update count = (count + $count);"
+  }
+
+  def insertOrUpdateAccum(
+                   table: String,
+                   code: String,
+                   stamp: Long,
+                   accum: Int): String = {
+
+    s"insert into $table(stock_code,timeTamp,accum) values(\'$code\',$stamp,$accum) on duplicate key update accum = (accum + $accum);"
   }
 
   def deleteData(table: String): String = {
-    "delete from " + table
+    s"delete from $table"
   }
 
   def deleteTime(table: String): String = {
-    "delete from " + "update_" + table.slice(6, table.length) + " where update_time <= " + TimeHandle.getPrevTime
+    s"delete from update_${table.slice(6, table.length)} where update_time <= ${TimeHandle.getPrevTime};"
   }
 
   def insertOldCount(
@@ -63,7 +72,7 @@ object MixTool {
                       stamp: Long,
                       count: Int): String = {
 
-    "insert into " + table + " values(\'" + code + "\'," + stamp + "," + count + ");"
+    s"insert into $table(stock_code,timeTamp,count) values(\'$code\',$stamp,$count) on duplicate key update count = (count+$count);"
   }
 
   def updateAccum(
@@ -71,32 +80,32 @@ object MixTool {
                    code: String,
                    accumulator: Int): String = {
 
-    "update " + table + " set accum = accum + " + accumulator + " where stock_code = " + code
+    s"update $table set accum = accum + $accumulator where stock_code = $code;"
   }
 
   def updateAccum(
                    table: String,
                    accumulator: Int): String = {
 
-    "update " + table + " set accum = " + accumulator
+    s"update $table set accum = $accumulator;"
   }
 
   def updateMonthAccum(
-                        table: String,
+                        tablePrefix: String,
                         code: String,
                         month: Int,
                         day: Int,
                         accum: Int): String = {
-    "insert into " + table + month + " (stock_code,day_" + day + ") values(\"" + code + "\",day_" + day + "+" + accum + ") on duplicate key update day_" + day + " = (day_" + day + "+" + accum + ")"
+    s"insert into $tablePrefix$month (stock_code,day_$day) values(\'$code\',$accum) on duplicate key update day_$day = (day_$day+$accum);"
   }
 
 
   def insertTime(table: String, stamp: Long): String = {
-    "insert into " + table + " values(" + stamp + ");"
+    s"insert into $table values($stamp);"
   }
 
   def updateMax(table: String, recode: String, max: Int): String = {
-    "update " + table + " set " + recode + "=" + max
+    s"update $table set $recode=$max;"
   }
 
   def fileName: String = {
@@ -105,6 +114,33 @@ object MixTool {
 
   def rowNum: Int = {
     Thread.currentThread.getStackTrace()(2).getLineNumber
+  }
+
+  /**
+    * 将不同类型的股票进行归类
+    *
+    * @param stockString 股票字符串
+    * @author wukun
+    */
+  def stockClassify(
+                     stockString: String,
+                     alias: Tuple2Map,
+                     needFilter: Boolean,
+                     levelStandard: Int,
+                     currentTamp: Long): ((String, String), Long) = {
+
+    val elems = stockString.split("\t")
+
+    if (elems.size < 3) {
+      (("0", "0"), 0L)
+    } else if (!needFilter) {
+      classifyFunctionByThreeElem(elems, alias, currentTamp)
+    } else if (needFilter) {
+      classifyFunctionByFourElem(elems, alias, levelStandard, currentTamp)
+    } else {
+      (("0", "0"), 0L)
+    }
+
   }
 
   def stockSearch(stockString: String): String = {
@@ -127,69 +163,45 @@ object MixTool {
     }
   }
 
-  /**
-    * 将不同类型的股票进行归类
-    *
-    * @param stockString 股票字符串
-    * @author wukun
-    */
-  def stockClassify(
-                     stockString: String,
-                     alias: Tuple2Map,
-                     needFilter: Boolean,
-                     levelStandard: Int): ((String, String), String) = {
-
-    val elems = stockString.split("\t")
-
-    if (elems.size < 3) {
-      (("0", "0"), "0")
-    } else if (!needFilter) {
-      classifyFunctionByThreeElem(elems, alias)
-    } else if (needFilter) {
-      classifyFunctionByFourElem(elems, alias, levelStandard)
-    } else {
-      (("0", "0"), "0")
-    }
-
-  }
-
-  def classifyFunctionByThreeElem(elem: Array[String], alias: Tuple2Map): ((String, String), String) = {
+  def classifyFunctionByThreeElem(elem: Array[String], alias: Tuple2Map, currTamp: Long): ((String, String), Long) = {
 
     val tp = elem(2).toInt
+    val time = TimeHandle.getMinuteTimeStamp(elem(1).toLong)
 
     val mappedType = {
 
-      if (tp >= 0 && tp <= 42) {
+      if (tp >= 0 && tp <= 42 && time <= currTamp) {
 
         val stockCode = DataPattern.stockCodeMatch(elem(0), alias)
         if (stockCode.compareTo("0") == 0) {
-          ((stockCode, "0"), elem(1))
+          ((stockCode, "0"), time)
         } else {
-          ((stockCode, "2"), elem(1))
+          ((stockCode, "2"), time)
         }
 
       } else if (tp >= 43 && tp <= 91) {
 
         val stockCode = DataPattern.stockCodeMatch(elem(0), alias)
         if (stockCode.compareTo("0") == 0) {
-          ((stockCode, "0"), elem(1))
+          ((stockCode, "0"), time)
         } else {
-          ((stockCode, "1"), elem(1))
+          ((stockCode, "1"), time)
         }
 
       } else
-        (("0", "0"), "0")
+        (("0", "0"), 0L)
+
     }
 
     mappedType
   }
 
-  def classifyFunctionByFourElem(elems: Array[String], alias: Tuple2Map, levelStandard: Int): ((String, String), String) = {
+  def classifyFunctionByFourElem(elems: Array[String], alias: Tuple2Map, levelStandard: Int, currTamp: Long): ((String, String), Long) = {
 
     if (elems(3).toInt <= levelStandard) {
-      classifyFunctionByThreeElem(elems, alias)
+      classifyFunctionByThreeElem(elems, alias, currTamp)
     } else {
-      (("0", "0"), "0")
+      (("0", "0"), 0L)
     }
   }
 
@@ -251,21 +263,28 @@ object MixTool {
   def replenish(stockString: String,
                 alias: Tuple2Map, dataType: (Int, Int)): ((String, String), Int) = {
 
-    //    println(s"数据是$stockString")
-    val elem = stockString.split("\t")
+    //    logger.warn(stockString)
+    val elem = stockString.split(" ")
+    //    val elem = stockString.split("\t")
+    val stockSumType = elem(3)
 
-    if (elem.size != 3) {
+    if (elem.size <= 3) {
+      (("0", "0"), 0)
+    } else if (stockSumType.toInt > 2) {
       (("0", "0"), 0)
     } else {
       val tp = elem(2).toInt
+
       val mappedType = {
+
         val stockCode = DataPattern.stockCodeMatch(elem(0), alias)
 
         if (tp >= dataType._1 && tp <= dataType._2) {
-          (((elem(1).toLong / 1000).toString, stockCode), 1)
+          (((elem(1).toLong / 1000 / 60 * 60).toString, stockCode), 1)
         } else {
           (("0", "0"), 0)
         }
+
       }
 
       mappedType

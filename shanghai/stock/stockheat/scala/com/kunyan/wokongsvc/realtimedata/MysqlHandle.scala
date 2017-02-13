@@ -39,7 +39,7 @@ class MysqlHandle(conn: Connection) extends Serializable {
       val sqlInfo = (xml.getElem("mysql_stock", "user"), xml.getElem("mysql_stock", "password"))
       // 这个方法可以不必显示调用，判断标准为jar包的META-INF/services/目录的java.sql.Driver文件里是否包含
       // com.mysql.jdbc.Driver这行，在DriverManager被加载时的静态块中会遍历这个文件里的内容进行主动加载
-      // Class.forName(xml.getElem("mysql", "driver"))
+//      Class.forName(xml.getElem("mysql", "driver"))
       dbConn = DriverManager.getConnection(url, sqlInfo._1, sqlInfo._2)
 
     } catch {
