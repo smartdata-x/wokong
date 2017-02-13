@@ -50,6 +50,8 @@ object SparkVisit {
     /* 初始化mysql连接池 */
     val execPool = MysqlPool(xmlHandle)
     val otherPool = MysqlPool(xmlHandle, "other_stock")
+    val changePool = MysqlPool(xmlHandle, "change")
+
     /* 初始化mysql连接池 */
     val masterPool = MysqlPool(xmlHandle)
     masterPool.setConfig(1, 1, 3)
@@ -65,11 +67,12 @@ object SparkVisit {
     val spc = new SparkContext(sparkConf)
     val stc = new StreamingContext(spc, Seconds(60))
 
-    var prevRdd: RDD[((String, String), Int)] = null
+    var prevRdd: RDD[((String, Long), Int)] = null
 
     /* 广播连接池、股票和到行业及概念的映射 */
     val otherStockPoolBr = stc.sparkContext.broadcast(otherPool)
     val stockPoolBr = stc.sparkContext.broadcast(execPool)
+    val changePoorBr = stc.sparkContext.broadcast(changePool)
 
     /* 初始化计算最大股票访问量；累加器 */
     val accum = stc.sparkContext.accumulator[(String, Int)](("0", 0))
@@ -81,28 +84,33 @@ object SparkVisit {
     /* 初始化kafka参数并创建Dstream对象 */
     val kafkaParam = Map("metadata.broker.list" -> xmlHandle.getElem("kafka", "broker"), "group.id" -> "visit")
     val topicParam = xmlHandle.getElem("kafka", "topic")
-    KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](stc, kafkaParam, topicParam.split(",").toSet)
+
+    KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](stc, kafkaParam, topicParam.split(",").toSet).filter(_._2.nonEmpty)
       .foreachRDD(rows => {
 
-        val cal: Calendar = Calendar.getInstance
+        val currCal: Calendar = Calendar.getInstance
         val nowUpdateTime = TimeHandle.getDay
-        val hour = TimeHandle.getNowHour(cal)
+        val currHour = TimeHandle.getNowHour(currCal)
+        val currTimeStamp = currCal.getTimeInMillis
 
-        if (nowUpdateTime != lastUpdateTime && hour == 0) {
-          RddOpt.updateAccum(masterPool.getConnect, "stock_visit", 0)
-          RddOpt.updateOtherAccum(otherPool.getConnect, "stock_visit", 0)
+        if (nowUpdateTime != lastUpdateTime && currHour == 0) {
+
+          RddOpt.updateAccum(stockPoolBr.value.getConnect, "stock_visit", 0)
+          RddOpt.updateAccum(otherStockPoolBr.value.getConnect, "stock_visit", 0)
+          RddOpt.updateOtherAccum(changePoorBr.value.getConnect, "stock_visit")
+
           Stock.initStockAlias(masterPool)
           lastUpdateTime = nowUpdateTime
         }
 
-        val year = TimeHandle.getYear(cal)
-        val month = TimeHandle.getMonth(cal, 1)
-        val day = TimeHandle.getDay(cal)
-        val stamp = TimeHandle.getStamp(cal)
+        val currYear = TimeHandle.getYear(currCal)
+        val currMonth = TimeHandle.getMonth(currCal, 1)
+        val currDay = TimeHandle.getDay(currCal)
+        val currStamp = TimeHandle.getStamp(currCal)
 
         val eachCodeCount = rows
           .map(row => row._2)
-          .map(x => MixTool.stockClassify(x, alias, NEEDFILTER, LEVEL))
+          .map(x => MixTool.stockClassify(x, alias, NEEDFILTER, LEVEL, currStamp))
           .filter(x => {
             isAlarm += 1
 
@@ -111,132 +119,154 @@ object SparkVisit {
             } else {
               true
             }
-          })
-          .map((y: ((String, String), String)) => (y._1, 1))
-          .reduceByKey(_ + _)
+            //因为此次要做累加统计，因此在此之前时间戳必须要转为分钟时间戳,先stock_type中插入数据时也需要判断之前有没有主键
+          }).map(cell => ((cell._1._1, cell._2), 1)).reduceByKey(_ + _)
           .coalesce(3) //重新分区
           .persist(StorageLevel.MEMORY_ONLY)
 
-        eachCodeCount.foreachPartition(x_ => {
+        if (!eachCodeCount.isEmpty()) {
 
-          val x = x_.toList
+          eachCodeCount.foreachPartition(x_ => {
 
-          stockPoolBr.value.getConnect match {
-
-            case Some(connect) =>
-
-              val stockHandle = MysqlHandle(connect)
-
-              RddOpt.updateStocksCount(stockHandle, x, accum, heatInfo, MixTool.VISIT, stamp, month, day)
-
-              stockHandle.batchExec recover {
-                case e: Exception =>
-                  exception(e)
-              }
-
-              stockHandle.close()
-
-            case None => logger.warn("Get connect exception")
-          }
-
-          otherStockPoolBr.value.getConnect match {
-
-            case Some(conn) =>
-
-              val otherStockHandle = MysqlHandle(conn)
-
-              RddOpt.updateOtherStockCount(otherStockHandle, x, MixTool.VISIT, year, month, stamp)
-
-              otherStockHandle.batchExec recover {
-                case e: Exception =>
-                  exception(e)
-              }
-
-              otherStockHandle.close()
-
-            case None => logger.warn("Get connect exception")
-          }
-
-        })
-
-        if (prevRdd == null) {
-
-          eachCodeCount.map(x => (x._1._1, x._2)).foreachPartition(y => {
+            val x = x_.toList
 
             stockPoolBr.value.getConnect match {
 
               case Some(connect) =>
 
-                val mysqlHandle = MysqlHandle(connect)
+                val stockHandle = MysqlHandle(connect)
 
-                RddOpt.updateAddFirst(mysqlHandle, y, "stock_visit_add", stamp)
+                RddOpt.updateStocksCount(stockHandle, x, accum, heatInfo, MixTool.VISIT, currTimeStamp)
 
-                mysqlHandle.batchExec recover {
+                stockHandle.batchExec recover {
                   case e: Exception =>
                     exception(e)
                 }
 
-                mysqlHandle.close()
+                stockHandle.close()
 
               case None => logger.warn("Get connect exception")
             }
-          })
 
-        } else {
+            otherStockPoolBr.value.getConnect match {
 
-          eachCodeCount.fullOuterJoin[Int](prevRdd).map(x => (x._1._1, x._2)).foreachPartition(y => {
+              case Some(conn) =>
 
-            stockPoolBr.value.getConnect match {
+                val otherStockHandle = MysqlHandle(conn)
 
-              case Some(connect) =>
+                RddOpt.updateOtherStockCount(otherStockHandle, x, MixTool.VISIT, currStamp)
 
-                val mysqlHandle = MysqlHandle(connect)
-
-                RddOpt.updateAdd(mysqlHandle, y, "stock_visit_add", stamp)
-
-                mysqlHandle.batchExec recover {
+                otherStockHandle.batchExec recover {
                   case e: Exception =>
                     exception(e)
                 }
 
-                mysqlHandle.close()
+                otherStockHandle.close()
 
               case None => logger.warn("Get connect exception")
             }
+
+            changePoorBr.value.getConnect match {
+
+              case Some(conn) =>
+
+                val changePoolHandle = MysqlHandle(conn)
+
+                RddOpt.updateChange(changePoolHandle, x, MixTool.VISIT, currStamp)
+
+                changePoolHandle.batchExec recover {
+                  case e: Exception =>
+                    exception(e)
+                }
+
+                changePoolHandle.close()
+
+              case None => logger.warn("change pool connect exception")
+            }
+
           })
-        }
 
-        prevRdd = eachCodeCount
+          //todo add表有没有必要
+          if (prevRdd == null) {
 
-        eachCodeCount.map(y => {
-          (y._1._2, y._2)
-        }).reduceByKey(_ + _).foreach(z => {
-          RddOpt.updateTotal(stockPoolBr.value.getConnect, MixTool.ALL_VISIT, stamp, z._2)
-        })
+            eachCodeCount.foreachPartition(y => {
 
-        RddOpt.updateTime(masterPool.getConnect, "update_visit", stamp)
+              stockPoolBr.value.getConnect match {
 
-        accum.setValue(("0", 0))
+                case Some(connect) =>
 
-        if (isAlarm.value == 0) {
+                  val mysqlHandle = MysqlHandle(connect)
 
-          if ((isToHour % 12) == 0) {
-            TextSender.send("C4545CC1AE91802D2C0FBA7075ADA972", "The real visit data is exception", "17839613797")
+                  RddOpt.updateAddFirst(mysqlHandle, y, "stock_visit_add", currStamp)
+
+                  mysqlHandle.batchExec recover {
+                    case e: Exception =>
+                      exception(e)
+                  }
+
+                  mysqlHandle.close()
+
+                case None => logger.warn("Get connect exception")
+              }
+            })
+
+          } else {
+
+            eachCodeCount.fullOuterJoin[Int](prevRdd).foreachPartition(y => {
+
+              stockPoolBr.value.getConnect match {
+
+                case Some(connect) =>
+
+                  val mysqlHandle = MysqlHandle(connect)
+
+                  RddOpt.updateAdd(mysqlHandle, y, "stock_visit_add", currStamp)
+
+                  mysqlHandle.batchExec recover {
+                    case e: Exception =>
+                      exception(e)
+                  }
+
+                  mysqlHandle.close()
+
+                case None => logger.warn("Get connect exception")
+              }
+            })
           }
 
-          isToHour += 1
+          prevRdd = eachCodeCount
+
+          val count = eachCodeCount.map(y => (y._1._2, y._2)).reduceByKey(_ + _).foreach(x =>
+            RddOpt.updateTotal(stockPoolBr.value.getConnect, MixTool.ALL_VISIT, x))
+
+
+          val maxTime = eachCodeCount.map(_._1._2).reduce(_ max _)
+
+          RddOpt.updateTime(masterPool.getConnect, "update_visit", maxTime)
+
+          accum.setValue(("0", 0))
+
+          if (isAlarm.value == 0) {
+
+            if ((isToHour % 12) == 0) {
+              TextSender.send("C4545CC1AE91802D2C0FBA7075ADA972", "The real visit data is exception", "17839613797")
+            }
+
+            isToHour += 1
+          }
+
+          isAlarm.setValue(0)
+
+          val stockInfo = heatInfo.value
+
+          //这边有一个问题，我这边发送的时间应该怎么发送
+          import JsonHandle.MyJsonProtocol._
+          val json = MixData("visit", currStamp, currMonth, currDay, currHour, stockInfo).toJson.compactPrint
+
+          kafkaProducer.send("0", json)
+
+          heatInfo.setValue(Nil)
         }
-
-        isAlarm.setValue(0)
-
-        val stockInfo = heatInfo.value
-
-        import JsonHandle.MyJsonProtocol._
-        val json = MixData("visit", stamp, month, day, hour, stockInfo).toJson.compactPrint
-
-        kafkaProducer.send("0", json)
-
-        heatInfo.setValue(Nil)
       })
 
     stc.start

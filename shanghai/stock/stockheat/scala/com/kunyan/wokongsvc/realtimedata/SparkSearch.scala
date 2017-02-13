@@ -61,7 +61,7 @@ object SparkSearch {
     val spc = new SparkContext(sparkConf)
     val stc = new StreamingContext(spc, Seconds(60))
 
-    var prevRdd: RDD[((String, String), Int)] = null
+    var prevRdd: RDD[((String, Long), Int)] = null
 
     val stockPool = stc.sparkContext.broadcast(execPool)
 
@@ -75,7 +75,7 @@ object SparkSearch {
     /* 初始化kafka参数并创建Dstream对象 */
     val kafkaParam = Map("metadata.broker.list" -> xmlHandle.getElem("kafka", "broker"), "group.id" -> "search")
     val topicParam = xmlHandle.getElem("kafka", "topic")
-    KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](stc, kafkaParam, topicParam.split(",").toSet)
+    KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](stc, kafkaParam, topicParam.split(",").toSet).filter(_._2.nonEmpty)
       .foreachRDD(rows => {
 
         val cal: Calendar = Calendar.getInstance
@@ -89,13 +89,13 @@ object SparkSearch {
           lastUpdateTime = nowUpdateTime
         }
 
-        val month = TimeHandle.getMonth(cal, 1)
-        val day = TimeHandle.getDay(cal)
-        val stamp = TimeHandle.getStamp(cal)
+        val currMonth = TimeHandle.getMonth(cal, 1)
+        val currDay = TimeHandle.getDay(cal)
+        val currStamp = TimeHandle.getStamp(cal)
 
         val eachCodeCount = rows
           .map(row => row._2) //接到的kafka数据
-          .map(x => MixTool.stockClassify(x, alias, NEEDFILTER, LEVEL)) //搜索  x._1._2 =2  查看 x._1._2 =1 无用数据 = 0  返回的结果是（（股票代码，搜索查看类型），时间）
+          .map(x => MixTool.stockClassify(x, alias, NEEDFILTER, LEVEL, currStamp)) //搜索  x._1._2 =2  查看 x._1._2 =1 无用数据 = 0  返回的结果是（（股票代码，搜索查看类型），时间）
           .filter(x => {
 
           if (x._1._2.compareTo("0") == 0 || x._1._2.compareTo("1") == 0) {
@@ -103,105 +103,106 @@ object SparkSearch {
           } else {
             true
           }
-        })
-          .map((y: ((String, String), String)) => (y._1, 1))
-          .reduceByKey(_ + _) //对股票代码进行累加操作
+        }).map(cell => ((cell._1._1, cell._2), 1)).reduceByKey(_ + _) //对股票代码进行累加操作
           .coalesce(3) //重新分区
           .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
-        eachCodeCount.foreachPartition(x => {
+        if (!eachCodeCount.isEmpty()) {
 
-          stockPool.value.getConnect match {
+          eachCodeCount.foreachPartition(x => {
 
-            case Some(connect) =>
+            stockPool.value.getConnect match {
 
-              val stockHandle = MysqlHandle(connect)
-              //_searce，_old,_accum表更新股票代码，时间，和此段时间内的搜索数量，_month表更新多了一个天数，accum和heatinfo累加股票和搜索数量
-              RddOpt.updateStockCount(stockHandle, x, accum, heatInfo, MixTool.SEARCH, stamp, month, day)
+              case Some(connect) =>
 
-              stockHandle.batchExec recover {
-                case e: Exception =>
-                  exception(e)
+                val stockHandle = MysqlHandle(connect)
+                //_searce，_old,_accum表更新股票代码，时间，和此段s时间内的搜索数量，_month表更新多了一个天数，accum和heatinfo累加股票和搜索数量
+                RddOpt.updateStocksCount(stockHandle, x.toList, accum, heatInfo, MixTool.SEARCH, currStamp)
+
+                stockHandle.batchExec recover {
+                  case e: Exception =>
+                    exception(e)
+                }
+
+                stockHandle close()
+
+              case None => logger.warn("Get connect exception")
+            }
+          })
+
+          //程序重新运行会执行为null代码
+          if (prevRdd == null) {
+
+            eachCodeCount.foreachPartition(y => {
+
+              stockPool.value.getConnect match {
+
+                case Some(connect) =>
+
+                  val mysqlHandle = MysqlHandle(connect)
+                  //直接在_add中插入股票，时间，和计数
+                  RddOpt.updateAddFirst(mysqlHandle, y, "stock_search_add", currStamp)
+
+                  mysqlHandle.batchExec recover {
+                    case e: Exception =>
+                      exception(e)
+                  }
+
+                  mysqlHandle.close()
+
+                case None => logger.warn("Get connect exception")
               }
+            })
 
-              stockHandle close()
+          } else {
 
-            case None => logger.warn("Get connect exception")
+            eachCodeCount.fullOuterJoin[Int](prevRdd).foreachPartition(y => {
+
+              stockPool.value.getConnect match {
+
+                case Some(connect) =>
+
+                  val mysqlHandle = MysqlHandle(connect)
+                  //直接在_add中插入股票，时间，和计数的差值
+                  RddOpt.updateAdd(mysqlHandle, y, "stock_search_add", currStamp)
+
+                  mysqlHandle.batchExec recover {
+                    case e: Exception =>
+                      exception(e)
+                  }
+
+                  mysqlHandle.close()
+
+                case None => logger.warn("Get connect exception")
+              }
+            })
           }
-        })
 
-        //程序重新运行会执行为null代码
-        if (prevRdd == null) {
+          prevRdd = eachCodeCount
 
-          eachCodeCount.map(x => (x._1._1, x._2)).foreachPartition(y => {
-
-            stockPool.value.getConnect match {
-
-              case Some(connect) =>
-
-                val mysqlHandle = MysqlHandle(connect)
-                //直接在_add中插入股票，时间，和计数
-                RddOpt.updateAddFirst(mysqlHandle, y, "stock_search_add", stamp)
-
-                mysqlHandle.batchExec recover {
-                  case e: Exception =>
-                    exception(e)
-                }
-
-                mysqlHandle.close()
-
-              case None => logger.warn("Get connect exception")
-            }
+          //按照股票的查看和搜索类型，和时间进行计数，更新_count表
+          val count = eachCodeCount.map(y => (y._1._2, y._2)).reduceByKey(_ + _).foreach(z => {
+            RddOpt.updateTotal(stockPool.value.getConnect, MixTool.ALL_SEARCH, z)
           })
 
-        } else {
+          val maxTime = eachCodeCount.map(_._1._2).reduce(_ max _)
+          //更新update_search表时间
+          RddOpt.updateTime(masterPool.getConnect, "update_search", maxTime)
 
-          eachCodeCount.fullOuterJoin[Int](prevRdd).map(x => (x._1._1, x._2)).foreachPartition(y => {
+          accum.setValue(("0", 0))
 
-            stockPool.value.getConnect match {
+          val stockInfo = heatInfo.value
 
-              case Some(connect) =>
+          import JsonHandle.MyJsonProtocol._
+          val json = MixData("search", currStamp, currMonth, currDay, hour, stockInfo).toJson.compactPrint //toJson.compactPrint没用过
 
-                val mysqlHandle = MysqlHandle(connect)
-                //直接在_add中插入股票，时间，和计数的差值
-                RddOpt.updateAdd(mysqlHandle, y, "stock_search_add", stamp)
+          val topic = xmlHandle.getElem("kafkaconsumer", "searchtopic")
 
-                mysqlHandle.batchExec recover {
-                  case e: Exception =>
-                    exception(e)
-                }
+          kafkaProducer.send(topic, "0", json)
 
-                mysqlHandle.close()
+          heatInfo.setValue(Nil) //重设发送的股票和对应的计数
 
-              case None => logger.warn("Get connect exception")
-            }
-          })
         }
-
-        prevRdd = eachCodeCount
-
-        //按照股票的查看和搜索类型，和时间进行计数，更新_count表
-        eachCodeCount.map(y => {
-          (y._1._2, y._2)
-        }).reduceByKey(_ + _).foreach(z => {
-          RddOpt.updateTotal(stockPool.value.getConnect, MixTool.ALL_SEARCH, stamp, z._2)
-        })
-
-        //更新update_search表时间
-        RddOpt.updateTime(masterPool.getConnect, "update_search", stamp)
-
-        accum.setValue(("0", 0))
-
-        val stockInfo = heatInfo.value
-
-        import JsonHandle.MyJsonProtocol._
-        val json = MixData("search", stamp, month, day, hour, stockInfo).toJson.compactPrint //toJson.compactPrint没用过
-
-        val topic = xmlHandle.getElem("kafkaconsumer", "searchtopic")
-
-        kafkaProducer.send(topic, "0", json)
-
-        heatInfo.setValue(Nil) //重设发送的股票和对应的计数
       })
 
     stc.start

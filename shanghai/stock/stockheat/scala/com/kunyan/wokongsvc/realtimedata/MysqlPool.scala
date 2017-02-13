@@ -40,7 +40,7 @@ class MysqlPool private(val xmlHandle: XmlHandle, val mysqlSign: String = "stock
 
     val initConfig = new BoneCPConfig
 
-    if (!(mysqlSign == "stock" || mysqlSign == "test" || mysqlSign == "other_stock")) {
+    if (!(mysqlSign == "stock" || mysqlSign == "change" || mysqlSign == "other_stock")) {
       logger.warn("couldn't obtain mysql conn by mysql sign")
     } else {
       initConfig.setJdbcUrl(xmlHandle.getElem("mysql_" + mysqlSign, "url"))

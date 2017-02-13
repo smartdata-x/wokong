@@ -12,6 +12,7 @@
 package com.kunyan.wokongsvc.realtimedata
 
 import java.sql.Connection
+import java.util.Calendar
 
 import com.kunyan.wokongsvc.realtimedata.JsonHandle.StockInfo
 import org.apache.spark.Accumulator
@@ -30,55 +31,63 @@ object RddOpt {
     * @param  rdd   要操作的rdd
     * @param  accum 累加器
     * @param  table 表名
-    * @param  tamp  时间戳
     * @author wukun
     */
   def updateStocksCount(
                          stockHandle: MysqlHandle,
-                         rdd: List[((String, String), Int)],
+                         rdd: List[((String, Long), Int)],
                          accum: Accumulator[(String, Int)],
                          heatInfo: Accumulator[List[StockInfo]],
                          table: String,
-                         tamp: Long,
-                         month: Int,
-                         day: Int
-                       ) {
+                         currTampStamp: Long) {
 
     rdd.foreach(y => {
 
+      val stock = y._1._1
+      val stockTampMinuteWT = y._1._2
+      val number = y._2
+
+      val stockCal: Calendar = Calendar.getInstance
+      stockCal.setTimeInMillis(stockTampMinuteWT * 1000)
+
+      val stockMonth = TimeHandle.getMonth(stockCal)
+      val stockYear = TimeHandle.getYear(stockCal)
+      val stockDay = TimeHandle.getDay(stockCal)
+
       stockHandle.addCommand(
-        MixTool.insertCount(table, y._1._1, tamp, y._2)
+        MixTool.insertCount(table, stock, stockTampMinuteWT, number)
       ) recover {
         case e: Exception => exception(e)
       }
 
       stockHandle.addCommand(
-        MixTool.insertOldCount(table + "_old", y._1._1, tamp, y._2)
+        MixTool.insertOldCount(table + "_old", stock, stockTampMinuteWT, number)
       ) recover {
         case e: Exception => exception(e)
       }
 
       stockHandle.addCommand(
-        MixTool.updateAccum(table + "_accum", y._1._1, y._2)
+        MixTool.updateAccum(table + "_accum", stock, number)
       ) recover {
         case e: Exception => exception(e)
       }
 
       stockHandle.addCommand(
-        MixTool.updateMonthAccum(table + "_month_", y._1._1, month, day, y._2)
+        MixTool.updateMonthAccum(table + "_month_", stock, stockMonth, stockDay, number)
       ) recover {
         case e: Exception => exception(e)
       }
 
-      accum +=(y._1._1, y._2)
-      heatInfo += List(StockInfo(y._1._1, y._2))
-    })
+      accum +=(stock, number)
+      heatInfo += List(StockInfo(stock, number))
+    }
+
+    )
 
   }
 
   def updateOtherAccum(otherConnect: Option[Connection],
-                       table: String,
-                       accum: Int): Unit = {
+                       table: String): Unit = {
 
     otherConnect match {
 
@@ -100,21 +109,81 @@ object RddOpt {
 
   }
 
+  def updateChange(otherConnect: Option[Connection],
+                   table: String): Unit = {
+
+    otherConnect match {
+
+      case Some(otherConnect_) => {
+
+        val otherMysqlHandle = MysqlHandle(otherConnect_)
+
+        otherMysqlHandle.execInsertInto(
+          MixTool.deleteData(table)
+        ) recover {
+          case e: Exception => exception(e)
+        }
+
+        otherMysqlHandle.execInsertInto(
+          MixTool.deleteData(s"${table}_accum")
+        ) recover {
+          case e: Exception => exception(e)
+        }
+
+      }
+
+      case None => logger.warn("Get other connect exception")
+
+    }
+
+  }
+
   def updateOtherStockCount(stockHandle: MysqlHandle,
-                            rdd: List[((String, String), Int)],
+                            rdd: List[((String, Long), Int)],
                             table: String,
-                            year: String,
-                            month: Int,
-                            tamp: Long): Unit = {
+                            currTampStamp: Long): Unit = {
+
     rdd.foreach { y =>
+
+      val stock = y._1._1
+      val stockTampMinuteWT = y._1._2
+      val number = y._2
+
+
       stockHandle.addCommand(
-        MixTool.insertCount(table + "_old", y._1._1, tamp, y._2)
+        MixTool.insertCount(table + "_old", stock, stockTampMinuteWT, number)
       ) recover {
         case e: Exception => exception(e)
       }
 
       stockHandle.addCommand(
-        MixTool.insertCount(table, y._1._1, tamp, y._2)
+        MixTool.insertCount(table, stock, stockTampMinuteWT, number)
+      ) recover {
+        case e: Exception => exception(e)
+      }
+
+    }
+  }
+
+  def updateChange(mysqlHandle: MysqlHandle,
+                   rdd: List[((String, Long), Int)],
+                   table: String,
+                   currTampStamp: Long): Unit = {
+
+    rdd.foreach { y =>
+
+      val stock = y._1._1
+      val stockTampMinuteWT = y._1._2
+      val number = y._2
+
+      mysqlHandle.addCommand(
+        MixTool.insertCount(table, stock, stockTampMinuteWT, number)
+      ) recover {
+        case e: Exception => exception(e)
+      }
+
+      mysqlHandle.addCommand(
+        MixTool.insertOrUpdateAccum(s"${table}_accum", stock, stockTampMinuteWT, number)
       ) recover {
         case e: Exception => exception(e)
       }
@@ -127,14 +196,14 @@ object RddOpt {
     *
     * @param  tryConnect mysql连接
     * @param  table      表名
-    * @param  tamp       时间戳
-    * @param  count      访问次数
     * @author wukun
     */
   def updateTotal(tryConnect: Option[Connection],
                   table: String,
-                  tamp: Long,
-                  count: Int) {
+                  timeAndCount: (Long, Int)) {
+
+    val stockTamp = timeAndCount._1
+    val count = timeAndCount._2
 
     tryConnect match {
 
@@ -143,7 +212,7 @@ object RddOpt {
         val mysqlHandle = MysqlHandle(connect)
 
         mysqlHandle.execInsertInto(
-          MixTool.insertTotal(table, tamp, count)
+          MixTool.insertTotal(table, stockTamp, count)
         ) recover {
           case e: Exception => exception(e)
         }
@@ -155,92 +224,92 @@ object RddOpt {
     }
   }
 
-  /**
-    * 更新所有股票访问的和
-    *
-    * @param  rdd   要操作的rdd
-    * @param  accum 累加器
-    * @param  table 表名
-    * @param  tamp  时间戳
-    * @author wukun
-    */
-  def updateStockCount(
-                        mysqlHandle: MysqlHandle,
-                        rdd: Iterator[((String, String), Int)],
-                        accum: Accumulator[(String, Int)],
-                        heatInfo: Accumulator[List[StockInfo]],
-                        table: String,
-                        tamp: Long,
-                        month: Int,
-                        day: Int) {
+  //  /**
+  //    * 更新所有股票访问的和
+  //    *
+  //    * @param  rdd   要操作的rdd
+  //    * @param  accum 累加器
+  //    * @param  table 表名
+  //    * @param  currTamp  时间戳
+  //    * @author wukun
+  //    */
+  //  def updateStockCount(
+  //                        mysqlHandle: MysqlHandle,
+  //                        rdd: Iterator[((String, Long), Int)],
+  //                        accum: Accumulator[(String, Int)],
+  //                        heatInfo: Accumulator[List[StockInfo]],
+  //                        table: String,
+  //                        currTamp: Long,
+  //                        currMonth: Int,
+  //                        currDay: Int) {
+  //
+  //    rdd.foreach(y => {
+  //
+  //      mysqlHandle.addCommand(
+  //        MixTool.insertCount(table, y._1._1, currTamp, y._2)
+  //      ) recover {
+  //        case e: Exception => exception(e)
+  //      }
+  //
+  //      mysqlHandle.addCommand(
+  //        MixTool.insertOldCount(table + "_old", y._1._1, currTamp, y._2)
+  //      ) recover {
+  //        case e: Exception => exception(e)
+  //      }
+  //
+  //      mysqlHandle.addCommand(
+  //        MixTool.updateAccum(table + "_accum", y._1._1, y._2)
+  //      ) recover {
+  //        case e: Exception => exception(e)
+  //      }
+  //
+  //
+  //      mysqlHandle.addCommand(
+  //        MixTool.updateMonthAccum(table + "_month_", y._1._1, currMonth, currDay, y._2)
+  //      ) recover {
+  //        case e: Exception => exception(e)
+  //      }
+  //
+  //      accum +=(y._1._1, y._2)
+  //      heatInfo += List(StockInfo(y._1._1, y._2))
+  //    })
+  //
+  //  }
 
-    rdd.foreach(y => {
-
-      mysqlHandle.addCommand(
-        MixTool.insertCount(table, y._1._1, tamp, y._2)
-      ) recover {
-        case e: Exception => exception(e)
-      }
-
-      mysqlHandle.addCommand(
-        MixTool.insertOldCount(table + "_old", y._1._1, tamp, y._2)
-      ) recover {
-        case e: Exception => exception(e)
-      }
-
-      mysqlHandle.addCommand(
-        MixTool.updateAccum(table + "_accum", y._1._1, y._2)
-      ) recover {
-        case e: Exception => exception(e)
-      }
-
-
-      mysqlHandle.addCommand(
-        MixTool.updateMonthAccum(table + "_month_", y._1._1, month, day, y._2)
-      ) recover {
-        case e: Exception => exception(e)
-      }
-
-      accum +=(y._1._1, y._2)
-      heatInfo += List(StockInfo(y._1._1, y._2))
-    })
-
-  }
-
-  /**
-    * 更新所有股票访问的和
-    *
-    * @param  fileInfo 日志所需的文件信息
-    * @param  rdd      要操作的rdd
-    * @param  table    表名
-    * @param  tamp     时间戳
-    * @author wukun
-    */
-  def updateStockCount(
-                        fileInfo: (String, String),
-                        mysqlHandle: MysqlHandle,
-                        rdd: Iterator[((String, String), Int)],
-                        table: String,
-                        tamp: Long,
-                        month: Int,
-                        day: Int) {
-
-    rdd.foreach(y => {
-
-      mysqlHandle.addCommand(
-        MixTool.insertOldCount(table + "_old", y._1._1, tamp, y._2)
-      ) recover {
-        case e: Exception => exception(e)
-      }
-
-      mysqlHandle.addCommand(
-        MixTool.updateMonthAccum(table + "_month_", y._1._1, month, day, y._2)
-      ) recover {
-        case e: Exception => exception(e)
-      }
-
-    })
-  }
+  //  /**
+  //    * 更新所有股票访问的和
+  //    *
+  //    * @param  fileInfo 日志所需的文件信息
+  //    * @param  rdd      要操作的rdd
+  //    * @param  table    表名
+  //    * @param  tamp     时间戳
+  //    * @author wukun
+  //    */
+  //  def updateStockCount(
+  //                        fileInfo: (String, String),
+  //                        mysqlHandle: MysqlHandle,
+  //                        rdd: Iterator[((String, String), Int)],
+  //                        table: String,
+  //                        tamp: Long,
+  //                        month: Int,
+  //                        day: Int) {
+  //
+  //    rdd.foreach(y => {
+  //
+  //      mysqlHandle.addCommand(
+  //        MixTool.insertOldCount(table + "_old", y._1._1, tamp, y._2)
+  //      ) recover {
+  //        case e: Exception => exception(e)
+  //      }
+  //
+  //      mysqlHandle.addCommand(
+  //        MixTool.updateMonthAccum(table + "_month_", y._1._1, month, day, y._2)
+  //      ) recover {
+  //        case e: Exception => exception(e)
+  //      }
+  //
+  //    })
+  //  }
 
   /**
     * 更新所有股票访问的和
@@ -307,39 +376,43 @@ object RddOpt {
   /**
     * 更新所有股票访问的和
     *
-    * @param  table 表名
-    * @param  tamp  时间戳
+    * @param  table    表名
+    * @param  currTamp 时间戳
     * @author wukun
     */
   def updateAddFirst(
                       mysqlHandle: MysqlHandle,
-                      rdd: Iterator[(String, Int)],
+                      rdd: Iterator[((String, Long), Int)],
                       table: String,
-                      tamp: Long) {
+                      currTamp: Long) {
 
     rdd.foreach(y => {
 
+      val stock = y._1._1
+
       mysqlHandle.addCommand(
-        MixTool.insertCount(table, y._1, tamp, y._2)
+        MixTool.insertCount(table, stock, currTamp, y._2)
       ) recover {
         case e: Exception => exception(e)
       }
+
     })
   }
 
   /**
     * 更新所有股票访问的和
     *
-    * @param  rdd   要操作的rdd
-    * @param  table 表名
-    * @param  tamp  时间戳
+    * @param  rdd         要操作的rdd
+    * @param  table       表名
+    * @param  currentTamp 时间戳
     * @author wukun
+    *         这里面比较可能有问题，但是好像改数据库并没有使用，因此此处并没有更新
     */
   def updateAdd(
                  mysqlHandle: MysqlHandle,
-                 rdd: Iterator[(String, (Option[Int], Option[Int]))],
+                 rdd: Iterator[((String, Long), (Option[Int], Option[Int]))],
                  table: String,
-                 tamp: Long) {
+                 currentTamp: Long) {
 
     rdd.foreach(y => {
 
@@ -354,10 +427,11 @@ object RddOpt {
       }
 
       mysqlHandle.addCommand(
-        MixTool.insertCount(table, y._1, tamp, now - prev)
+        MixTool.insertCount(table, y._1._1, currentTamp, now - prev)
       ) recover {
         case e: Exception => exception(e)
       }
+
     })
   }
 
