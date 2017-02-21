@@ -6,3 +6,5 @@
 */**/*.iml
 */**/*.xml
 */**/*.class
+shanghai/stock/stockheat/.gitigore
+shanghai/stock/stockheat/scala/com/kunyan/wokongsvc/person/*
